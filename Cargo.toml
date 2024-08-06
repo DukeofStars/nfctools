@@ -1,0 +1,9 @@
+[package]
+name = "nfctools"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+color-eyre = "0.6.3"
+xml = "0.8.20"
