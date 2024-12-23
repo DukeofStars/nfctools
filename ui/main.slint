@@ -1,0 +1,40 @@
+import { Button, GridBox } from "std-widgets.slint";
+
+export component MainWindow inherits Window {
+    height: 600px;
+    width: 800px;
+    HorizontalLayout {
+        VerticalLayout {
+            alignment: start;
+            Text {
+                text: "Box 1";
+                font-size: 24px;
+            }
+
+            GridLayout { }
+        }
+
+        VerticalLayout {
+            alignment: start;
+            width: 20%;
+            Text {
+                text: "Box 2";
+                width: 100%;
+                font-size: 24px;
+            }
+
+            GridLayout {
+                Button {
+                    text: "Merge";
+                }
+            }
+        }
+    }
+}
+
+export component ExportedComponent inherits TouchArea {
+    property <string> name;
+    Text {
+        text: name;
+    }
+}

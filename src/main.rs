@@ -26,40 +26,14 @@ enum Command {
     },
 }
 
+slint::include_modules!();
+
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
+    let main_window = MainWindow::new()?;
 
-    let cli = Cli::parse();
+    main_window.run()?;
 
-    match cli.command {
-        Command::Merge {
-            fleet1,
-            fleet2,
-            out,
-            name,
-        } => {
-            let ships = {
-                let file = File::open(fleet1)?;
-                let file = BufReader::new(file);
-                let reader = EventReader::new(file);
-
-                let mut ships = Vec::new();
-                let mut reader = Reader::new(reader, &mut ships);
-                reader.run_until_complete();
-                ships
-            };
-            let file = File::open(fleet2)?;
-            let file = BufReader::new(file);
-            let reader = EventReader::new(file);
-
-            let out = File::create(out)?;
-            let out = BufWriter::new(out);
-
-            let mut writer = Writer::new(out, reader, ships, name);
-
-            writer.run_until_complete();
-        }
-    }
     Ok(())
 }
 
