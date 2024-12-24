@@ -1,40 +1,163 @@
-import { Button, GridBox } from "std-widgets.slint";
+import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView } from "std-widgets.slint";
+
+export struct FleetData {
+    path: string,
+    name: string,
+    selected: bool,
+}
 
 export component MainWindow inherits Window {
     height: 600px;
     width: 800px;
-    HorizontalLayout {
+    in property <[FleetData]> fleets;
+    in-out property <string> cur_fleet_description;
+    in-out property <string> merge_output_name;
+    callback merge();
+    callback viewing(int);
+    callback show_error_popup(string, string);
+    show_error_popup(title, message) => {
+        error_title = title;
+        error_message = message;
+        error_popup.show();
+    }
+    out property <string> error_message;
+    out property <string> error_title;
+    error_popup := PopupWindow {
+        height: 600px;
+        width: 800px;
+        x: 0;
+        y: 0;
+        close-policy: no-auto-close;
         VerticalLayout {
-            alignment: start;
-            Text {
-                text: "Box 1";
-                font-size: 24px;
+            Rectangle {
+                height: 37.5%;
             }
 
-            GridLayout { }
-        }
+            HorizontalLayout {
+                Rectangle {
+                    width: 37.5%;
+                }
 
-        VerticalLayout {
-            alignment: start;
-            width: 20%;
-            Text {
-                text: "Box 2";
-                width: 100%;
-                font-size: 24px;
-            }
+                Rectangle {
+                    width: 25%;
+                    height: 25%;
+                    border-radius: 4px;
+                    background: rgba(0, 0, 0, 0.8);
+                    VerticalLayout {
+                        padding: 10px;
+                        Text {
+                            text: error_title;
+                            font-size: 24px;
+                        }
 
-            GridLayout {
-                Button {
-                    text: "Merge";
+                        Text {
+                            text: error_message;
+                            font-size: 12px;
+                        }
+
+                        Button {
+                            text: "Ok";
+                            clicked => {
+                                error_popup.close();
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-}
 
-export component ExportedComponent inherits TouchArea {
-    property <string> name;
-    Text {
-        text: name;
+    HorizontalLayout {
+        padding-left: 5px;
+        VerticalLayout {
+            alignment: start;
+            Text {
+                text: "Fleets";
+                font-size: 24px;
+            }
+
+            ScrollView {
+                height: 500px;
+                width: 70%;
+                viewport-height: 5000px;
+                VerticalLayout {
+                    padding-top: 15px;
+                    for fleet[idx] in fleets: Rectangle {
+                        callback view();
+                        TouchArea {
+                            Text {
+                                text: fleet.name;
+                                font-size: 16px;
+                                padding: 5px;
+                                horizontal-alignment: left;
+                                width: 100%;
+                            }
+
+                            clicked => {
+                                fleet.selected = !fleet.selected;
+                                viewing(idx)
+                            }
+                        }
+
+                        border-width: 1px;
+                        border-color: rgba(255, 255, 255, 0.1);
+                        states [
+                            selected when fleet.selected: {
+                                background: rgba(204, 134, 092, 1);
+                            }
+                            unselected when !fleet.selected: {}
+                        ]
+                    }
+                }
+            }
+        }
+
+        VerticalLayout {
+            alignment: start;
+            width: 30%;
+            max-width: 240px;
+            Text {
+                text: "Actions";
+                width: 100%;
+                font-size: 24px;
+                padding-bottom: 10px;
+            }
+
+            VerticalLayout {
+                spacing: 10px;
+                HorizontalLayout {
+                    LineEdit {
+                        text: merge_output_name;
+                    }
+
+                    Button {
+                        text: "Merge";
+                        clicked => {
+                            root.merge();
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    Text {
+                        text: "Edit Description";
+                        font-size: 16px;
+                    }
+
+                    Button {
+                        width: 40%;
+                        text: "Save";
+                    }
+                }
+
+                TextInput {
+                    width: 100%;
+                    height: 100%;
+                    font-size: 12px;
+                    wrap: word-wrap;
+                    text: cur_fleet_description;
+                }
+            }
+        }
     }
 }

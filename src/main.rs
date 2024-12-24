@@ -1,36 +1,135 @@
+use slint::Model;
 use std::{
     fs::File,
-    io::{BufReader, BufWriter, Read, Write},
-    path::PathBuf,
+    io::{Read, Write},
+    path::Path,
 };
-
-use clap::{Parser, Subcommand};
 use xml::{
     reader::{EventReader, XmlEvent},
     writer, EmitterConfig, EventWriter,
 };
 
-#[derive(Parser)]
-struct Cli {
-    #[clap(subcommand)]
-    command: Command,
-}
-#[derive(Subcommand)]
-enum Command {
-    Merge {
-        fleet1: PathBuf,
-        fleet2: PathBuf,
-        out: PathBuf,
-        #[clap(short, long)]
-        name: String,
-    },
-}
-
 slint::include_modules!();
+
+fn load_fleets(path: impl AsRef<Path>) -> color_eyre::Result<Vec<FleetData>> {
+    let mut output = vec![];
+    load_fleets_rec(path, &mut output)?;
+
+    Ok(output)
+}
+fn load_fleets_rec(path: impl AsRef<Path>, output: &mut Vec<FleetData>) -> color_eyre::Result<()> {
+    let path = path.as_ref();
+    let read_dir = path.read_dir()?;
+    for child in read_dir {
+        if let Ok(child) = child {
+            let file_type = child.file_type()?;
+            if file_type.is_dir() {
+                load_fleets_rec(child.path(), output)?;
+            }
+            if file_type.is_file() {
+                if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
+                    continue;
+                }
+                dbg!(child.path());
+                let fleet_info_reader = FleetInfoReader::new(File::open(child.path())?);
+                let fleet_name = fleet_info_reader.get_value("Fleet/Name");
+                let fleet_data = FleetData {
+                    path: child.path().to_path_buf().to_str().unwrap().into(),
+                    selected: false,
+                    name: fleet_name.into(),
+                };
+                output.push(fleet_data);
+            }
+        }
+    }
+    Ok(())
+}
 
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
     let main_window = MainWindow::new()?;
+
+    let fleets_path = r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#;
+    let fleets = load_fleets(fleets_path)?;
+    // let fleets: Vec<FleetData> = vec![
+    //     FleetData {
+    //         name: "TF Oak".into(),
+    //         selected: false,
+    //         path: "C:/Program Files (x86)/Steam/steamapps/common/Nebulous/Saves/Fleets/Starter Fleets - Alliance/TF Oak.fleet".into()
+    //     },
+    //     FleetData {
+    //         name: "TF Birch".into(),
+    //         selected: false,
+    //         path: "C:/Program Files (x86)/Steam/steamapps/common/Nebulous/Saves/Fleets/Starter Fleets - Alliance/TF Birch.fleet".into(),
+    //     },
+    // ];
+
+    let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
+    main_window.set_fleets(fleets_model.clone().into());
+
+    {
+        let main_window_weak = main_window.as_weak();
+        let fleets_model = fleets_model.clone();
+        main_window.on_viewing(move |idx| {
+            let fleet = fleets_model.iter().nth(idx as usize).unwrap();
+            let fleet_info_reader = FleetInfoReader::new(
+                File::open(fleet.path.to_string())
+                    .expect(&format!("Failed to open fleet {}", fleet.path.to_string())),
+            );
+            let description = fleet_info_reader.get_value("Fleet/Description");
+
+            let main_window = main_window_weak.unwrap();
+            main_window.set_cur_fleet_description(description.into());
+        });
+    }
+
+    {
+        let main_window_weak = main_window.as_weak();
+        let fleets_model = fleets_model.clone();
+        main_window.on_merge(move || {
+            let selected_fleets = fleets_model
+                .iter()
+                .filter(|f| f.selected)
+                .collect::<Vec<_>>();
+            let first_fleet = &selected_fleets[0];
+            let rest_fleets = &selected_fleets[1..];
+
+            let mut ships = Vec::new();
+            rest_fleets.iter().for_each(|fleet| {
+                let file = File::open(fleet.path.to_string())
+                    .expect(&format!("Failed to open fleet {}", fleet.path.to_string()));
+
+                Reader::new(EventReader::new(file), &mut ships).run_until_complete();
+            });
+
+            let main_window = main_window_weak.unwrap();
+            let merge_output_name = main_window
+                .get_merge_output_name()
+                .to_string()
+                .trim()
+                .to_string();
+            if merge_output_name == "" {
+                main_window.invoke_show_error_popup(
+                    "No merge output name".into(),
+                    "You must set an output name for the merged fleets".into(),
+                );
+                dbg!();
+                return;
+            }
+
+            let mut output = Vec::new();
+            Writer::new(
+                &mut output,
+                EventReader::new(File::open(first_fleet.path.to_string()).expect(&format!(
+                    "Failed to open primary fleet {}",
+                    first_fleet.path.to_string()
+                ))),
+                ships,
+                merge_output_name,
+            )
+            .run_until_complete();
+        });
+    }
 
     main_window.run()?;
 
@@ -38,6 +137,98 @@ fn main() -> color_eyre::Result<()> {
 }
 
 type Ship = Vec<XmlEvent>;
+
+struct FleetInfoReader<R: Read> {
+    state: FleetInfoReaderState,
+    event_reader: EventReader<R>,
+    buf: String,
+}
+#[derive(PartialEq, Eq, Debug)]
+enum FleetInfoReaderState {
+    Idle,
+    FindField(String, Vec<String>),
+    ReadField,
+    Complete,
+}
+impl<R: Read> FleetInfoReader<R> {
+    fn new(reader: R) -> FleetInfoReader<R> {
+        FleetInfoReader {
+            state: FleetInfoReaderState::Idle,
+            event_reader: EventReader::new(reader),
+            buf: String::new(),
+        }
+    }
+
+    fn get_value(mut self, arg: impl Into<String>) -> String {
+        let mut fields: Vec<String> = arg.into().split("/").map(String::from).collect();
+        self.state = FleetInfoReaderState::FindField(fields.remove(0), fields);
+        while self.state != FleetInfoReaderState::Complete {
+            self.tick();
+        }
+        self.buf
+    }
+
+    fn tick(&mut self) {
+        let Ok(event) = self.event_reader.next() else {
+            panic!("EventReader failed");
+        };
+        match &mut self.state {
+            FleetInfoReaderState::Idle | FleetInfoReaderState::Complete => {}
+            FleetInfoReaderState::FindField(field, remaining_fields) => match event {
+                XmlEvent::StartElement { name, .. } if name.local_name.as_str() == field => {
+                    self.state = if remaining_fields.is_empty() {
+                        FleetInfoReaderState::ReadField
+                    } else {
+                        FleetInfoReaderState::FindField(
+                            remaining_fields.remove(0),
+                            remaining_fields.clone(),
+                        )
+                    };
+                }
+                // If a start element is followed by another start element, that means the
+                // program has found an element that contains other elements; a list of elements.
+                // Once we reach this, we terminate as we only want to read elements at the root
+                // of the file.
+                XmlEvent::StartElement { name, .. } => {
+                    dbg!(&name);
+                    let Ok(event) = self.event_reader.next() else {
+                        panic!("EventReader failed");
+                    };
+                    // Skip whitespace
+                    let event = if let XmlEvent::Whitespace(_) = event {
+                        let Ok(event) = self.event_reader.next() else {
+                            panic!("EventReader failed");
+                        };
+                        event
+                    } else {
+                        event
+                    };
+                    dbg!(&event);
+                    if let XmlEvent::StartElement { .. } = event {
+                        dbg!();
+                        self.state = FleetInfoReaderState::Complete;
+                        return;
+                    } else {
+                        dbg!();
+                    }
+                }
+                _ => {}
+            },
+            FleetInfoReaderState::ReadField => match event {
+                XmlEvent::CData(chunk) => {
+                    self.buf.push_str(&chunk);
+                }
+                XmlEvent::EndElement { name: _ } => {
+                    self.state = FleetInfoReaderState::Complete;
+                }
+                XmlEvent::Characters(chunk) => {
+                    self.buf.push_str(&chunk);
+                }
+                _ => {}
+            },
+        }
+    }
+}
 
 struct Reader<'a, R: Read> {
     state: ReadState,

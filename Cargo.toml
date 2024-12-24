@@ -6,8 +6,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 color-eyre = "0.6.3"
-slint = "1.7.2"
+slint = "1"
 xml = "0.8.20"
 
 [build-dependencies]
-slint-build = "1.7.2"
+slint-build = "1"
