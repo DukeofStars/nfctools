@@ -4,6 +4,7 @@ use std::{
     io::{Read, Write},
     path::Path,
 };
+use tracing::{debug, info, level_filters::LevelFilter, trace};
 use xml::{
     reader::{EventReader, XmlEvent},
     writer, EmitterConfig, EventWriter,
@@ -12,8 +13,11 @@ use xml::{
 slint::include_modules!();
 
 fn load_fleets(path: impl AsRef<Path>) -> color_eyre::Result<Vec<FleetData>> {
+    debug!("Loading fleets from {}", path.as_ref().display());
     let mut output = vec![];
     load_fleets_rec(path, &mut output)?;
+
+    debug!("Loaded {} fleets", output.len());
 
     Ok(output)
 }
@@ -45,32 +49,29 @@ fn load_fleets_rec(path: impl AsRef<Path>, output: &mut Vec<FleetData>) -> color
 }
 
 fn main() -> color_eyre::Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(LevelFilter::TRACE)
+        .init();
     color_eyre::install()?;
+
+    info!("Starting NebTools");
+
     let main_window = MainWindow::new()?;
 
     let fleets_path = r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#;
     let fleets = load_fleets(fleets_path)?;
-    // let fleets: Vec<FleetData> = vec![
-    //     FleetData {
-    //         name: "TF Oak".into(),
-    //         selected: false,
-    //         path: "C:/Program Files (x86)/Steam/steamapps/common/Nebulous/Saves/Fleets/Starter Fleets - Alliance/TF Oak.fleet".into()
-    //     },
-    //     FleetData {
-    //         name: "TF Birch".into(),
-    //         selected: false,
-    //         path: "C:/Program Files (x86)/Steam/steamapps/common/Nebulous/Saves/Fleets/Starter Fleets - Alliance/TF Birch.fleet".into(),
-    //     },
-    // ];
 
     let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
     main_window.set_fleets(fleets_model.clone().into());
+    debug!("Fleets passed to UI");
 
+    debug!("Setting up callbacks");
     {
         let main_window_weak = main_window.as_weak();
         let fleets_model = fleets_model.clone();
         main_window.on_viewing(move |idx| {
             let fleet = fleets_model.iter().nth(idx as usize).unwrap();
+            trace!("Viewing fleet {}: {}", idx, fleet.name);
             let fleet_info_reader = FleetInfoReader::new(
                 File::open(fleet.path.to_string())
                     .expect(&format!("Failed to open fleet {}", fleet.path.to_string())),
@@ -90,13 +91,20 @@ fn main() -> color_eyre::Result<()> {
                 .iter()
                 .filter(|f| f.selected)
                 .collect::<Vec<_>>();
+            debug!(
+                "Merging fleets {:?}",
+                selected_fleets.iter().map(|f| &f.name).collect::<Vec<_>>()
+            );
             let first_fleet = &selected_fleets[0];
-            let rest_fleets = &selected_fleets[1..];
+            trace!("Primary fleet is '{}'", first_fleet.name);
 
             let mut ships = Vec::new();
-            rest_fleets.iter().for_each(|fleet| {
-                let file = File::open(fleet.path.to_string())
-                    .expect(&format!("Failed to open fleet {}", fleet.path.to_string()));
+            selected_fleets.iter().for_each(|fleet| {
+                trace!("Pulling ships from fleet at '{}'", fleet.path);
+                let file = File::open(fleet.path.to_string()).expect(&format!(
+                    "Failed to open fleet '{}'",
+                    fleet.path.to_string()
+                ));
 
                 Reader::new(EventReader::new(file), &mut ships).run_until_complete();
             });
@@ -107,27 +115,27 @@ fn main() -> color_eyre::Result<()> {
                 .to_string()
                 .trim()
                 .to_string();
-            dbg!(&merge_output_name);
+            debug!("Merging fleets into '{}'", merge_output_name);
             if merge_output_name == "" {
                 main_window.invoke_show_error_popup(
                     "No merge output name".into(),
                     "You must set an output name for the merged fleets".into(),
                 );
-                dbg!();
                 return;
             }
 
             let mut output = Vec::new();
-            Writer::new(
+            let mut writer = Writer::new(
                 &mut output,
                 EventReader::new(File::open(first_fleet.path.to_string()).expect(&format!(
-                    "Failed to open primary fleet {}",
-                    first_fleet.path.to_string()
+                    "Failed to open primary fleet '{}'",
+                    first_fleet.path
                 ))),
                 ships,
                 merge_output_name,
-            )
-            .run_until_complete();
+            );
+            writer.run_until_complete();
+            debug!("Merge complete");
         });
     }
 
@@ -337,6 +345,7 @@ impl<W: Write, R: Read> Writer<W, R> {
     }
 
     fn run_until_complete(&mut self) {
+        trace!("Copying primary fleet");
         while !(self.is_done() || self.is_error()) {
             self.tick();
         }
@@ -352,6 +361,7 @@ impl<W: Write, R: Read> Writer<W, R> {
                 self.write_event(event.clone());
                 match event {
                     XmlEvent::StartElement { name, .. } if name.local_name.as_str() == "Name" => {
+                        trace!("Overwriting fleet name");
                         let _old_name = self.main.skip();
                         self.event_writer
                             .write(writer::XmlEvent::Characters(&self.name))
@@ -363,6 +373,7 @@ impl<W: Write, R: Read> Writer<W, R> {
                             .unwrap();
                     }
                     XmlEvent::StartElement { name, .. } if name.local_name.as_str() == "Ships" => {
+                        trace!("Injecting ships");
                         self.state = WriteState::Inserting;
                     }
                     _ => {}
@@ -377,6 +388,7 @@ impl<W: Write, R: Read> Writer<W, R> {
                     .for_each(|event| {
                         self.write_event(event);
                     });
+                trace!("Finishing fleet file");
                 self.state = WriteState::Finishing;
             }
             WriteState::Finishing => {
