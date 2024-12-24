@@ -1,5 +1,6 @@
 use slint::Model;
 use std::{
+    cmp::Ordering,
     fs::File,
     io::{Read, Write},
     path::Path,
@@ -23,26 +24,33 @@ fn load_fleets(path: impl AsRef<Path>) -> color_eyre::Result<Vec<FleetData>> {
 }
 fn load_fleets_rec(path: impl AsRef<Path>, output: &mut Vec<FleetData>) -> color_eyre::Result<()> {
     let path = path.as_ref();
-    let read_dir = path.read_dir()?;
-    for child in read_dir {
-        if let Ok(child) = child {
-            let file_type = child.file_type()?;
-            if file_type.is_dir() {
-                load_fleets_rec(child.path(), output)?;
+    let mut children = path.read_dir()?.filter_map(|c| c.ok()).collect::<Vec<_>>();
+    children.sort_by(|a, b| {
+        if a.path().is_dir() {
+            Ordering::Greater
+        } else if b.path().is_dir() {
+            Ordering::Less
+        } else {
+            Ordering::Equal
+        }
+    });
+    for child in children {
+        let file_type = child.file_type()?;
+        if file_type.is_dir() {
+            load_fleets_rec(child.path(), output)?;
+        }
+        if file_type.is_file() {
+            if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
+                continue;
             }
-            if file_type.is_file() {
-                if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
-                    continue;
-                }
-                let fleet_info_reader = FleetInfoReader::new(File::open(child.path())?);
-                let fleet_name = fleet_info_reader.get_value("Fleet/Name");
-                let fleet_data = FleetData {
-                    path: child.path().to_path_buf().to_str().unwrap().into(),
-                    selected: false,
-                    name: fleet_name.into(),
-                };
-                output.push(fleet_data);
-            }
+            let fleet_info_reader = FleetInfoReader::new(File::open(child.path())?);
+            let fleet_name = fleet_info_reader.get_value("Fleet/Name");
+            let fleet_data = FleetData {
+                path: child.path().to_path_buf().to_str().unwrap().into(),
+                selected: false,
+                name: fleet_name.into(),
+            };
+            output.push(fleet_data);
         }
     }
     Ok(())

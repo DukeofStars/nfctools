@@ -77,13 +77,12 @@ export component MainWindow inherits Window {
             }
 
             ScrollView {
-                height: 500px;
                 width: 70%;
-                viewport-height: 100000px;
+                height: 600px - 30px;
                 VerticalLayout {
                     padding-top: 15px;
                     for fleet[idx] in fleets: Rectangle {
-                        callback view();
+                        height: 16px;
                         TouchArea {
                             Text {
                                 text: fleet.name;
