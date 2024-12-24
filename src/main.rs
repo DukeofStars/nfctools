@@ -30,7 +30,6 @@ fn load_fleets_rec(path: impl AsRef<Path>, output: &mut Vec<FleetData>) -> color
                 if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
                     continue;
                 }
-                dbg!(child.path());
                 let fleet_info_reader = FleetInfoReader::new(File::open(child.path())?);
                 let fleet_name = fleet_info_reader.get_value("Fleet/Name");
                 let fleet_data = FleetData {
@@ -108,6 +107,7 @@ fn main() -> color_eyre::Result<()> {
                 .to_string()
                 .trim()
                 .to_string();
+            dbg!(&merge_output_name);
             if merge_output_name == "" {
                 main_window.invoke_show_error_popup(
                     "No merge output name".into(),
@@ -189,8 +189,7 @@ impl<R: Read> FleetInfoReader<R> {
                 // program has found an element that contains other elements; a list of elements.
                 // Once we reach this, we terminate as we only want to read elements at the root
                 // of the file.
-                XmlEvent::StartElement { name, .. } => {
-                    dbg!(&name);
+                XmlEvent::StartElement { .. } => {
                     let Ok(event) = self.event_reader.next() else {
                         panic!("EventReader failed");
                     };
@@ -203,13 +202,11 @@ impl<R: Read> FleetInfoReader<R> {
                     } else {
                         event
                     };
-                    dbg!(&event);
+
                     if let XmlEvent::StartElement { .. } = event {
-                        dbg!();
                         self.state = FleetInfoReaderState::Complete;
                         return;
                     } else {
-                        dbg!();
                     }
                 }
                 _ => {}
