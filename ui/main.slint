@@ -9,10 +9,11 @@ export struct FleetData {
 export component MainWindow inherits Window {
     height: 600px;
     width: 800px;
-    in property <[FleetData]> fleets;
+    in-out property <[FleetData]> fleets;
     in-out property <string> cur_fleet_description;
     out property <string> merge_output_name;
     out property <int> cur_fleet_idx;
+    in-out property <bool> multi_selecting: false;
     callback merge();
     callback viewing(int);
     callback show_error_popup(string, string);
@@ -32,6 +33,25 @@ export component MainWindow inherits Window {
     viewing(a) => {
         desc_input.text = cur_fleet_description;
     }
+
+    forward-focus: key-handler;
+    key-handler := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Control) {
+                root.multi_selecting = true;
+                accept
+            }
+            reject
+        }
+        key-released(event) => {
+            if (event.text == Key.Control) {
+                root.multi_selecting = false;
+                accept
+            }
+            reject
+        }
+    }
+
     error_popup := PopupWindow {
         height: 600px;
         width: 800px;
@@ -104,7 +124,7 @@ export component MainWindow inherits Window {
                 height: 600px - 30px;
                 VerticalLayout {
                     padding-top: 15px;
-                    for fleet[idx] in fleets: Rectangle {
+                    for fleet[idx] in fleets: this-rectangle := Rectangle {
                         height: 16px;
                         TouchArea {
                             Text {
@@ -117,8 +137,15 @@ export component MainWindow inherits Window {
 
                             clicked => {
                                 fleet.selected = !fleet.selected;
-                                cur_fleet_idx = idx;
-                                viewing(idx)
+                                if fleet.selected {
+                                    cur_fleet_idx = idx;
+                                    viewing(idx)
+                                }
+                                else {
+                                    cur_fleet_idx = 0;
+                                    cur_fleet_description = "";
+                                    root.update_description();
+                                }
                             }
                         }
 

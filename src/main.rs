@@ -134,6 +134,21 @@ fn main() -> color_eyre::Result<()> {
         main_window.on_viewing(move |idx| {
             let main_window = main_window_weak.unwrap();
             wrap_errorable_function(&main_window_weak.unwrap(), || {
+                if !main_window.get_multi_selecting() {
+                    fleets_model.set_vec(
+                        fleets_model
+                            .iter()
+                            .enumerate()
+                            .map(|(f_idx, mut fleet)| {
+                                if f_idx as i32 != idx {
+                                    fleet.selected = false;
+                                }
+                                fleet
+                            })
+                            .collect::<Vec<_>>(),
+                    );
+                }
+
                 let fleet = fleets_model.iter().nth(idx as usize).ok_or(my_error!(
                     "Selected fleet doesn't exist",
                     "cur_fleet_idx points to a nonexistant fleet"
