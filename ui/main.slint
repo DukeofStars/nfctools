@@ -18,6 +18,7 @@ export component MainWindow inherits Window {
     callback show_error_popup(string, string);
     callback save_description();
     callback update_description();
+    callback reload_fleets();
     update_description => {
         desc_input.text = cur_fleet_description;
     }
@@ -77,12 +78,25 @@ export component MainWindow inherits Window {
     }
 
     HorizontalLayout {
+        padding-top: 5px;
         padding-left: 5px;
         VerticalLayout {
             alignment: start;
-            Text {
-                text: "Fleets";
-                font-size: 24px;
+            HorizontalLayout{
+                Text {
+                    text: "Fleets";
+                    font-size: 24px;
+                }
+                HorizontalLayout {
+                    padding-right: 5px;
+                    alignment: end;
+                    Button {
+                        text: "Refresh";
+                        clicked => {
+                            root.reload_fleets();
+                        }
+                    }
+                }
             }
 
             ScrollView {

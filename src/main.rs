@@ -113,6 +113,24 @@ fn main() -> color_eyre::Result<()> {
     {
         let main_window_weak = main_window.as_weak();
         let fleets_model = fleets_model.clone();
+        main_window.on_reload_fleets(move || {
+            let main_window = main_window_weak.unwrap();
+            wrap_errorable_function(&main_window, || {
+                debug!("Reloading fleets list");
+                let fleets_path =
+                    r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#;
+                let fleets = load_fleets(fleets_path)
+                    .map_err(|err| my_error!("Failed to load fleets", err))?;
+                fleets_model.set_vec(fleets);
+
+                Ok(())
+            });
+        });
+    }
+
+    {
+        let main_window_weak = main_window.as_weak();
+        let fleets_model = fleets_model.clone();
         main_window.on_viewing(move |idx| {
             let main_window = main_window_weak.unwrap();
             wrap_errorable_function(&main_window_weak.unwrap(), || {
@@ -310,6 +328,9 @@ fn main() -> color_eyre::Result<()> {
                 );
                 writer.run_until_complete();
                 debug!("Merge complete");
+
+                // A new fleet has been created, so reload the fleet list.
+                main_window.invoke_reload_fleets();
 
                 Ok(())
             });
