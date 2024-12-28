@@ -2,63 +2,151 @@ import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView } fro
 
 export struct FleetData {
     path: string,
-    short_path: string,
+    short-path: string,
     name: string,
     selected: bool,
+}
+
+component FleetListItem inherits TouchArea {
+    in-out property <string> name;
+    in property <string> short-path;
+    in property <color> background-colour;
+
+    callback viewing();
+
+    clicked => {
+        root.viewing();
+    }
+
+    Rectangle {
+        height: 18px;
+        background: background-colour;
+    
+        HorizontalLayout {
+            spacing: 100px;
+            padding-right: 5px;
+            Text {
+                text: name;
+                horizontal-stretch: 1.0;
+                font-size: 16px;
+            }
+            HorizontalLayout {
+                alignment: end;
+                Text {
+                    overflow: elide;
+                    wrap: no-wrap;
+                    color: rgba(255, 255, 255, 0.5);
+                    text: short-path;
+                    horizontal-alignment: right;
+                    // font-size: 16px;
+                }
+            }
+        }
+
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+component ActionsPane inherits VerticalLayout {
+    callback merge(string);
+    callback save-description(string);
+
+    public function update-description(description: string) {
+        desc-input.text = description;
+    }
+
+    spacing: 10px;
+    HorizontalLayout {
+        merge-output-name-input := LineEdit {
+            text: "";
+        }
+
+        Button {
+            text: "Merge";
+            clicked => {
+                root.merge(merge-output-name-input.text);
+            }
+        }
+    }
+
+    HorizontalLayout {
+        Text {
+            text: "Edit Description";
+            font-size: 16px;
+        }
+
+        Button {
+            width: 40%;
+            text: "Save";
+            clicked => {
+                desc-input.text;
+                root.save-description(desc-input.text);
+            }
+        }
+    }
+
+    desc-input := TextInput {
+        width: 100%;
+        height: 100%;
+        font-size: 12px;
+        wrap: word-wrap;
+        text: "";
+    }
 }
 
 export component MainWindow inherits Window {
     height: 600px;
     width: 800px;
+    
     in-out property <[FleetData]> fleets;
-    in-out property <string> cur_fleet_description;
-    out property <string> merge_output_name;
-    out property <int> cur_fleet_idx;
-    in-out property <bool> multi_selecting: false;
-    callback merge();
+    in-out property <bool> multi-selecting: false;
+
+    out property <int> cur-fleet-idx;
+    
+    callback merge(string);
     callback viewing(int);
-    callback show_error_popup(string, string);
-    callback save_description();
-    callback update_description();
-    callback reload_fleets();
-    update_description => {
-        desc_input.text = cur_fleet_description;
+
+    callback save-description(string);
+    callback reload-fleets();
+    
+    public function update-description(description: string) {
+        actions-pane.update-description(description);
     }
-    show_error_popup(title, message) => {
-        error_title = title;
-        error_message = message;
-        error_popup.show();
-    }
-    out property <string> error_message;
-    out property <string> error_title;
-    viewing(a) => {
-        desc_input.text = cur_fleet_description;
+
+    property <string> error-popup-title;
+    property <string> error-popup-message;
+    public function show-error-popup(title: string, message: string) {
+        error-popup-title = title;
+        error-popup-message = message;
+        error-popup.show();
     }
 
     forward-focus: key-handler;
     key-handler := FocusScope {
         key-pressed(event) => {
             if (event.text == Key.Control) {
-                root.multi_selecting = true;
+                root.multi-selecting = true;
                 accept
             }
             reject
         }
         key-released(event) => {
             if (event.text == Key.Control) {
-                root.multi_selecting = false;
+                root.multi-selecting = false;
                 accept
             }
             reject
         }
     }
 
-    error_popup := PopupWindow {
+    error-popup := PopupWindow {
         height: 600px;
         width: 800px;
         x: 0;
         y: 0;
         close-policy: no-auto-close;
+
         VerticalLayout {
             Rectangle {
                 height: 37.5%;
@@ -77,19 +165,19 @@ export component MainWindow inherits Window {
                     VerticalLayout {
                         padding: 10px;
                         Text {
-                            text: error_title;
+                            text: error-popup-title;
                             font-size: 24px;
                         }
 
                         Text {
-                            text: error_message;
+                            text: error-popup-message;
                             font-size: 12px;
                         }
 
                         Button {
                             text: "Ok";
                             clicked => {
-                                error_popup.close();
+                                error-popup.close();
                             }
                         }
                     }
@@ -114,63 +202,41 @@ export component MainWindow inherits Window {
                     Button {
                         text: "Refresh";
                         clicked => {
-                            root.reload_fleets();
+                            root.reload-fleets();
                         }
                     }
                 }
             }
 
-            scroll-view := ScrollView {
+            ScrollView {
                 width: 70%;
                 height: 600px - 30px;
                 VerticalLayout {
                     padding-top: 15px;
-                    for fleet[idx] in fleets: this-rectangle := TouchArea {
-                        clicked => {
+                    for fleet[idx] in fleets: FleetListItem {
+                        name: fleet.name;
+                        short-path: fleet.short-path;
+
+                        viewing => {
                             fleet.selected = !fleet.selected;
                             if fleet.selected {
-                                cur_fleet_idx = idx;
-                                viewing(idx)
+                                cur-fleet-idx = idx;
+                                root.viewing(idx)
                             }
                             else {
-                                cur_fleet_idx = 0;
-                                cur_fleet_description = "";
-                                root.update_description();
+                                cur-fleet-idx = -1;
+                                root.viewing(-1);
+                                root.update-description("");
                             }
                         }
-                        Rectangle {
-                            height: 18px;
-                        
-                            HorizontalLayout {
-                                spacing: 100px;
-                                padding-right: 5px;
-                                Text {
-                                    text: fleet.name;
-                                    horizontal-stretch: 1.0;
-                                    font-size: 16px;
-                                }
-                                HorizontalLayout {
-                                    alignment: end;
-                                    Text {
-                                        overflow: elide;
-                                        wrap: no-wrap;
-                                        color: rgba(255, 255, 255, 0.5);
-                                        text: fleet.short-path;
-                                        horizontal-alignment: right;
-                                        // font-size: 16px;
-                                    }
-                                }
+                        states [
+                            selected when fleet.selected: {
+                                background-colour: rgba(204, 134, 092, 1);
                             }
-
-                            border-width: 1px;
-                            border-color: rgba(255, 255, 255, 0.1);
-                            states [
-                                selected when fleet.selected: {
-                                    background: rgba(204, 134, 092, 1);
-                                }
-                                unselected when !fleet.selected: {}
-                            ]
-                        }
+                            unselected when !fleet.selected: {
+                                background-colour: rgba(0, 0, 0, 0);
+                            }
+                        ]
                     }
                 }
             }
@@ -187,44 +253,13 @@ export component MainWindow inherits Window {
                 padding-bottom: 10px;
             }
 
-            VerticalLayout {
-                spacing: 10px;
-                HorizontalLayout {
-                    merge_output_name_input := LineEdit {
-                        text: merge_output_name;
-                    }
-
-                    Button {
-                        text: "Merge";
-                        clicked => {
-                            merge_output_name = merge_output_name_input.text;
-                            root.merge();
-                        }
-                    }
+            actions-pane := ActionsPane {
+                merge(output-name) => {
+                    root.merge(output-name);
                 }
 
-                HorizontalLayout {
-                    Text {
-                        text: "Edit Description";
-                        font-size: 16px;
-                    }
-
-                    Button {
-                        width: 40%;
-                        text: "Save";
-                        clicked => {
-                            cur_fleet_description = desc_input.text;
-                            root.save_description();
-                        }
-                    }
-                }
-
-                desc_input := TextInput {
-                    width: 100%;
-                    height: 100%;
-                    font-size: 12px;
-                    wrap: word-wrap;
-                    text: cur_fleet_description;
+                save-description(description) => {
+                    root.save-description(description);
                 }
             }
         }

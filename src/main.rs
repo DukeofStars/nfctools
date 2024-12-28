@@ -158,6 +158,11 @@ fn main() -> color_eyre::Result<()> {
                     );
                 }
 
+                // idx is set to -1 when a fleet is unselected, meaning no fleet is selected.
+                if idx == -1 {
+                    return Ok(());
+                }
+
                 let fleet = fleets_model.iter().nth(idx as usize).ok_or(my_error!(
                     "Selected fleet doesn't exist",
                     "cur_fleet_idx points to a nonexistant fleet"
@@ -173,8 +178,7 @@ fn main() -> color_eyre::Result<()> {
                 let description = fleet_info_reader.get_value("Fleet/Description");
                 trace!(%description, "Found description");
 
-                main_window.set_cur_fleet_description(description.into());
-                main_window.invoke_update_description();
+                main_window.invoke_update_description(description.into());
 
                 Ok(())
             });
@@ -184,13 +188,14 @@ fn main() -> color_eyre::Result<()> {
     {
         let main_window_weak = main_window.as_weak();
         let fleets_model = fleets_model.clone();
-        main_window.on_save_description(move || {
+        main_window.on_save_description(move |description| {
             let main_window = main_window_weak.unwrap();
 
             wrap_errorable_function(&main_window, || {
-                let cur_description = main_window.get_cur_fleet_description();
-
                 let cur_fleet_idx = main_window.get_cur_fleet_idx();
+                if cur_fleet_idx == -1 {
+                    return Err(my_error!("No fleet selected", ""));
+                }
                 let fleet = fleets_model
                     .iter()
                     .nth(cur_fleet_idx as usize)
@@ -213,16 +218,19 @@ fn main() -> color_eyre::Result<()> {
 
                 _ = element.take_child("Description");
 
-                trace!("Inserting new description");
-                let mut description_elem = Element::new("Description");
-                description_elem
-                    .children
-                    .push(xmltree::XMLNode::Text((&cur_description).to_string()));
-
-                // For some reason the new element must be at the start of the list otherwise the fleet file is corrupted. ¯\_(ツ)_/¯
-                let mut new_children = vec![xmltree::XMLNode::Element(description_elem)];
-                new_children.append(&mut element.children);
-                element.children = new_children;
+                if description.is_empty() {
+                    trace!("Not inserting new element, description is empty");
+                } else {
+                    trace!("Inserting new description");
+                    let mut description_elem = Element::new("Description");
+                    description_elem
+                        .children
+                        .push(xmltree::XMLNode::Text((&description).to_string()));
+                    // For some reason the new element must be at the start of the list otherwise the fleet file is corrupted. ¯\_(ツ)_/¯
+                    let mut new_children = vec![xmltree::XMLNode::Element(description_elem)];
+                    new_children.append(&mut element.children);
+                    element.children = new_children;
+                }
 
                 trace!("Saving file");
                 let fleet_file =
@@ -252,9 +260,18 @@ fn main() -> color_eyre::Result<()> {
     {
         let main_window_weak = main_window.as_weak();
         let fleets_model = fleets_model.clone();
-        main_window.on_merge(move || {
+        main_window.on_merge(move |merge_output_name| {
             let main_window = main_window_weak.unwrap();
             wrap_errorable_function(&main_window, || {
+                let merge_output_name = merge_output_name.to_string().trim().to_string();
+                debug!("Merging fleets into '{}'", merge_output_name);
+                if merge_output_name == "" {
+                    return Err(my_error!(
+                        "No merge output name",
+                        "You must set an output name for the merged fleets"
+                    ));
+                }
+
                 let selected_fleets = fleets_model
                     .iter()
                     .filter(|f| f.selected)
@@ -309,19 +326,6 @@ fn main() -> color_eyre::Result<()> {
                         "One or more fleets could not be parsed"
                     ));
                 };
-
-                let merge_output_name = main_window
-                    .get_merge_output_name()
-                    .to_string()
-                    .trim()
-                    .to_string();
-                debug!("Merging fleets into '{}'", merge_output_name);
-                if merge_output_name == "" {
-                    return Err(my_error!(
-                        "No merge output name",
-                        "You must set an output name for the merged fleets"
-                    ));
-                }
 
                 let output_path = PathBuf::from(
                     r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#,
