@@ -2,6 +2,7 @@ import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView } fro
 
 export struct FleetData {
     path: string,
+    short_path: string,
     name: string,
     selected: bool,
 }
@@ -119,44 +120,57 @@ export component MainWindow inherits Window {
                 }
             }
 
-            ScrollView {
+            scroll-view := ScrollView {
                 width: 70%;
                 height: 600px - 30px;
                 VerticalLayout {
                     padding-top: 15px;
-                    for fleet[idx] in fleets: this-rectangle := Rectangle {
-                        height: 16px;
-                        TouchArea {
-                            Text {
-                                text: fleet.name;
-                                font-size: 16px;
-                                padding: 5px;
-                                horizontal-alignment: left;
-                                width: 100%;
+                    for fleet[idx] in fleets: this-rectangle := TouchArea {
+                        clicked => {
+                            fleet.selected = !fleet.selected;
+                            if fleet.selected {
+                                cur_fleet_idx = idx;
+                                viewing(idx)
                             }
-
-                            clicked => {
-                                fleet.selected = !fleet.selected;
-                                if fleet.selected {
-                                    cur_fleet_idx = idx;
-                                    viewing(idx)
-                                }
-                                else {
-                                    cur_fleet_idx = 0;
-                                    cur_fleet_description = "";
-                                    root.update_description();
-                                }
+                            else {
+                                cur_fleet_idx = 0;
+                                cur_fleet_description = "";
+                                root.update_description();
                             }
                         }
-
-                        border-width: 1px;
-                        border-color: rgba(255, 255, 255, 0.1);
-                        states [
-                            selected when fleet.selected: {
-                                background: rgba(204, 134, 092, 1);
+                        Rectangle {
+                            height: 18px;
+                        
+                            HorizontalLayout {
+                                spacing: 100px;
+                                padding-right: 5px;
+                                Text {
+                                    text: fleet.name;
+                                    horizontal-stretch: 1.0;
+                                    font-size: 16px;
+                                }
+                                HorizontalLayout {
+                                    alignment: end;
+                                    Text {
+                                        overflow: elide;
+                                        wrap: no-wrap;
+                                        color: rgba(255, 255, 255, 0.5);
+                                        text: fleet.short-path;
+                                        horizontal-alignment: right;
+                                        // font-size: 16px;
+                                    }
+                                }
                             }
-                            unselected when !fleet.selected: {}
-                        ]
+
+                            border-width: 1px;
+                            border-color: rgba(255, 255, 255, 0.1);
+                            states [
+                                selected when fleet.selected: {
+                                    background: rgba(204, 134, 092, 1);
+                                }
+                                unselected when !fleet.selected: {}
+                            ]
+                        }
                     }
                 }
             }

@@ -17,6 +17,9 @@ mod merge;
 
 slint::include_modules!();
 
+const FLEETS_ROOT_DIR: &str =
+    r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#;
+
 struct Error {
     title: String,
     error: Box<dyn Display>,
@@ -81,8 +84,15 @@ fn load_fleets_rec(path: impl AsRef<Path>, output: &mut Vec<FleetData>) -> color
             }
             let fleet_info_reader = FleetInfoReader::new(File::open(child.path())?);
             let fleet_name = fleet_info_reader.get_value("Fleet/Name");
+            let path = child.path().to_path_buf();
+            let short_path = path
+                .strip_prefix(FLEETS_ROOT_DIR)?
+                .parent()
+                .map(|p| p.to_str().unwrap().to_string())
+                .unwrap_or_default();
             let fleet_data = FleetData {
-                path: child.path().to_path_buf().to_str().unwrap().into(),
+                path: path.to_str().unwrap().into(),
+                short_path: short_path.into(),
                 selected: false,
                 name: fleet_name.into(),
             };
@@ -102,8 +112,7 @@ fn main() -> color_eyre::Result<()> {
 
     let main_window = MainWindow::new()?;
 
-    let fleets_path = r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#;
-    let fleets = load_fleets(fleets_path)?;
+    let fleets = load_fleets(FLEETS_ROOT_DIR)?;
 
     let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
     main_window.set_fleets(fleets_model.clone().into());
