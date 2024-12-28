@@ -9,7 +9,8 @@ color-eyre = "0.6.3"
 slint = "1"
 tracing = "0.1.41"
 tracing-subscriber = "0.3.19"
-xml = "0.8.20"
+xml = "0.8"
+xmltree = "0.11.0"
 
 [build-dependencies]
 slint-build = "1"

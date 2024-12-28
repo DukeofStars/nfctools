@@ -1,15 +1,16 @@
 use slint::Model;
 use std::{
     cmp::Ordering,
-    fs::File,
+    fs::{File, OpenOptions},
     io::{Read, Write},
     path::Path,
 };
-use tracing::{debug, info, level_filters::LevelFilter, trace};
+use tracing::{debug, error, info, level_filters::LevelFilter, trace};
 use xml::{
     reader::{EventReader, XmlEvent},
     writer, EmitterConfig, EventWriter,
 };
+use xmltree::Element;
 
 slint::include_modules!();
 
@@ -88,6 +89,65 @@ fn main() -> color_eyre::Result<()> {
 
             let main_window = main_window_weak.unwrap();
             main_window.set_cur_fleet_description(description.into());
+            main_window.invoke_update_description();
+        });
+    }
+
+    {
+        let main_window_weak = main_window.as_weak();
+        let fleets_model = fleets_model.clone();
+        main_window.on_save_description(move || {
+            let main_window = main_window_weak.unwrap();
+            let cur_description = main_window.get_cur_fleet_description();
+
+            let cur_fleet_idx = main_window.get_cur_fleet_idx();
+            let fleet = fleets_model.iter().nth(cur_fleet_idx as usize).unwrap();
+
+            trace!("Opening fleet file");
+            let fleet_file = File::open(&fleet.path).unwrap();
+
+            trace!("Parsing fleet file");
+            let Ok(mut element) = Element::parse(fleet_file).inspect_err(|err| {
+                error!(%err, "Failed to parse fleet file");
+                main_window.invoke_show_error_popup(
+                    "Failed to parse fleet file".into(),
+                    err.to_string().into(),
+                );
+            }) else {
+                return;
+            };
+
+            if let Some(description_elem) = element.take_child("Description") {
+                let text_node = description_elem
+                    .children
+                    .into_iter()
+                    .next()
+                    .unwrap_or(xmltree::XMLNode::Text(String::new()));
+                let text = text_node.as_text().unwrap();
+                trace!("Old description was: '{}'", text);
+            }
+
+            trace!("Inserting new description");
+            let mut description_elem = Element::new("Description");
+            description_elem
+                .children
+                .push(xmltree::XMLNode::Text((&cur_description).to_string()));
+
+            // For some reason the new element must be at the start of the list otherwise the fleet file is corrupted. ¯\_(ツ)_/¯
+            let mut new_children = vec![xmltree::XMLNode::Element(description_elem)];
+            new_children.append(&mut element.children);
+            element.children = new_children;
+
+            trace!("Saving file");
+            let fleet_file = OpenOptions::new()
+                .write(true)
+                .open(&fleet.path)
+                .expect("Failed to open fleet file");
+            element
+                .write(fleet_file)
+                .expect("Failed to write to fleet file");
+
+            debug!("Fleet description saved");
         });
     }
 

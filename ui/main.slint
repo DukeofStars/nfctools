@@ -12,9 +12,15 @@ export component MainWindow inherits Window {
     in property <[FleetData]> fleets;
     in-out property <string> cur_fleet_description;
     out property <string> merge_output_name;
+    out property <int> cur_fleet_idx;
     callback merge();
     callback viewing(int);
     callback show_error_popup(string, string);
+    callback save_description();
+    callback update_description();
+    update_description => {
+        desc_input.text = cur_fleet_description;
+    }
     show_error_popup(title, message) => {
         error_title = title;
         error_message = message;
@@ -22,6 +28,9 @@ export component MainWindow inherits Window {
     }
     out property <string> error_message;
     out property <string> error_title;
+    viewing(a) => {
+        desc_input.text = cur_fleet_description;
+    }
     error_popup := PopupWindow {
         height: 600px;
         width: 800px;
@@ -94,6 +103,7 @@ export component MainWindow inherits Window {
 
                             clicked => {
                                 fleet.selected = !fleet.selected;
+                                cur_fleet_idx = idx;
                                 viewing(idx)
                             }
                         }
@@ -147,10 +157,14 @@ export component MainWindow inherits Window {
                     Button {
                         width: 40%;
                         text: "Save";
+                        clicked => {
+                            cur_fleet_description = desc_input.text;
+                            root.save_description();
+                        }
                     }
                 }
 
-                TextInput {
+                desc_input := TextInput {
                     width: 100%;
                     height: 100%;
                     font-size: 12px;
