@@ -2,7 +2,7 @@ use std::{
     cmp::Ordering,
     fmt::Display,
     fs::{File, OpenOptions},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use fleet_info_reader::FleetInfoReader;
@@ -225,10 +225,21 @@ fn main() -> color_eyre::Result<()> {
                 trace!("Primary fleet is '{}'", first_fleet.name);
 
                 let mut ships = Vec::new();
+                let mut missiles = Vec::new();
                 if !selected_fleets
                     .iter()
+                    // Skip the primary fleet as it's ships are included by default
+                    .skip(1)
                     .filter_map(|fleet| {
+                        let file = File::open(fleet.path.to_string());
+                        if file.is_err() {
+                            return Some(());
+                        }
+                        let file = file.unwrap();
+
                         trace!("Pulling ships from fleet at '{}'", fleet.path);
+                        Reader::new(EventReader::new(&file), &mut ships, "Ships", "Ship")
+                            .run_until_complete();
 
                         let file = File::open(fleet.path.to_string());
                         if file.is_err() {
@@ -236,7 +247,14 @@ fn main() -> color_eyre::Result<()> {
                         }
                         let file = file.unwrap();
 
-                        Reader::new(EventReader::new(file), &mut ships).run_until_complete();
+                        trace!("Pulling missile types from fleet at '{}'", fleet.path);
+                        Reader::new(
+                            EventReader::new(&file),
+                            &mut missiles,
+                            "MissileTypes",
+                            "MissileTemplate",
+                        )
+                        .run_until_complete();
 
                         None
                     })
@@ -263,7 +281,21 @@ fn main() -> color_eyre::Result<()> {
                     ));
                 }
 
-                let mut output = Vec::new();
+                let output_path = PathBuf::from(
+                    r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#,
+                )
+                .join(&merge_output_name)
+                .with_extension("fleet");
+                let mut output = OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .open(&output_path)
+                    .map_err(|err| {
+                        my_error!(
+                            format!("Failed to write to file '{}'", output_path.display()),
+                            err
+                        )
+                    })?;
                 let mut writer = Writer::new(
                     &mut output,
                     EventReader::new(File::open(first_fleet.path.to_string()).map_err(|err| {
@@ -273,6 +305,7 @@ fn main() -> color_eyre::Result<()> {
                         )
                     })?),
                     ships,
+                    missiles,
                     merge_output_name,
                 );
                 writer.run_until_complete();

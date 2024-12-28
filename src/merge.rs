@@ -1,29 +1,43 @@
 use std::io::{Read, Write};
 
 use tracing::trace;
-use xml::{reader::XmlEvent, writer, EmitterConfig, EventReader, EventWriter};
+use xml::{
+    name::OwnedName, namespace::Namespace, reader::XmlEvent, writer, EmitterConfig, EventReader,
+    EventWriter,
+};
 
 type Ship = Vec<XmlEvent>;
+type MissileType = Vec<XmlEvent>;
+
 pub struct Reader<'a, R: Read> {
     state: ReadState,
     event_reader: EventReader<R>,
     current: Ship,
     emit_to: &'a mut Vec<Ship>,
+    element_name: String,
+    indiv_element_name: String,
 }
 enum ReadState {
     Start,
-    ReadShips,
-    ReadShip,
+    ReadElements,
+    ReadElement,
     Done,
     Error,
 }
 impl<'a, R: Read> Reader<'a, R> {
-    pub fn new(event_reader: EventReader<R>, emit_to: &mut Vec<Ship>) -> Reader<R> {
+    pub fn new(
+        event_reader: EventReader<R>,
+        emit_to: &mut Vec<Ship>,
+        element_name: impl Into<String>,
+        indiv_element_name: impl Into<String>,
+    ) -> Reader<R> {
         Reader {
             state: ReadState::Start,
             event_reader,
             current: Ship::new(),
             emit_to,
+            element_name: element_name.into(),
+            indiv_element_name: indiv_element_name.into(),
         }
     }
 
@@ -40,28 +54,33 @@ impl<'a, R: Read> Reader<'a, R> {
         };
         match self.state {
             ReadState::Start => match event {
-                XmlEvent::StartElement { name, .. } if name.local_name.as_str() == "Ships" => {
-                    self.state = ReadState::ReadShips;
+                XmlEvent::StartElement { name, .. } if name.local_name == self.element_name => {
+                    self.state = ReadState::ReadElements;
+                }
+                XmlEvent::EndDocument => {
+                    self.state = ReadState::Done;
                 }
                 _ => {}
             },
-            ReadState::ReadShips => match event.clone() {
+            ReadState::ReadElements => match event.clone() {
                 XmlEvent::EndElement { .. } => {
                     self.state = ReadState::Done;
                 }
-                XmlEvent::StartElement { name, .. } if name.local_name.as_str() == "Ship" => {
+                XmlEvent::StartElement { name, .. }
+                    if name.local_name == self.indiv_element_name =>
+                {
                     self.current.push(event);
-                    self.state = ReadState::ReadShip;
+                    self.state = ReadState::ReadElement;
                 }
                 _ => {}
             },
-            ReadState::ReadShip => {
+            ReadState::ReadElement => {
                 self.current.push(event.clone());
                 match &event {
-                    XmlEvent::EndElement { name } if name.local_name.as_str() == "Ship" => {
+                    XmlEvent::EndElement { name } if name.local_name == self.indiv_element_name => {
                         let cur = std::mem::replace(&mut self.current, Vec::new());
                         self.emit_to.push(cur);
-                        self.state = ReadState::ReadShips;
+                        self.state = ReadState::ReadElements;
                     }
                     _ => {}
                 }
@@ -87,28 +106,38 @@ impl<'a, R: Read> Reader<'a, R> {
 pub struct Writer<W: Write, R: Read> {
     event_writer: xml::writer::EventWriter<W>,
     main: EventReader<R>,
-    insert: Vec<Ship>,
+    insert_ships: Vec<Ship>,
+    insert_missiles: Vec<MissileType>,
     state: WriteState,
     name: String,
 }
 #[derive(Debug, Clone, Copy)]
 enum WriteState {
-    Start,
-    Inserting,
+    FindShips,
+    InsertingShips,
+    FindMissiles,
+    InsertingMissiles,
     Finishing,
     Done,
     Error,
 }
 impl<W: Write, R: Read> Writer<W, R> {
-    pub fn new(writer: W, main: EventReader<R>, insert: Vec<Ship>, name: String) -> Writer<W, R> {
+    pub fn new(
+        writer: W,
+        main: EventReader<R>,
+        insert_ships: Vec<Ship>,
+        insert_missiles: Vec<MissileType>,
+        name: String,
+    ) -> Writer<W, R> {
         Writer {
             event_writer: EventWriter::new_with_config(
                 writer,
                 EmitterConfig::new().perform_indent(true),
             ),
             main,
-            insert,
-            state: WriteState::Start,
+            insert_ships,
+            insert_missiles,
+            state: WriteState::FindShips,
             name,
         }
     }
@@ -122,7 +151,7 @@ impl<W: Write, R: Read> Writer<W, R> {
 
     fn tick(&mut self) {
         match self.state {
-            WriteState::Start => {
+            WriteState::FindShips => {
                 let Ok(event) = self.main.next() else {
                     self.state = WriteState::Error;
                     return;
@@ -143,16 +172,69 @@ impl<W: Write, R: Read> Writer<W, R> {
                     }
                     XmlEvent::StartElement { name, .. } if name.local_name.as_str() == "Ships" => {
                         trace!("Injecting ships");
-                        self.state = WriteState::Inserting;
+                        self.state = WriteState::InsertingShips;
                     }
                     _ => {}
                 }
             }
-            WriteState::Inserting => {
-                let ships = std::mem::replace(&mut self.insert, Vec::new());
+            WriteState::InsertingShips => {
+                let ships = std::mem::replace(&mut self.insert_ships, Vec::new());
                 ships
                     .into_iter()
                     .map(|ship| ship.into_iter())
+                    .flatten()
+                    .for_each(|event| {
+                        self.write_event(event);
+                    });
+                self.state = WriteState::FindMissiles;
+            }
+            WriteState::FindMissiles => {
+                let Ok(event) = self.main.next() else {
+                    self.state = WriteState::Error;
+                    return;
+                };
+                match event.clone() {
+                    XmlEvent::StartElement { name, .. }
+                        if name.local_name.as_str() == "MissileTypes" =>
+                    {
+                        trace!("Injecting missiles");
+                        self.state = WriteState::InsertingMissiles;
+                    }
+                    // If the fleet element ends, that means the primary fleet has no missile types.
+                    // We must insert the missile types into the document.
+                    XmlEvent::EndElement { name } if name.local_name.as_str() == "Fleet" => {
+                        // Write the starting tag
+                        self.write_event(XmlEvent::StartElement {
+                            name: OwnedName::local("MissileTypes"),
+                            attributes: Vec::new(),
+                            namespace: Namespace::empty(),
+                        });
+                        // Inject the missiles
+                        let missiles = std::mem::replace(&mut self.insert_missiles, Vec::new());
+                        missiles
+                            .into_iter()
+                            .map(|missile| missile.into_iter())
+                            .flatten()
+                            .for_each(|event| {
+                                self.write_event(event);
+                            });
+                        // Write the ending tag
+                        self.write_event(XmlEvent::EndElement {
+                            name: OwnedName::local("MissileTypes"),
+                        });
+                        // Switch state
+                        trace!("Finishing fleet file");
+                        self.state = WriteState::Finishing;
+                    }
+                    _ => {}
+                }
+                self.write_event(event);
+            }
+            WriteState::InsertingMissiles => {
+                let missiles = std::mem::replace(&mut self.insert_missiles, Vec::new());
+                missiles
+                    .into_iter()
+                    .map(|missile| missile.into_iter())
                     .flatten()
                     .for_each(|event| {
                         self.write_event(event);
