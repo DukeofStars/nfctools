@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    collections::HashMap,
     fmt::Display,
     fs::{File, OpenOptions},
     path::{Path, PathBuf},
@@ -9,8 +10,8 @@ use fleet_info_reader::FleetInfoReader;
 use merge::{Reader, Writer};
 use slint::Model;
 use tracing::{debug, error, info, level_filters::LevelFilter, trace};
-use xml::reader::EventReader;
-use xmltree::Element;
+use xml::{reader::EventReader, EmitterConfig};
+use xmltree::{AttributeMap, Element};
 
 mod fleet_info_reader;
 mod merge;
@@ -204,38 +205,75 @@ fn main() -> color_eyre::Result<()> {
                         "cur_fleet_idx points to a nonexistant fleet"
                     ))?;
 
-                trace!("Opening fleet file");
-                let fleet_file = File::open(&fleet.path).map_err(|err| {
-                    my_error!(
-                        format!("Failed to open fleet '{}'", fleet.path.to_string()),
-                        err
-                    )
-                })?;
+                let mut element = {
+                    trace!("Opening fleet file");
+                    let fleet_file = File::open(&fleet.path).map_err(|err| {
+                        my_error!(
+                            format!("Failed to open fleet '{}'", fleet.path.to_string()),
+                            err
+                        )
+                    })?;
+                    trace!("Parsing fleet file");
+                    Element::parse(fleet_file)
+                        .map_err(|err| my_error!("Failed to parse fleet file", err))?
+                };
 
-                trace!("Parsing fleet file");
-                let mut element = Element::parse(fleet_file)
-                    .map_err(|err| my_error!("Failed to parse fleet file", err))?;
-
-                _ = element.take_child("Description");
+                let text_node = xmltree::XMLNode::Text((&description).to_string());
 
                 if description.is_empty() {
                     trace!("Not inserting new element, description is empty");
+                    // It doesn't actually affect the data, but personally I dislike the idea of leaving an empty Description element lying around.
+                    let _ = element.take_child("Description");
+                } else if let Some(description_elem) = element.get_mut_child("Description") {
+                    trace!("Overwriting old description");
+                    description_elem.children = vec![text_node];
                 } else {
                     trace!("Inserting new description");
-                    let mut description_elem = Element::new("Description");
-                    description_elem
-                        .children
-                        .push(xmltree::XMLNode::Text((&description).to_string()));
+                    let attr_map = [
+                        (String::new(), String::new()),
+                        (
+                            String::from("xml"),
+                            String::from("http://www.w3.org/XML/1998/namespace"),
+                        ),
+                        (
+                            String::from("xmlns"),
+                            String::from("http://www.w3.org/2000/xmlns/"),
+                        ),
+                        (
+                            String::from("xsd"),
+                            String::from("http://www.w3.org/2001/XMLSchema"),
+                        ),
+                        (
+                            String::from("xsd"),
+                            String::from("http://www.w3.org/2001/XMLSchema-instance"),
+                        ),
+                    ];
+                    let mut namespace = xmltree::Namespace::empty();
+                    for (prefix, uri) in attr_map {
+                        namespace.put(prefix, uri);
+                    }
+                    let description_elem = Element {
+                        prefix: None,
+                        namespace: None,
+                        namespaces: Some(namespace),
+                        name: String::from("Description"),
+                        attributes: AttributeMap::new(),
+                        children: vec![text_node],
+                        attribute_namespaces: HashMap::new(),
+                    };
                     // For some reason the new element must be at the start of the list otherwise the fleet file is corrupted. ¯\_(ツ)_/¯
                     let mut new_children = vec![xmltree::XMLNode::Element(description_elem)];
                     new_children.append(&mut element.children);
                     element.children = new_children;
                 }
 
-                trace!("Saving file");
-                let fleet_file =
-                    OpenOptions::new()
+                {
+                    std::fs::remove_file(&fleet.path)
+                        .map_err(|err| my_error!("Failed to delete previous fleet file", err))?;
+                    trace!("Saving file");
+                    let fleet_file = OpenOptions::new()
                         .write(true)
+                        .create(true)
                         .open(&fleet.path)
                         .map_err(|err| {
                             my_error!(
@@ -243,12 +281,19 @@ fn main() -> color_eyre::Result<()> {
                                 err
                             )
                         })?;
-                element.write(fleet_file).map_err(|err| {
-                    my_error!(
-                        format!("Failed to write to fleet file '{}'", fleet.path.to_string()),
-                        err
-                    )
-                })?;
+                    let config = EmitterConfig::new().perform_indent(true);
+                    element
+                        .write_with_config(fleet_file, config)
+                        .map_err(|err| {
+                            my_error!(
+                                format!(
+                                    "Failed to write to fleet file '{}'",
+                                    fleet.path.to_string()
+                                ),
+                                err
+                            )
+                        })?;
+                }
 
                 debug!("Fleet description saved");
 
