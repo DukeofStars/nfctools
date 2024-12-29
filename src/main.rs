@@ -1,14 +1,14 @@
 use std::{
     cmp::Ordering,
     collections::HashMap,
-    fmt::Display,
+    fmt::{Debug, Display},
     fs::{File, OpenOptions},
     path::{Path, PathBuf},
 };
 
 use fleet_info_reader::FleetInfoReader;
 use merge::{Reader, Writer};
-use slint::Model;
+use slint::{ComponentHandle, Model, ToSharedString};
 use tracing::{debug, error, info, level_filters::LevelFilter, trace};
 use xml::{reader::EventReader, EmitterConfig};
 use xmltree::{AttributeMap, Element};
@@ -24,6 +24,14 @@ const FLEETS_ROOT_DIR: &str =
 struct Error {
     title: String,
     error: Box<dyn Display>,
+}
+impl Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Error")
+            .field("title", &self.title)
+            .field("error", &self.error.to_string())
+            .finish()
+    }
 }
 
 macro_rules! my_error {
@@ -120,6 +128,98 @@ fn main() -> color_eyre::Result<()> {
     debug!("Fleets passed to UI");
 
     debug!("Setting up callbacks");
+
+    {
+        let fleets_model = fleets_model.clone();
+        let main_window_weak = main_window.as_weak();
+        main_window.on_open_fleet_editor(move || {
+            let main_window = main_window_weak.unwrap();
+            wrap_errorable_function(&main_window, || {
+                let window = FleetEditorWindow::new()
+                    .map_err(|err| my_error!("Failed to create fleet editor window", err))
+                    .unwrap();
+
+                let cur_idx = main_window.get_cur_fleet_idx();
+                if cur_idx == -1 {
+                    return Err(my_error!("No fleet selected", ""));
+                }
+                let fleet = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
+                    "Selected fleet doesn't exist",
+                    "cur_fleet_idx points to a nonexistant fleet"
+                ))?;
+
+                window.set_fleet_name(fleet.name);
+
+                let element = {
+                    trace!("Opening fleet file");
+                    let fleet_file = File::open(&fleet.path).map_err(|err| {
+                        my_error!(
+                            format!("Failed to open fleet '{}'", fleet.path.to_string()),
+                            err
+                        )
+                    })?;
+                    trace!("Parsing fleet file");
+                    Element::parse(fleet_file)
+                        .map_err(|err| my_error!("Failed to parse fleet file", err))?
+                };
+                let ships_elem = element
+                    .get_child("Ships")
+                    .ok_or(my_error!("Failed to get ships list", "Fleet has no ships"))?;
+
+                let ships = ships_elem
+                    .children
+                    .iter()
+                    .map(|ship_elem| {
+                        let ship_elem = ship_elem
+                            .as_element()
+                            .ok_or(my_error!("Invalid fleet file", "Ship is not an element"))?;
+
+                        let name = ship_elem
+                            .get_child("Name")
+                            .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
+                            .get_text()
+                            .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
+                            .to_shared_string();
+                        let hulltype = ship_elem
+                            .get_child("HullType")
+                            .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                            .get_text()
+                            .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                            .to_shared_string();
+                        let cost: i32 = ship_elem
+                            .get_child("Cost")
+                            .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                            .get_text()
+                            .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                            .parse()
+                            .map_err(|err| {
+                                my_error!(
+                                    "Invalid fleet file",
+                                    format!("Failed to parse cost: {}", err)
+                                )
+                            })?;
+
+                        Ok(ShipData {
+                            class: hulltype,
+                            name,
+                            cost,
+                        })
+                    })
+                    .collect::<Result<Vec<ShipData>, Error>>()?;
+
+                let ships_model = std::rc::Rc::new(slint::VecModel::from(ships));
+                window.set_ships(ships_model.clone().into());
+
+                window
+                    .show()
+                    .map_err(|err| my_error!("Could not show fleet editor window.", err))
+                    .unwrap();
+
+                Ok(())
+            });
+        });
+    }
+
     {
         let main_window_weak = main_window.as_weak();
         let fleets_model = fleets_model.clone();

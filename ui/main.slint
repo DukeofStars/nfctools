@@ -1,4 +1,4 @@
-import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView } from "std-widgets.slint";
+import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView, StandardButton } from "std-widgets.slint";
 
 export struct FleetData {
     path: string,
@@ -51,12 +51,21 @@ component FleetListItem inherits TouchArea {
 component ActionsPane inherits VerticalLayout {
     callback merge(string);
     callback save-description(string);
+    callback open-fleet-editor();
 
     public function update-description(description: string) {
         desc-input.text = description;
     }
 
-    spacing: 10px;
+    spacing: 5px;
+
+    Button {
+        text: "Open Fleet Editor";
+        clicked => {
+            root.open-fleet-editor();
+        }
+    }
+
     HorizontalLayout {
         merge-output-name-input := LineEdit {
             text: "";
@@ -72,6 +81,7 @@ component ActionsPane inherits VerticalLayout {
 
     HorizontalLayout {
         Text {
+            vertical-alignment: center;
             text: "Edit Description";
             font-size: 16px;
         }
@@ -98,6 +108,7 @@ component ActionsPane inherits VerticalLayout {
 export component MainWindow inherits Window {
     height: 600px;
     width: 800px;
+    title: "NebTools";
     
     in-out property <[FleetData]> fleets;
     in-out property <bool> multi-selecting: false;
@@ -106,9 +117,9 @@ export component MainWindow inherits Window {
     
     callback merge(string);
     callback viewing(int);
-
     callback save-description(string);
     callback reload-fleets();
+    callback open-fleet-editor();
     
     public function update-description(description: string) {
         actions-pane.update-description(description);
@@ -148,15 +159,9 @@ export component MainWindow inherits Window {
         close-policy: no-auto-close;
 
         VerticalLayout {
-            Rectangle {
-                height: 37.5%;
-            }
-
+            Rectangle {}
             HorizontalLayout {
-                Rectangle {
-                    width: 37.5%;
-                }
-
+                Rectangle {}
                 Rectangle {
                     width: 25%;
                     height: 25%;
@@ -174,22 +179,51 @@ export component MainWindow inherits Window {
                             font-size: 12px;
                         }
 
-                        Button {
-                            text: "Ok";
+                        StandardButton {
+                            kind: ok;
                             clicked => {
                                 error-popup.close();
                             }
                         }
                     }
                 }
+                Rectangle {}
             }
+            Rectangle {}
         }
     }
 
     HorizontalLayout {
-        padding-top: 5px;
-        padding-left: 5px;
+        padding: 5px;
+        spacing: 5px;
+
         VerticalLayout {
+            alignment: start;
+            width: 30%;
+            max-width: 240px;
+            Text {
+                text: "Actions";
+                width: 100%;
+                font-size: 24px;
+                padding-bottom: 10px;
+            }
+
+            actions-pane := ActionsPane {
+                merge(output-name) => {
+                    root.merge(output-name);
+                }
+
+                save-description(description) => {
+                    root.save-description(description);
+                }
+
+                open-fleet-editor => {
+                    root.open-fleet-editor();
+                }
+            }
+        }
+
+                VerticalLayout {
             alignment: start;
             HorizontalLayout{
                 Text {
@@ -241,27 +275,84 @@ export component MainWindow inherits Window {
                 }
             }
         }
+    }
+}
+
+export struct ShipData {
+    name: string,
+    class: string,
+    cost: int,
+}
+
+component ShipListItem inherits TouchArea {
+    in property <ShipData> ship;
+    in property <color> background-colour;
+
+    Rectangle {
+        padding: 2px;
+        height: 36px;
+        background: background-colour;
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, 0.1);
 
         VerticalLayout {
-            alignment: start;
-            width: 30%;
-            max-width: 240px;
             Text {
-                text: "Actions";
-                width: 100%;
-                font-size: 24px;
-                padding-bottom: 10px;
+                font-size: 18px;
+                text: ship.name;
             }
-
-            actions-pane := ActionsPane {
-                merge(output-name) => {
-                    root.merge(output-name);
+            HorizontalLayout {
+                Text {
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 14px;
+                    text: ship.class;
                 }
-
-                save-description(description) => {
-                    root.save-description(description);
+                Rectangle {}
+                Text {
+                    horizontal-alignment: right;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 14px;
+                    text: ship.cost;
                 }
             }
+        }
+    }
+}
+
+export component FleetEditorWindow inherits Window {
+    in property <[ShipData]> ships;
+    in-out property <string> fleet-name;
+
+    property <int> selected_ship_idx;
+
+    width: 800px;
+    height: 600px;
+    title: "Editing " + fleet-name;
+
+    HorizontalLayout {
+        ScrollView {
+            width: 30%;
+            height: 80%;
+            viewport-height: ships.length * 36px;
+            VerticalLayout {
+                for ship[idx] in ships: ShipListItem {
+                    ship: ship;
+
+                    clicked => {
+                        selected_ship_idx = idx;
+                    }
+                    states [
+                        selected when selected_ship_idx == idx: {
+                            background-colour: rgba(204, 134, 092, 1);
+                        }
+                        unselected when selected_ship_idx != idx: {
+                            background-colour: rgba(0, 0, 0, 0);
+                        }
+                    ]
+                }
+            }
+        }
+        Rectangle {
+
         }
     }
 }
