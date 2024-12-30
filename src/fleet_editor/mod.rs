@@ -23,6 +23,15 @@ lazy_static! {
         ("Bulk-0-Stern", "78d72a9a-893c-41c6-bddd-f198dfcf77ee"),
         ("Bulk-1-Stern", "2f2b451c-4776-405c-9914-cad4764f1072"),
         ("Bulk-2-Stern", "a8bf77b9-b7e3-4498-bf91-d3e777a7f688"),
+        ("Container-0-Bow", "2d7c228c-cbd6-425e-9590-a2f8ae8d5915"),
+        ("Container-1-Bow", "541cf476-4952-4234-a35a-5f1aa9089316"),
+        ("Container-2-Bow", "bb034299-84c2-456f-b271-c91249cd4375"),
+        ("Container-0-Core", "18a6bc15-58b0-479c-82c3-1722768f033d"),
+        ("Container-1-Core", "09354e51-953c-451a-b415-3e3361812650"),
+        ("Container-2-Core", "2c68a462-a143-4c89-aea0-df09d4786e92"),
+        ("Container-0-Stern", "674e0528-3e0c-48e4-8e5e-d3a559869104"),
+        ("Container-1-Stern", "2dbd82fe-d365-4367-aef5-9bb2d3528528"),
+        ("Container-2-Stern", "aff1eba2-048e-4477-956b-574f4d468f1d"),
         ("Superstructure-0", "42d07c1a-156b-4057-aaca-7a2024751423"),
         ("Superstructure-1", "c9d04445-3558-46b4-b6fc-7dca8617d438"),
         ("Superstructure-2", "9ebcea74-e9c9-45b3-b616-e12e3f491024"),
@@ -48,6 +57,21 @@ lazy_static! {
         "78d72a9a-893c-41c6-bddd-f198dfcf77ee",
         "2f2b451c-4776-405c-9914-cad4764f1072",
         "a8bf77b9-b7e3-4498-bf91-d3e777a7f688",
+    ]);
+    static ref CONTAINER_BOWS: Vec<&'static str> = Vec::from_iter([
+        "2d7c228c-cbd6-425e-9590-a2f8ae8d5915",
+        "541cf476-4952-4234-a35a-5f1aa9089316",
+        "bb034299-84c2-456f-b271-c91249cd4375",
+    ]);
+    static ref CONTAINER_CORES: Vec<&'static str> = Vec::from_iter([
+        "18a6bc15-58b0-479c-82c3-1722768f033d",
+        "09354e51-953c-451a-b415-3e3361812650",
+        "2c68a462-a143-4c89-aea0-df09d4786e92",
+    ]);
+    static ref CONTAINER_STERNS: Vec<&'static str> = Vec::from_iter([
+        "674e0528-3e0c-48e4-8e5e-d3a559869104",
+        "2dbd82fe-d365-4367-aef5-9bb2d3528528",
+        "aff1eba2-048e-4477-956b-574f4d468f1d",
     ]);
 }
 

@@ -8,7 +8,7 @@ use tracing::trace;
 use xml::EmitterConfig;
 use xmltree::{Element, Traversable};
 
-use super::BULKER_SEGMENTS;
+use super::{BULKER_SEGMENTS, CONTAINER_BOWS, CONTAINER_CORES, CONTAINER_STERNS};
 use crate::{
     error::wrap_errorable_function,
     fleet_editor::{BRIDGE_MODELS, BULK_BOWS, BULK_CORES, BULK_STERNS},
@@ -51,6 +51,28 @@ pub fn on_get_liner_config_handler(
                 .as_element()
                 .unwrap();
 
+            let bow_key_list;
+            let core_key_list;
+            let stern_key_list;
+
+            if selected_ship_element
+                .get_child("HullType")
+                .unwrap()
+                .get_text()
+                .unwrap()
+                .to_string()
+                .as_str()
+                == "Stock/Bulk Hauler"
+            {
+                bow_key_list = BULK_BOWS.iter();
+                core_key_list = BULK_CORES.iter();
+                stern_key_list = BULK_STERNS.iter();
+            } else {
+                bow_key_list = CONTAINER_BOWS.iter();
+                core_key_list = CONTAINER_CORES.iter();
+                stern_key_list = CONTAINER_STERNS.iter();
+            }
+
             let hull_config = selected_ship_element.get_child("HullConfig").unwrap();
             let primary_structure = hull_config.get_child("PrimaryStructure").unwrap();
             let mut children = primary_structure.get_children().into_iter();
@@ -62,8 +84,7 @@ pub fn on_get_liner_config_handler(
                 .get_text()
                 .unwrap()
                 .to_string();
-            let segment_bow = BULK_BOWS
-                .iter()
+            let segment_bow = bow_key_list
                 .take_while(|skey| **skey != segment_bow.as_str())
                 .count() as i32;
             let segment_core = children
@@ -74,8 +95,7 @@ pub fn on_get_liner_config_handler(
                 .get_text()
                 .unwrap()
                 .to_string();
-            let segment_core = BULK_CORES
-                .iter()
+            let segment_core = core_key_list
                 .take_while(|skey| **skey != segment_core.as_str())
                 .count() as i32;
             let segment_stern = children
@@ -86,8 +106,7 @@ pub fn on_get_liner_config_handler(
                 .get_text()
                 .unwrap()
                 .to_string();
-            let segment_stern = BULK_STERNS
-                .iter()
+            let segment_stern = stern_key_list
                 .take_while(|skey| **skey != segment_stern.as_str())
                 .count() as i32;
 
@@ -175,6 +194,21 @@ pub fn on_save_liner_config_handler(
                 .as_mut_element()
                 .unwrap();
 
+            let liner_type = match selected_ship_element
+                .get_child("HullType")
+                .unwrap()
+                .get_text()
+                .unwrap()
+                .to_string()
+                .as_str()
+            {
+                "Stock/Bulk Hauler" => "Bulk",
+                "Stock/Container Hauler" => "Container",
+                _ => {
+                    panic!()
+                }
+            };
+
             let hull_config = selected_ship_element.get_mut_child("HullConfig").unwrap();
             let primary_structure = hull_config.get_mut_child("PrimaryStructure").unwrap();
             for (idx, child) in primary_structure.children.iter_mut().enumerate() {
@@ -198,7 +232,8 @@ pub fn on_save_liner_config_handler(
                     _ => panic!(),
                 };
 
-                let key_lookup_name = format!("Bulk-{}-{}", segment_type_idx, segment_name);
+                let key_lookup_name =
+                    format!("{}-{}-{}", liner_type, segment_type_idx, segment_name);
                 let key_data = BULKER_SEGMENTS.get(&key_lookup_name.as_str()).unwrap();
 
                 let text_node = xmltree::XMLNode::Text(key_data.to_string());

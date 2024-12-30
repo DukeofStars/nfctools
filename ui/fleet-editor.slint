@@ -93,7 +93,7 @@ export component FleetEditorWindow inherits Window {
                     clicked => {
                         selected_ship_idx = idx;
 
-                        if ship.class == "Stock/Bulk Hauler" {
+                        if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler") {
                             current_hull_config = root.get-liner-config();
                             checkbox_toggle = true;
                         }
@@ -114,12 +114,12 @@ export component FleetEditorWindow inherits Window {
         }
         VerticalLayout {
             padding-left: 5px;
-            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler"): marauder_editing := VerticalLayout {
+            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler"): marauder_editing := VerticalLayout {
                 alignment: start;
 
                 HorizontalLayout {
                     Text {
-                        text: "Marauder Editing";
+                        text: "Liner Editing";
                         font-size: 24px;
                         horizontal-stretch: 1.0;
                     }
