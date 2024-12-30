@@ -5,7 +5,7 @@ use std::{
 };
 
 use slint::{Model, ModelRc, ToSharedString, VecModel, Weak};
-use tracing::trace;
+use tracing::{debug, trace};
 use xml::EmitterConfig;
 use xmltree::{AttributeMap, Element, Traversable};
 
@@ -28,6 +28,9 @@ pub fn on_load_dressings_handler(
 
             let mut dressing_slots = DressingSlots::default();
 
+            debug!(?hull_config, "Determining dressing slots for");
+
+            trace!("Loading bow dressings");
             dressing_slots.bow = match hull_config.segment_bow {
                 0 => ModelRc::from([
                     DressingSlot {
@@ -86,6 +89,7 @@ pub fn on_load_dressings_handler(
                 ]),
                 _ => panic!(),
             };
+            trace!("Loading core dressings");
             dressing_slots.core = match hull_config.segment_core {
                 0 => ModelRc::from([
                     DressingSlot {
@@ -171,7 +175,10 @@ pub fn on_load_dressings_handler(
                 _ => panic!(),
             };
 
+            trace!("Passing dressing slots to UI");
             window.set_dressing_slots(dressing_slots);
+
+            debug!("Dressing slots loaded");
 
             Ok(())
         });
@@ -192,6 +199,7 @@ pub fn on_get_liner_config_handler(
                 "Selected fleet doesn't exist",
                 "cur_fleet_idx points to a nonexistant fleet"
             ))?;
+
             let element = {
                 trace!("Opening fleet file");
                 let fleet_file = File::open(&fleet.path).map_err(|err| {
@@ -214,6 +222,16 @@ pub fn on_get_liner_config_handler(
                 .as_element()
                 .unwrap();
 
+            debug!(
+                "Reading liner config for '{}' in '{}'",
+                selected_ship_element
+                    .get_child("Name")
+                    .unwrap()
+                    .get_text()
+                    .unwrap(),
+                &fleet.name
+            );
+
             let bow_key_list;
             let core_key_list;
             let stern_key_list;
@@ -227,16 +245,19 @@ pub fn on_get_liner_config_handler(
                 .as_str()
                 == "Stock/Bulk Hauler"
             {
+                trace!("Selected ship is a Marauder. Loading segment lists");
                 bow_key_list = BULK_BOWS.iter();
                 core_key_list = BULK_CORES.iter();
                 stern_key_list = BULK_STERNS.iter();
             } else {
+                trace!("Selected ship is a Moorline. Loading segment lists");
                 bow_key_list = CONTAINER_BOWS.iter();
                 core_key_list = CONTAINER_CORES.iter();
                 stern_key_list = CONTAINER_STERNS.iter();
             }
 
             let hull_config = selected_ship_element.get_child("HullConfig").unwrap();
+            trace!("Reading segment configurations");
             let primary_structure = hull_config.get_child("PrimaryStructure").unwrap();
             let mut children = primary_structure.get_children().into_iter();
             let segment_bow = children
@@ -273,6 +294,7 @@ pub fn on_get_liner_config_handler(
                 .take_while(|skey| **skey != segment_stern.as_str())
                 .count() as i32;
 
+            trace!("Reading superstructure configuration");
             let secondary_structure = hull_config.get_child("SecondaryStructure").unwrap();
             let secondary_structure_config = secondary_structure
                 .get_child("SecondaryStructureConfig")
@@ -301,14 +323,18 @@ pub fn on_get_liner_config_handler(
                 .parse::<i32>()
                 .unwrap();
 
-            Ok(LinerHullConfig {
+            let liner_hull_config = LinerHullConfig {
                 bridge_model: key_idx as i32,
                 bridge_segment,
                 bridge_snappoint,
                 segment_bow,
                 segment_core,
                 segment_stern,
-            })
+            };
+
+            debug!(hull_config = ?liner_hull_config, "Loaded liner hull config");
+
+            Ok(liner_hull_config)
         })
         .unwrap_or_default()
     }
@@ -358,6 +384,16 @@ pub fn on_save_liner_config_handler(
                 .as_mut_element()
                 .unwrap();
 
+            debug!(
+                "Saving liner config for '{}' in '{}'",
+                selected_ship_element
+                    .get_child("Name")
+                    .unwrap()
+                    .get_text()
+                    .unwrap(),
+                &fleet.name
+            );
+
             let liner_type = match selected_ship_element
                 .get_child("HullType")
                 .unwrap()
@@ -373,48 +409,52 @@ pub fn on_save_liner_config_handler(
                 }
             };
 
+            trace!("HullType is '{}'", &liner_type);
+
             let dressing_slots = window.get_dressing_slots();
 
             let hull_config = selected_ship_element.get_mut_child("HullConfig").unwrap();
             let primary_structure = hull_config.get_mut_child("PrimaryStructure").unwrap();
+
+            let attr_map = [
+                (String::new(), String::new()),
+                (
+                    String::from("xml"),
+                    String::from("http://www.w3.org/XML/1998/namespace"),
+                ),
+                (
+                    String::from("xmlns"),
+                    String::from("http://www.w3.org/2000/xmlns/"),
+                ),
+                (
+                    String::from("xsd"),
+                    String::from("http://www.w3.org/2001/XMLSchema"),
+                ),
+                (
+                    String::from("xsd"),
+                    String::from("http://www.w3.org/2001/XMLSchema-instance"),
+                ),
+            ];
+            let mut namespace = xmltree::Namespace::empty();
+            for (prefix, uri) in attr_map {
+                namespace.put(prefix, uri);
+            }
+            // Template to be copied later.
+            let int_elem = Element {
+                prefix: None,
+                namespace: None,
+                namespaces: Some(namespace),
+                name: String::from("int"),
+                attributes: AttributeMap::new(),
+                children: vec![],
+                attribute_namespaces: HashMap::new(),
+            };
+
+            debug!("Editing segment configurations");
             for (idx, child) in primary_structure.children.iter_mut().enumerate() {
                 let child = child.as_mut_element().unwrap();
 
-                let attr_map = [
-                    (String::new(), String::new()),
-                    (
-                        String::from("xml"),
-                        String::from("http://www.w3.org/XML/1998/namespace"),
-                    ),
-                    (
-                        String::from("xmlns"),
-                        String::from("http://www.w3.org/2000/xmlns/"),
-                    ),
-                    (
-                        String::from("xsd"),
-                        String::from("http://www.w3.org/2001/XMLSchema"),
-                    ),
-                    (
-                        String::from("xsd"),
-                        String::from("http://www.w3.org/2001/XMLSchema-instance"),
-                    ),
-                ];
-                let mut namespace = xmltree::Namespace::empty();
-                for (prefix, uri) in attr_map {
-                    namespace.put(prefix, uri);
-                }
-
-                // Template to be copied later.
-                let int_elem = Element {
-                    prefix: None,
-                    namespace: None,
-                    namespaces: Some(namespace),
-                    name: String::from("int"),
-                    attributes: AttributeMap::new(),
-                    children: vec![],
-                    attribute_namespaces: HashMap::new(),
-                };
-
+                trace!("Clearing previous dressings");
                 let dressing = child.get_mut_child("Dressing").unwrap();
                 dressing.children.clear();
                 let segment_type_idx;
@@ -422,9 +462,11 @@ pub fn on_save_liner_config_handler(
 
                 match idx {
                     0 => {
+                        trace!("Setting bow hull configuration");
                         segment_type_idx = segment_bow;
                         segment_name = "Bow";
 
+                        trace!("Setting bow dressing configuration");
                         for elem in dressing_selections
                             .bow
                             .iter()
@@ -440,8 +482,11 @@ pub fn on_save_liner_config_handler(
                         }
                     }
                     1 => {
+                        trace!("Setting core hull configuration");
                         segment_type_idx = segment_core;
                         segment_name = "Core";
+
+                        trace!("Setting core dressing configuration");
                         for elem in dressing_selections
                             .core
                             .iter()
@@ -457,6 +502,7 @@ pub fn on_save_liner_config_handler(
                         }
                     }
                     2 => {
+                        trace!("Setting stern hull configuration");
                         segment_type_idx = segment_stern;
                         segment_name = "Stern";
                     }
@@ -465,13 +511,16 @@ pub fn on_save_liner_config_handler(
 
                 let key_lookup_name =
                     format!("{}-{}-{}", liner_type, segment_type_idx, segment_name);
+                trace!("Looking up segment key '{}'", &key_lookup_name);
                 let key_data = BULKER_SEGMENTS.get(&key_lookup_name.as_str()).unwrap();
+                trace!("Returned segment key '{}'", &key_data);
 
                 let text_node = xmltree::XMLNode::Text(key_data.to_string());
                 let key = child.get_mut_child("Key").unwrap();
                 key.children = vec![text_node];
             }
 
+            trace!("Setting superstructure configuration");
             let secondary_structure = hull_config
                 .get_mut_child("SecondaryStructure")
                 .unwrap()
@@ -479,7 +528,9 @@ pub fn on_save_liner_config_handler(
                 .unwrap();
 
             let key_lookup_name = format!("Superstructure-{}", bridge_model);
+            trace!("Looking up superstructure key '{}'", &key_lookup_name);
             let key_data = BULKER_SEGMENTS.get(&key_lookup_name.as_str()).unwrap();
+            trace!("Returned key '{}'", &key_data);
             let key = secondary_structure.get_mut_child("Key").unwrap();
             key.children = vec![xmltree::XMLNode::Text(key_data.to_string())];
 
@@ -488,6 +539,8 @@ pub fn on_save_liner_config_handler(
 
             let segment = secondary_structure.get_mut_child("SnapPoint").unwrap();
             segment.children = vec![xmltree::XMLNode::Text(bridge_snappoint.to_string())];
+
+            debug!("Hull configuration complete");
 
             {
                 std::fs::remove_file(&fleet.path)
@@ -513,6 +566,8 @@ pub fn on_save_liner_config_handler(
                         )
                     })?;
             }
+
+            debug!("Hull configuration saved");
 
             Ok(())
         });

@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, rc::Rc};
 
 use lazy_static::lazy_static;
 use slint::{ComponentHandle, Model, ToSharedString, VecModel, Weak};
-use tracing::trace;
+use tracing::{debug, trace};
 use xmltree::Element;
 
 use crate::{
@@ -82,6 +82,8 @@ pub fn on_open_fleet_editor_handler(
     move || {
         let main_window = main_window_weak.unwrap();
         let _ = wrap_errorable_function(&main_window, || {
+            debug!("Initialising fleet editor");
+
             let main_window = main_window_weak.unwrap();
             let window = FleetEditorWindow::new()
                 .map_err(|err| my_error!("Failed to create fleet editor window", err))
@@ -95,9 +97,11 @@ pub fn on_open_fleet_editor_handler(
                 "Selected fleet doesn't exist",
                 "cur_fleet_idx points to a nonexistant fleet"
             ))?;
+            let fleet_name = fleet.name.clone();
 
             window.set_fleet_name(fleet.name);
 
+            debug!("Getting ships list");
             let element = {
                 trace!("Opening fleet file");
                 let fleet_file = File::open(&fleet.path).map_err(|err| {
@@ -155,9 +159,13 @@ pub fn on_open_fleet_editor_handler(
                 })
                 .collect::<Result<Vec<ShipData>, Error>>()?;
 
+            debug!(?ships, "Found {} ships", ships.len());
+
             let ships_model = std::rc::Rc::new(slint::VecModel::from(ships));
             window.set_ships(ships_model.clone().into());
+            trace!("Ships passed to ui");
 
+            debug!("Setting up callbacks");
             window.on_save_liner_config(liner_hull_config::on_save_liner_config_handler(
                 main_window.as_weak(),
                 window.as_weak(),
@@ -173,6 +181,7 @@ pub fn on_open_fleet_editor_handler(
                 window.as_weak(),
             ));
 
+            debug!("Opening fleet editor for '{}'", fleet_name);
             window
                 .show()
                 .map_err(|err| my_error!("Could not show fleet editor window.", err))
