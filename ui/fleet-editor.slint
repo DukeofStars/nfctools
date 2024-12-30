@@ -75,41 +75,50 @@ export component FleetEditorWindow inherits Window {
     property <LinerHullConfig> current_hull_config;
     callback save-liner-config(LinerHullConfig);
     callback get-liner-config() -> LinerHullConfig;
-    public function load-liner-config(config: LinerHullConfig) {
-        current_hull_config = config;
-    }
 
     property <bool> checkbox_toggle: true;
 
     HorizontalLayout {
-        ScrollView {
-            width: 30%;
-            height: 80%;
-            viewport-height: ships.length * 36px;
-            VerticalLayout {
-                for ship[idx] in ships: ShipListItem {
-                    ship: ship;
+        padding: 5px;
+        VerticalLayout {
+            alignment: start;
+            Text {
+                text: "Ships";
+                font-size: 24px;
+                vertical-stretch: 0.0;
+            }
+            ScrollView {
+                width: 30%;
+                height: 80%;
+                viewport-height: ships.length * 36px;
+                VerticalLayout {
+                    for ship[idx] in ships: ShipListItem {
+                        ship: ship;
 
-                    clicked => {
-                        selected_ship_idx = idx;
+                        clicked => {
+                            selected_ship_idx = idx;
 
-                        if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler") {
-                            current_hull_config = root.get-liner-config();
-                            checkbox_toggle = true;
+                            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler") {
+                                current_hull_config = root.get-liner-config();
+                                checkbox_toggle = true;
+                            }
+                            else {
+                                checkbox_toggle = false;
+                            }
                         }
-                        else {
-                            checkbox_toggle = false;
-                        }
+                        states [
+                            selected when selected_ship_idx == idx: {
+                                background-colour: rgba(204, 134, 092, 1);
+                            }
+                            unselected when selected_ship_idx != idx: {
+                                background-colour: rgba(0, 0, 0, 0);
+                            }
+                        ]
                     }
-                    states [
-                        selected when selected_ship_idx == idx: {
-                            background-colour: rgba(204, 134, 092, 1);
-                        }
-                        unselected when selected_ship_idx != idx: {
-                            background-colour: rgba(0, 0, 0, 0);
-                        }
-                    ]
                 }
+            }
+            Rectangle {
+                vertical-stretch: 1.0;
             }
         }
         VerticalLayout {
