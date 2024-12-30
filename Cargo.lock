@@ -2830,6 +2830,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "color-eyre",
+ "lazy_static",
  "slint",
  "slint-build",
  "tracing",

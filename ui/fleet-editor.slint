@@ -1,0 +1,273 @@
+import { ScrollView, Button, ComboBox, CheckBox } from "std-widgets.slint";
+
+import { FleetData } from "./fleet-list.slint";
+
+export struct ShipData {
+    name: string,
+    class: string,
+    cost: int,
+}
+
+export struct LinerHullConfig {
+    segment-bow: int,
+    segment-core: int,
+    segment-stern: int,
+    bridge-model: int,
+    bridge-segment: int,
+    bridge-snappoint: int,
+}
+
+component ShipListItem inherits TouchArea {
+    in property <ShipData> ship;
+    in property <color> background-colour;
+
+    Rectangle {
+        padding: 2px;
+        height: 36px;
+        background: background-colour;
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, 0.1);
+
+        VerticalLayout {
+            Text {
+                font-size: 18px;
+                text: ship.name;
+            }
+            HorizontalLayout {
+                Text {
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 14px;
+                    text: ship.class;
+                }
+                Rectangle {}
+                Text {
+                    horizontal-alignment: right;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 14px;
+                    text: ship.cost;
+                }
+            }
+        }
+    }
+}
+
+component TableHeader inherits Rectangle {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+}
+component TableItem inherits Rectangle {
+    width: 100px;
+    border-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+}
+
+export component FleetEditorWindow inherits Window {
+    in property <FleetData> fleet;
+    in property <[ShipData]> ships;
+    in-out property <string> fleet-name;
+
+    out property <int> selected_ship_idx;
+
+    width: 800px;
+    height: 600px;
+    title: "Editing " + fleet-name;
+
+    property <LinerHullConfig> current_hull_config;
+    callback save-liner-config(LinerHullConfig);
+    callback get-liner-config() -> LinerHullConfig;
+    public function load-liner-config(config: LinerHullConfig) {
+        current_hull_config = config;
+    }
+
+    property <bool> checkbox_toggle: true;
+
+    HorizontalLayout {
+        ScrollView {
+            width: 30%;
+            height: 80%;
+            viewport-height: ships.length * 36px;
+            VerticalLayout {
+                for ship[idx] in ships: ShipListItem {
+                    ship: ship;
+
+                    clicked => {
+                        selected_ship_idx = idx;
+
+                        if ship.class == "Stock/Bulk Hauler" {
+                            current_hull_config = root.get-liner-config();
+                            checkbox_toggle = true;
+                        }
+                        else {
+                            checkbox_toggle = false;
+                        }
+                    }
+                    states [
+                        selected when selected_ship_idx == idx: {
+                            background-colour: rgba(204, 134, 092, 1);
+                        }
+                        unselected when selected_ship_idx != idx: {
+                            background-colour: rgba(0, 0, 0, 0);
+                        }
+                    ]
+                }
+            }
+        }
+        VerticalLayout {
+            padding-left: 5px;
+            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler"): marauder_editing := VerticalLayout {
+                alignment: start;
+
+                HorizontalLayout {
+                    Text {
+                        text: "Marauder Editing";
+                        font-size: 24px;
+                        horizontal-stretch: 1.0;
+                    }
+                    Button {
+                        horizontal-stretch: 0.0;
+                        text: "Save";
+                        clicked => {
+                            current_hull_config.segment-bow = combo-box-bow.current-index;
+                            current_hull_config.segment-core = combo-box-core.current-index;
+                            current_hull_config.segment-stern = combo-box-stern.current-index;
+                            current_hull_config.bridge-model = combo-box-bridge-model.current-index;
+                            current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
+                            current_hull_config.bridge-snappoint = 0;
+                            
+                            root.save-liner-config(current_hull_config);
+                        }
+                    }
+                }
+
+                GridLayout {
+                    width: 65%;
+                    Row {
+                        TableHeader {}
+                        TableItem {}
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Bow";
+                            }
+                        }
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Core";
+                            }
+                        }
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Stern";
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                font-size: 18px;
+                                text: "Hull Segments";
+                            }
+                        }
+                        TableItem {}
+                        TableItem {
+                            combo-box-bow := ComboBox {
+                                width: 50px;
+                                current-index: root.current_hull_config.segment-bow;
+                                model: ["A", "B", "C"];
+                            }
+                        }
+                        TableItem {
+                            combo-box-core := ComboBox {
+                                width: 50px;
+                                current-index: root.current_hull_config.segment-core;
+                                model: ["A", "B", "C"];
+                            }
+                        } 
+                        TableItem {
+                            combo-box-stern := ComboBox {
+                                width: 50px;
+                                current-index: root.current_hull_config.segment-stern;
+                                model: ["A", "B", "C"];
+                            }
+                        } 
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                font-size: 18px;
+                                text: "Superstructure";
+                            }
+                        }
+                        TableItem {
+                            combo-box-bridge-model := ComboBox {
+                                width: 50px;
+                                current-index: root.current_hull_config.bridge-model;
+                                model: ["A", "B", "C", "D"];
+                            }
+                        }
+                        TableItem {
+                            bridge-location-bow := CheckBox {
+                                toggled => {
+                                    // bridge-location-bow.checked = false;
+                                    bridge-location-core.checked = false;
+                                    bridge-location-stern.checked = false;
+
+                                    root.current_hull_config.bridge-segment = 0;
+                                }
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 0 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                            }
+                        }
+                        TableItem {
+                            bridge-location-core := CheckBox {
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 1 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                                toggled => {
+                                    bridge-location-bow.checked = false;
+                                    // bridge-location-core.checked = false;
+                                    bridge-location-stern.checked = false;
+
+                                    root.current_hull_config.bridge-segment = 1;
+                                }
+                            }
+                        } 
+                        TableItem {
+                            bridge-location-stern := CheckBox {
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 2 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                                toggled => {
+                                    bridge-location-bow.checked = false;
+                                    bridge-location-core.checked = false;
+                                    // bridge-location-stern.checked = false;
+                                    
+                                    root.current_hull_config.bridge-segment = 2;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+

@@ -1,0 +1,281 @@
+import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView, StandardButton, SpinBox, ComboBox, TextEdit, CheckBox } from "std-widgets.slint";
+
+export struct FleetData {
+    path: string,
+    short-path: string,
+    name: string,
+    selected: bool,
+}
+
+component FleetListItem inherits TouchArea {
+    in-out property <string> name;
+    in property <string> short-path;
+    in property <color> background-colour;
+
+    callback viewing();
+
+    clicked => {
+        root.viewing();
+    }
+
+    Rectangle {
+        height: 18px;
+        background: background-colour;
+    
+        HorizontalLayout {
+            spacing: 100px;
+            padding-right: 5px;
+            Text {
+                text: name;
+                horizontal-stretch: 1.0;
+                font-size: 16px;
+            }
+            HorizontalLayout {
+                alignment: end;
+                Text {
+                    overflow: elide;
+                    wrap: no-wrap;
+                    color: rgba(255, 255, 255, 0.5);
+                    text: short-path;
+                    horizontal-alignment: right;
+                    // font-size: 16px;
+                }
+            }
+        }
+
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+component ActionsPane inherits VerticalLayout {
+    callback merge(string);
+    callback save-description(string);
+    callback open-fleet-editor();
+
+    public function update-description(description: string) {
+        desc-input.text = description;
+    }
+
+    spacing: 5px;
+
+    Button {
+        text: "Open Fleet Editor";
+        clicked => {
+            root.open-fleet-editor();
+        }
+    }
+
+    HorizontalLayout {
+        merge-output-name-input := LineEdit {
+            text: "";
+        }
+
+        Button {
+            text: "Merge";
+            clicked => {
+                root.merge(merge-output-name-input.text);
+            }
+        }
+    }
+
+    HorizontalLayout {
+        Text {
+            vertical-alignment: center;
+            text: "Edit Description";
+            font-size: 16px;
+        }
+
+        Button {
+            width: 40%;
+            text: "Save";
+            clicked => {
+                desc-input.text;
+                root.save-description(desc-input.text);
+            }
+        }
+    }
+
+    desc-input := TextEdit {
+        width: 100%;
+        height: 100%;
+        font-size: 12px;
+        wrap: word-wrap;
+        text: "";
+    }
+}
+
+export component MainWindow inherits Window {
+    height: 600px;
+    width: 800px;
+    title: "NebTools";
+    
+    in-out property <[FleetData]> fleets;
+    in-out property <bool> multi-selecting: false;
+
+    out property <int> cur-fleet-idx;
+    
+    callback merge(string);
+    callback viewing(int);
+    callback save-description(string);
+    callback reload-fleets();
+    callback open-fleet-editor();
+    
+    public function update-description(description: string) {
+        actions-pane.update-description(description);
+    }
+
+    property <string> error-popup-title;
+    property <string> error-popup-message;
+    public function show-error-popup(title: string, message: string) {
+        error-popup-title = title;
+        error-popup-message = message;
+        error-popup.show();
+    }
+
+    forward-focus: key-handler;
+    key-handler := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Control) {
+                root.multi-selecting = true;
+                accept
+            }
+            reject
+        }
+        key-released(event) => {
+            if (event.text == Key.Control) {
+                root.multi-selecting = false;
+                accept
+            }
+            reject
+        }
+    }
+
+    error-popup := PopupWindow {
+        height: 600px;
+        width: 800px;
+        x: 0;
+        y: 0;
+        close-policy: no-auto-close;
+
+        VerticalLayout {
+            Rectangle {}
+            HorizontalLayout {
+                Rectangle {}
+                Rectangle {
+                    width: 25%;
+                    height: 25%;
+                    border-radius: 4px;
+                    background: rgba(0, 0, 0, 0.8);
+                    VerticalLayout {
+                        padding: 10px;
+                        Text {
+                            text: error-popup-title;
+                            font-size: 24px;
+                        }
+
+                        Text {
+                            text: error-popup-message;
+                            font-size: 12px;
+                        }
+
+                        StandardButton {
+                            kind: ok;
+                            clicked => {
+                                error-popup.close();
+                            }
+                        }
+                    }
+                }
+                Rectangle {}
+            }
+            Rectangle {}
+        }
+    }
+
+    HorizontalLayout {
+        padding: 5px;
+        spacing: 5px;
+
+        VerticalLayout {
+            alignment: start;
+            HorizontalLayout{
+                Text {
+                    text: "Fleets";
+                    font-size: 24px;
+                }
+                HorizontalLayout {
+                    padding-right: 5px;
+                    alignment: end;
+                    Button {
+                        text: "Refresh";
+                        clicked => {
+                            root.reload-fleets();
+                        }
+                    }
+                }
+            }
+
+            ScrollView {
+                // width: 68%;
+                height: 600px - 40px;
+                VerticalLayout {
+                    padding-top: 15px;
+                    for fleet[idx] in fleets: FleetListItem {
+                        name: fleet.name;
+                        short-path: fleet.short-path;
+
+                        viewing => {
+                            fleet.selected = !fleet.selected;
+                            if fleet.selected {
+                                cur-fleet-idx = idx;
+                                root.viewing(idx)
+                            }
+                            else {
+                                cur-fleet-idx = -1;
+                                root.viewing(-1);
+                                root.update-description("");
+                            }
+                        }
+                        states [
+                            selected when fleet.selected: {
+                                background-colour: rgba(204, 134, 092, 1);
+                            }
+                            unselected when !fleet.selected: {
+                                background-colour: rgba(0, 0, 0, 0);
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+
+        VerticalLayout {
+            alignment: start;
+            width: 30%;
+            max-width: 240px;
+            Text {
+                text: "Actions";
+                width: 100%;
+                font-size: 24px;
+                padding-bottom: 10px;
+            }
+
+            actions-pane := ActionsPane {
+                merge(output-name) => {
+                    root.merge(output-name);
+                }
+
+                save-description(description) => {
+                    root.save-description(description);
+                }
+
+                open-fleet-editor => {
+                    root.open-fleet-editor();
+                }
+            }
+        }
+    }
+}
+
+
