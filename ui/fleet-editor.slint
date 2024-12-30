@@ -8,15 +8,6 @@ export struct ShipData {
     cost: int,
 }
 
-export struct LinerHullConfig {
-    segment-bow: int,
-    segment-core: int,
-    segment-stern: int,
-    bridge-model: int,
-    bridge-segment: int,
-    bridge-snappoint: int,
-}
-
 export struct DressingSlot {
     dressings: [string],
 }
@@ -28,6 +19,16 @@ export struct DressingSlots {
 export struct DressingSelections {
     bow: [int],
     core: [int]
+}
+
+export struct LinerHullConfig {
+    segment-bow: int,
+    segment-core: int,
+    segment-stern: int,
+    bridge-model: int,
+    bridge-segment: int,
+    bridge-snappoint: int,
+    dressings: DressingSelections,
 }
 
 component ShipListItem inherits TouchArea {
@@ -87,11 +88,7 @@ export component FleetEditorWindow inherits Window {
     title: "Editing " + fleet-name;
 
     property <LinerHullConfig> current_hull_config;
-    property <DressingSelections> current-dressing-selections: {
-        bow: [0, 0, 0, 0, 0],
-        core: [0, 0, 0, 0, 0]
-    };
-    callback save-liner-config(LinerHullConfig, DressingSelections);
+    callback save-liner-config(LinerHullConfig);
     callback get-liner-config() -> LinerHullConfig;
 
     callback load-dressings(LinerHullConfig);
@@ -157,16 +154,16 @@ export component FleetEditorWindow inherits Window {
                 }
 
                 function update-current-dressing-selections() {
-                    current-dressing-selections.bow[0] = dressing-selection-bow-0.current-index;
-                    current-dressing-selections.core[0] = dressing-selection-core-0.current-index;
-                    current-dressing-selections.bow[1] = dressing-selection-bow-1.current-index;
-                    current-dressing-selections.core[1] = dressing-selection-core-1.current-index;
-                    current-dressing-selections.bow[2] = dressing-selection-bow-2.current-index;
-                    current-dressing-selections.core[2] = dressing-selection-core-2.current-index;
-                    current-dressing-selections.bow[3] = dressing-selection-bow-3.current-index;
-                    current-dressing-selections.core[3] = dressing-selection-core-3.current-index;
-                    current-dressing-selections.bow[4] = dressing-selection-bow-4.current-index;
-                    current-dressing-selections.core[4] = dressing-selection-core-4.current-index;
+                    current_hull_config.dressings.bow[0] = dressing-selection-bow-0.current-index;
+                    current_hull_config.dressings.core[0] = dressing-selection-core-0.current-index;
+                    current_hull_config.dressings.bow[1] = dressing-selection-bow-1.current-index;
+                    current_hull_config.dressings.core[1] = dressing-selection-core-1.current-index;
+                    current_hull_config.dressings.bow[2] = dressing-selection-bow-2.current-index;
+                    current_hull_config.dressings.core[2] = dressing-selection-core-2.current-index;
+                    current_hull_config.dressings.bow[3] = dressing-selection-bow-3.current-index;
+                    current_hull_config.dressings.core[3] = dressing-selection-core-3.current-index;
+                    current_hull_config.dressings.bow[4] = dressing-selection-bow-4.current-index;
+                    current_hull_config.dressings.core[4] = dressing-selection-core-4.current-index;
                 }
 
                 HorizontalLayout {
@@ -186,7 +183,7 @@ export component FleetEditorWindow inherits Window {
                             current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
                             current_hull_config.bridge-snappoint = 0;
 
-                            root.save-liner-config(current_hull_config, current-dressing-selections);
+                            root.save-liner-config(current_hull_config);
                         }
                     }
                 }
@@ -341,6 +338,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-bow-0 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.bow[0].dressings;
+                                current-index: current_hull_config.dressings.bow[0];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -350,6 +348,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-core-0 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.core[0].dressings;
+                                current-index: current_hull_config.dressings.core[0];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -368,6 +367,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-bow-1 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.bow[1].dressings;
+                                current-index: current_hull_config.dressings.bow[1];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -377,6 +377,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-core-1 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.core[1].dressings;
+                                current-index: current_hull_config.dressings.core[1];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -395,6 +396,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-bow-2 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.bow[2].dressings;
+                                current-index: current_hull_config.dressings.bow[2];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -404,6 +406,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-core-2 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.core[2].dressings;
+                                current-index: current_hull_config.dressings.core[2];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -422,6 +425,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-bow-3 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.bow[3].dressings;
+                                current-index: current_hull_config.dressings.bow[3];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -431,6 +435,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-core-3 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.core[3].dressings;
+                                current-index: current_hull_config.dressings.core[3];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -449,6 +454,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-bow-4 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.bow[4].dressings;
+                                current-index: current_hull_config.dressings.bow[4];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }
@@ -458,6 +464,7 @@ export component FleetEditorWindow inherits Window {
                             dressing-selection-core-4 := ComboBox {
                                 width: 150px;
                                 model: dressing-slots.core[4].dressings;
+                                current-index: current_hull_config.dressings.core[4];
                                 selected(current-value) => {
                                     update-current-dressing-selections();
                                 }

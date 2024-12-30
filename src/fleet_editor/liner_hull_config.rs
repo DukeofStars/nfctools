@@ -257,31 +257,67 @@ pub fn on_get_liner_config_handler(
             }
 
             let hull_config = selected_ship_element.get_child("HullConfig").unwrap();
-            trace!("Reading segment configurations");
+            debug!("Reading segment configurations");
             let primary_structure = hull_config.get_child("PrimaryStructure").unwrap();
             let mut children = primary_structure.get_children().into_iter();
-            let segment_bow = children
-                .next()
-                .unwrap()
+
+            // Bow
+            let segment_bow_elem = children.next().unwrap();
+            let segment_bow_key = segment_bow_elem
                 .get_child("Key")
                 .unwrap()
                 .get_text()
                 .unwrap()
                 .to_string();
-            let segment_bow = bow_key_list
-                .take_while(|skey| **skey != segment_bow.as_str())
+            let segment_bow_model_idx = bow_key_list
+                .take_while(|skey| **skey != segment_bow_key.as_str())
                 .count() as i32;
-            let segment_core = children
-                .next()
+            let segment_bow_dressing = segment_bow_elem
+                .get_child("Dressing")
                 .unwrap()
+                .get_children()
+                .iter()
+                .map(|child| {
+                    child
+                        .get_text()
+                        .unwrap()
+                        .to_string()
+                        .parse::<i32>()
+                        .unwrap()
+                        + 1
+                })
+                .collect::<Vec<_>>();
+            trace!(dressings = ?segment_bow_dressing, "Loaded bow dressing");
+
+            // Core
+            let segment_core_elem = children.next().unwrap();
+            let segment_core_key = segment_core_elem
                 .get_child("Key")
                 .unwrap()
                 .get_text()
                 .unwrap()
                 .to_string();
             let segment_core = core_key_list
-                .take_while(|skey| **skey != segment_core.as_str())
+                .take_while(|skey| **skey != segment_core_key.as_str())
                 .count() as i32;
+            let segment_core_dressing = segment_core_elem
+                .get_child("Dressing")
+                .unwrap()
+                .get_children()
+                .iter()
+                .map(|child| {
+                    child
+                        .get_text()
+                        .unwrap()
+                        .to_string()
+                        .parse::<i32>()
+                        .unwrap()
+                        + 1
+                })
+                .collect::<Vec<_>>();
+            trace!(dressings = ?segment_core_dressing, "Loaded core dressing");
+
+            // Stern
             let segment_stern = children
                 .next()
                 .unwrap()
@@ -294,7 +330,7 @@ pub fn on_get_liner_config_handler(
                 .take_while(|skey| **skey != segment_stern.as_str())
                 .count() as i32;
 
-            trace!("Reading superstructure configuration");
+            debug!("Reading superstructure configuration");
             let secondary_structure = hull_config.get_child("SecondaryStructure").unwrap();
             let secondary_structure_config = secondary_structure
                 .get_child("SecondaryStructureConfig")
@@ -327,9 +363,13 @@ pub fn on_get_liner_config_handler(
                 bridge_model: key_idx as i32,
                 bridge_segment,
                 bridge_snappoint,
-                segment_bow,
+                segment_bow: segment_bow_model_idx,
                 segment_core,
                 segment_stern,
+                dressings: DressingSelections {
+                    bow: segment_bow_dressing.as_slice().into(),
+                    core: segment_core_dressing.as_slice().into(),
+                },
             };
 
             debug!(hull_config = ?liner_hull_config, "Loaded liner hull config");
@@ -344,7 +384,7 @@ pub fn on_save_liner_config_handler(
     main_window_weak: Weak<MainWindow>,
     window_weak: Weak<FleetEditorWindow>,
     fleets_model: Rc<VecModel<FleetData>>,
-) -> impl Fn(LinerHullConfig, DressingSelections) {
+) -> impl Fn(LinerHullConfig) {
     move |LinerHullConfig {
               segment_bow,
               segment_core,
@@ -352,8 +392,8 @@ pub fn on_save_liner_config_handler(
               bridge_model,
               bridge_segment,
               bridge_snappoint,
-          },
-          dressing_selections| {
+              dressings,
+          }| {
         let main_window = main_window_weak.unwrap();
         let _ = wrap_errorable_function(&main_window, || {
             let window = window_weak.unwrap();
@@ -467,7 +507,7 @@ pub fn on_save_liner_config_handler(
                         segment_name = "Bow";
 
                         trace!("Setting bow dressing configuration");
-                        for elem in dressing_selections
+                        for elem in dressings
                             .bow
                             .iter()
                             .map(|i| i - 1)
@@ -487,7 +527,7 @@ pub fn on_save_liner_config_handler(
                         segment_name = "Core";
 
                         trace!("Setting core dressing configuration");
-                        for elem in dressing_selections
+                        for elem in dressings
                             .core
                             .iter()
                             .map(|i| i - 1)
