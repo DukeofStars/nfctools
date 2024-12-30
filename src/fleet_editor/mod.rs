@@ -168,6 +168,10 @@ pub fn on_open_fleet_editor_handler(
                 window.as_weak(),
                 fleets_model.clone(),
             ));
+            window.on_load_dressings(liner_hull_config::on_load_dressings_handler(
+                main_window.as_weak(),
+                window.as_weak(),
+            ));
 
             window
                 .show()

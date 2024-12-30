@@ -1,19 +1,182 @@
 use std::{
+    collections::HashMap,
     fs::{File, OpenOptions},
     rc::Rc,
 };
 
-use slint::{Model, VecModel, Weak};
+use slint::{Model, ModelRc, ToSharedString, VecModel, Weak};
 use tracing::trace;
 use xml::EmitterConfig;
-use xmltree::{Element, Traversable};
+use xmltree::{AttributeMap, Element, Traversable};
 
 use super::{BULKER_SEGMENTS, CONTAINER_BOWS, CONTAINER_CORES, CONTAINER_STERNS};
 use crate::{
     error::wrap_errorable_function,
     fleet_editor::{BRIDGE_MODELS, BULK_BOWS, BULK_CORES, BULK_STERNS},
-    my_error, FleetData, FleetEditorWindow, LinerHullConfig, MainWindow,
+    my_error, DressingSelections, DressingSlot, DressingSlots, FleetData, FleetEditorWindow,
+    LinerHullConfig, MainWindow,
 };
+
+pub fn on_load_dressings_handler(
+    main_window_weak: Weak<MainWindow>,
+    window_weak: Weak<FleetEditorWindow>,
+) -> impl Fn(LinerHullConfig) {
+    move |hull_config| {
+        let main_window = main_window_weak.unwrap();
+        let _ = wrap_errorable_function(&main_window, || {
+            let window = window_weak.unwrap();
+
+            let mut dressing_slots = DressingSlots::default();
+
+            dressing_slots.bow = match hull_config.segment_bow {
+                0 => ModelRc::from([
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Top crates".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Bottom crates".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Flat arm bottom".to_shared_string(),
+                        ]),
+                    },
+                ]),
+                1 => ModelRc::from([
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Tanks".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Top crates".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Flat arm top".to_shared_string(),
+                        ]),
+                    },
+                ]),
+                2 => ModelRc::from([
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Flat arm top".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Triple arm bottom".to_shared_string(),
+                            "Double arm bottom".to_shared_string(),
+                        ]),
+                    },
+                ]),
+                _ => panic!(),
+            };
+            dressing_slots.core = match hull_config.segment_core {
+                0 => ModelRc::from([
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Top crates".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Bottom crates".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Vertical arm top".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Flat arm bottom".to_shared_string(),
+                        ]),
+                    },
+                ]),
+                1 => ModelRc::from([
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Tanks".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Top crates".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Big tanks".to_shared_string(),
+                            "Big crates".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Flat arm top".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Vertical arm top".to_shared_string(),
+                        ]),
+                    },
+                ]),
+                2 => ModelRc::from([
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Tanks & crates bottom".to_shared_string(),
+                            "Crates bottom".to_shared_string(),
+                            "Crates under wings".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Crates above wings".to_shared_string(),
+                        ]),
+                    },
+                    DressingSlot {
+                        dressings: ModelRc::from([
+                            "None".to_shared_string(),
+                            "Vertical arm top".to_shared_string(),
+                        ]),
+                    },
+                ]),
+                _ => panic!(),
+            };
+
+            window.set_dressing_slots(dressing_slots);
+
+            Ok(())
+        });
+    }
+}
 
 pub fn on_get_liner_config_handler(
     main_window_weak: Weak<MainWindow>,
@@ -155,7 +318,7 @@ pub fn on_save_liner_config_handler(
     main_window_weak: Weak<MainWindow>,
     window_weak: Weak<FleetEditorWindow>,
     fleets_model: Rc<VecModel<FleetData>>,
-) -> impl Fn(LinerHullConfig) {
+) -> impl Fn(LinerHullConfig, DressingSelections) {
     move |LinerHullConfig {
               segment_bow,
               segment_core,
@@ -163,7 +326,8 @@ pub fn on_save_liner_config_handler(
               bridge_model,
               bridge_segment,
               bridge_snappoint,
-          }| {
+          },
+          dressing_selections| {
         let main_window = main_window_weak.unwrap();
         let _ = wrap_errorable_function(&main_window, || {
             let window = window_weak.unwrap();
@@ -209,25 +373,92 @@ pub fn on_save_liner_config_handler(
                 }
             };
 
+            let dressing_slots = window.get_dressing_slots();
+
             let hull_config = selected_ship_element.get_mut_child("HullConfig").unwrap();
             let primary_structure = hull_config.get_mut_child("PrimaryStructure").unwrap();
             for (idx, child) in primary_structure.children.iter_mut().enumerate() {
                 let child = child.as_mut_element().unwrap();
-                let key = child.get_mut_child("Key").unwrap();
 
+                let attr_map = [
+                    (String::new(), String::new()),
+                    (
+                        String::from("xml"),
+                        String::from("http://www.w3.org/XML/1998/namespace"),
+                    ),
+                    (
+                        String::from("xmlns"),
+                        String::from("http://www.w3.org/2000/xmlns/"),
+                    ),
+                    (
+                        String::from("xsd"),
+                        String::from("http://www.w3.org/2001/XMLSchema"),
+                    ),
+                    (
+                        String::from("xsd"),
+                        String::from("http://www.w3.org/2001/XMLSchema-instance"),
+                    ),
+                ];
+                let mut namespace = xmltree::Namespace::empty();
+                for (prefix, uri) in attr_map {
+                    namespace.put(prefix, uri);
+                }
+
+                // Template to be copied later.
+                let int_elem = Element {
+                    prefix: None,
+                    namespace: None,
+                    namespaces: Some(namespace),
+                    name: String::from("int"),
+                    attributes: AttributeMap::new(),
+                    children: vec![],
+                    attribute_namespaces: HashMap::new(),
+                };
+
+                let dressing = child.get_mut_child("Dressing").unwrap();
+                dressing.children.clear();
                 let segment_type_idx;
-                let segment_name = match idx {
+                let segment_name;
+
+                match idx {
                     0 => {
                         segment_type_idx = segment_bow;
-                        "Bow"
+                        segment_name = "Bow";
+
+                        for elem in dressing_selections
+                            .bow
+                            .iter()
+                            .map(|i| i - 1)
+                            .map(|i| {
+                                let mut int_elem = int_elem.clone();
+                                int_elem.children = vec![xmltree::XMLNode::Text(i.to_string())];
+                                xmltree::XMLNode::Element(int_elem)
+                            })
+                            .take(dressing_slots.bow.iter().count())
+                        {
+                            dressing.children.push(elem);
+                        }
                     }
                     1 => {
                         segment_type_idx = segment_core;
-                        "Core"
+                        segment_name = "Core";
+                        for elem in dressing_selections
+                            .core
+                            .iter()
+                            .map(|i| i - 1)
+                            .map(|i| {
+                                let mut int_elem = int_elem.clone();
+                                int_elem.children = vec![xmltree::XMLNode::Text(i.to_string())];
+                                xmltree::XMLNode::Element(int_elem)
+                            })
+                            .take(dressing_slots.core.iter().count())
+                        {
+                            dressing.children.push(elem);
+                        }
                     }
                     2 => {
                         segment_type_idx = segment_stern;
-                        "Stern"
+                        segment_name = "Stern";
                     }
                     _ => panic!(),
                 };
@@ -237,6 +468,7 @@ pub fn on_save_liner_config_handler(
                 let key_data = BULKER_SEGMENTS.get(&key_lookup_name.as_str()).unwrap();
 
                 let text_node = xmltree::XMLNode::Text(key_data.to_string());
+                let key = child.get_mut_child("Key").unwrap();
                 key.children = vec![text_node];
             }
 

@@ -86,7 +86,7 @@ pub fn on_save_description_handler(
                     children: vec![text_node],
                     attribute_namespaces: HashMap::new(),
                 };
-                // For some reason the new element must be at the start of the list otherwise the fleet file is corrupted. ¯\_(ツ)_/¯
+                // Put the description at the start so it is easier to find and read.
                 let mut new_children = vec![xmltree::XMLNode::Element(description_elem)];
                 new_children.append(&mut element.children);
                 element.children = new_children;
