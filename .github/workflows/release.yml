@@ -9,22 +9,6 @@ on:
       - v[0-9]+.*
 
 jobs:
-  build-installer:
-    name: Build the Inno Setup Installer
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Compile app
-        run: cargo build --release --verbose
-
-      - name: Compile .ISS to .EXE Installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with:
-          path: installer/installer.iss
-          options: /O+
-
-
   create-release:
     runs-on: windows-latest
     steps:
@@ -34,18 +18,58 @@ jobs:
           # (required) GitHub token for creating GitHub Releases.
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nfctools-bin
+          path: target/release/nfctools.exe
+
+  build-installer:
+    runs-on: windows-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: nfctools-bin
+          path: target/release/
+      - uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with:
+          path: installer/installer.iss
+          options: /O+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nebtools-setup
+          path: installer/bin/nebtools-setup.exe
+
   upload-assets:
     needs: 
       - create-release
       - build-installer
+      - build
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: taiki-e/upload-rust-binary-action@v1
+      - uses: actions/download-artifact@v4
         with:
-          # (required) Comma-separated list of binary names (non-extension portion of filename) to build and upload.
-          # Note that glob pattern is not supported yet.
-          bin: nfctools
-          # (required) GitHub token for uploading assets to GitHub Releases.
-          token: ${{ secrets.GITHUB_TOKEN }}
-          include: installer/bin/nebtools-setup.exe
+          name: nfctools-bin
+          path: target/release/
+      - uses: actions/download-artifact@v4
+        with:
+          name: nebtools-setup
+          path: installer/bin/
+      - name: Upload binary to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/nfctools.exe
+      - name: Upload installer to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: target/release/nfctools.exe
+          
