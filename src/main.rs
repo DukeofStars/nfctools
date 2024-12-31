@@ -1,3 +1,9 @@
+// On windows, disable logging to stdout (which will open a terminal window) when built in release mode.
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
+
 use std::{fs::File, path::PathBuf};
 
 use color_eyre::eyre::OptionExt;
@@ -44,10 +50,11 @@ fn load_app_config() -> color_eyre::Result<AppConfig> {
 }
 
 fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::TRACE)
         .init();
-    color_eyre::install()?;
 
     info!("Starting NebTools");
 
