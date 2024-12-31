@@ -1,7 +1,9 @@
-use std::fs::File;
+use std::{fs::File, path::PathBuf};
 
+use color_eyre::eyre::OptionExt;
 use error::wrap_errorable_function;
 use fleet_info_reader::FleetInfoReader;
+use serde::Deserialize;
 use slint::{ComponentHandle, Model};
 use tracing::{debug, info, level_filters::LevelFilter, trace};
 
@@ -15,8 +17,29 @@ mod load_fleets;
 
 slint::include_modules!();
 
-const FLEETS_ROOT_DIR: &str =
-    r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\Fleets\"#;
+fn default_saves_dir() -> PathBuf {
+    PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\"#)
+}
+
+#[derive(Deserialize)]
+struct AppConfig {
+    #[serde(default = "default_saves_dir")]
+    saves_dir: PathBuf,
+}
+
+fn load_app_config() -> color_eyre::Result<AppConfig> {
+    let config_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or_eyre("Failed to retrieve config dir")?
+        .preference_dir()
+        .join("config.toml");
+    trace!("Loading config from '{}'", config_path.display());
+    let config_file = std::fs::read_to_string(&config_path)
+        .inspect_err(|_| trace!("No config file found, using default config values"))
+        .unwrap_or_default();
+    let app_config: AppConfig = toml::from_str(&config_file)?;
+
+    Ok(app_config)
+}
 
 fn main() -> color_eyre::Result<()> {
     tracing_subscriber::fmt()
@@ -28,7 +51,10 @@ fn main() -> color_eyre::Result<()> {
 
     let main_window = MainWindow::new()?;
 
-    let fleets = load_fleets(FLEETS_ROOT_DIR)?;
+    debug!("Loading app configuration");
+    let app_config = load_app_config()?;
+
+    let fleets = load_fleets(app_config.saves_dir.join("Fleets"))?;
 
     let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
     main_window.set_fleets(fleets_model.clone().into());
@@ -54,6 +80,7 @@ fn main() -> color_eyre::Result<()> {
     main_window.on_reload_fleets(load_fleets::on_reload_fleets_handler(
         main_window.as_weak(),
         fleets_model.clone(),
+        app_config.saves_dir.join("Fleets"),
     ));
 
     {
