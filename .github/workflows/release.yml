@@ -9,7 +9,7 @@ on:
       - v[0-9]+.*
 
 jobs:
-  build:
+  build-installer:
     name: Build the Inno Setup Installer
     runs-on: windows-latest
     steps:
@@ -38,7 +38,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
   upload-assets:
-    needs: create-release
+    needs: 
+      - create-release
+      - build-installer
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
