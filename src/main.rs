@@ -3,6 +3,7 @@ use std::{fs::File, path::PathBuf};
 use color_eyre::eyre::OptionExt;
 use error::wrap_errorable_function;
 use fleet_info_reader::FleetInfoReader;
+use glob::Pattern;
 use serde::Deserialize;
 use slint::{ComponentHandle, Model};
 use tracing::{debug, info, level_filters::LevelFilter, trace};
@@ -25,6 +26,7 @@ fn default_saves_dir() -> PathBuf {
 struct AppConfig {
     #[serde(default = "default_saves_dir")]
     saves_dir: PathBuf,
+    excluded_dirs: Vec<String>,
 }
 
 fn load_app_config() -> color_eyre::Result<AppConfig> {
@@ -54,7 +56,13 @@ fn main() -> color_eyre::Result<()> {
     debug!("Loading app configuration");
     let app_config = load_app_config()?;
 
-    let fleets = load_fleets(app_config.saves_dir.join("Fleets"))?;
+    let excluded_patterns = app_config
+        .excluded_dirs
+        .iter()
+        .map(|s| Pattern::new(s.as_str()))
+        .collect::<Result<Vec<Pattern>, _>>()?;
+
+    let fleets = load_fleets(app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
 
     let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
     main_window.set_fleets(fleets_model.clone().into());
@@ -81,6 +89,7 @@ fn main() -> color_eyre::Result<()> {
         main_window.as_weak(),
         fleets_model.clone(),
         app_config.saves_dir.join("Fleets"),
+        excluded_patterns,
     ));
 
     {

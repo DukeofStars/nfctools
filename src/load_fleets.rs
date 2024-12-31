@@ -5,6 +5,7 @@ use std::{
     rc::Rc,
 };
 
+use glob::Pattern;
 use slint::{VecModel, Weak};
 use tracing::debug;
 
@@ -14,13 +15,14 @@ pub fn on_reload_fleets_handler(
     main_window_weak: Weak<MainWindow>,
     fleets_model: Rc<VecModel<FleetData>>,
     fleets_dir: PathBuf,
+    excluded_patterns: Vec<Pattern>,
 ) -> impl Fn() {
     move || {
         let main_window = main_window_weak.unwrap();
         let _ = wrap_errorable_function(&main_window, || {
             debug!("Reloading fleets list");
-            let fleets =
-                load_fleets(&fleets_dir).map_err(|err| my_error!("Failed to load fleets", err))?;
+            let fleets = load_fleets(&fleets_dir, &excluded_patterns)
+                .map_err(|err| my_error!("Failed to load fleets", err))?;
             fleets_model.set_vec(fleets);
 
             Ok(())
@@ -28,10 +30,18 @@ pub fn on_reload_fleets_handler(
     }
 }
 
-pub fn load_fleets(path: impl AsRef<Path>) -> color_eyre::Result<Vec<FleetData>> {
+pub fn load_fleets(
+    path: impl AsRef<Path>,
+    excluded_patterns: &Vec<Pattern>,
+) -> color_eyre::Result<Vec<FleetData>> {
     debug!("Loading fleets from {}", path.as_ref().display());
     let mut output = vec![];
-    load_fleets_rec(&path.as_ref().to_path_buf(), path, &mut output)?;
+    load_fleets_rec(
+        &path.as_ref().to_path_buf(),
+        excluded_patterns,
+        path,
+        &mut output,
+    )?;
 
     debug!("Loaded {} fleets", output.len());
 
@@ -39,6 +49,7 @@ pub fn load_fleets(path: impl AsRef<Path>) -> color_eyre::Result<Vec<FleetData>>
 }
 fn load_fleets_rec(
     root_path: &PathBuf,
+    excluded_patterns: &Vec<Pattern>,
     path: impl AsRef<Path>,
     output: &mut Vec<FleetData>,
 ) -> color_eyre::Result<()> {
@@ -53,10 +64,10 @@ fn load_fleets_rec(
             Ordering::Equal
         }
     });
-    for child in children {
+    'child_loop: for child in children {
         let file_type = child.file_type()?;
         if file_type.is_dir() {
-            load_fleets_rec(root_path, child.path(), output)?;
+            load_fleets_rec(root_path, excluded_patterns, child.path(), output)?;
         }
         if file_type.is_file() {
             if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
@@ -64,7 +75,12 @@ fn load_fleets_rec(
             }
             let fleet_info_reader = FleetInfoReader::new(File::open(child.path())?);
             let fleet_name = fleet_info_reader.get_value("Fleet/Name");
-            let path = child.path().to_path_buf();
+            for pattern in excluded_patterns {
+                if pattern.matches_path(child.path().as_path()) {
+                    continue 'child_loop;
+                }
+            }
+            let path = child.path();
             let short_path = path
                 .strip_prefix(root_path)?
                 .parent()
