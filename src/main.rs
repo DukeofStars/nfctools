@@ -32,6 +32,7 @@ fn default_saves_dir() -> PathBuf {
 struct AppConfig {
     #[serde(default = "default_saves_dir")]
     saves_dir: PathBuf,
+    #[serde(default)]
     excluded_dirs: Vec<String>,
 }
 
