@@ -444,6 +444,7 @@ pub fn on_save_liner_config_handler(
             {
                 "Stock/Bulk Hauler" => "Bulk",
                 "Stock/Container Hauler" => "Container",
+                "Stock/Container Hauler Refit" => "Container",
                 _ => {
                     panic!()
                 }

@@ -115,7 +115,7 @@ export component FleetEditorWindow inherits Window {
                         clicked => {
                             selected_ship_idx = idx;
 
-                            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler") {
+                            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit") {
                                 current_hull_config = root.get-liner-config();
                                 root.load-dressings(current_hull_config);
                                 checkbox_toggle = true;
@@ -141,7 +141,7 @@ export component FleetEditorWindow inherits Window {
         }
         VerticalLayout {
             padding-left: 5px;
-            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler"): marauder_editing := VerticalLayout {
+            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit"): marauder_editing := VerticalLayout {
                 alignment: start;
 
                 function update_current_hull_config() {
