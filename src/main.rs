@@ -4,7 +4,11 @@
     windows_subsystem = "windows"
 )]
 
-use std::{fs::File, path::PathBuf};
+use std::{
+    fs::{File, OpenOptions},
+    io::stderr,
+    path::PathBuf,
+};
 
 use color_eyre::eyre::eyre;
 use error::{wrap_errorable_function, Error};
@@ -13,6 +17,7 @@ use glob::Pattern;
 use serde::Deserialize;
 use slint::{ComponentHandle, Model};
 use tracing::{debug, info, level_filters::LevelFilter, trace};
+use tracing_subscriber::fmt::writer::{BoxMakeWriter, MakeWriterExt};
 
 use crate::load_fleets::load_fleets;
 
@@ -25,7 +30,7 @@ mod load_fleets;
 slint::include_modules!();
 
 fn default_saves_dir() -> PathBuf {
-    PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Save\"#)
+    PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\"#)
 }
 
 #[derive(Deserialize)]
@@ -57,11 +62,32 @@ fn load_app_config() -> Result<AppConfig, Error> {
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
 
+    let log_file = std::env::current_exe().map(|p| {
+        p.parent().map(|p| {
+            OpenOptions::new()
+                .create(true)
+                .write(true)
+                .open(p.join("log.txt"))
+        })
+    });
     tracing_subscriber::fmt()
         .with_max_level(LevelFilter::TRACE)
+        .map_writer(|w| match log_file {
+            Ok(Some(Ok(file))) => w.and(BoxMakeWriter::new(file)),
+            _ => w.and(BoxMakeWriter::new(stderr)),
+        })
         .init();
 
     info!("Starting NebTools");
+    debug!(
+        "Writing logs to '{}'",
+        std::env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("log.txt")
+            .display()
+    );
 
     let main_window = MainWindow::new()?;
     let (app_config, excluded_patterns, fleets_model) =
