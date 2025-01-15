@@ -16,7 +16,7 @@ use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
 use serde::Deserialize;
 use slint::{ComponentHandle, Model};
-use tracing::{debug, info, level_filters::LevelFilter, trace};
+use tracing::{debug, info, level_filters::LevelFilter, trace, warn};
 use tracing_subscriber::fmt::writer::{BoxMakeWriter, MakeWriterExt};
 
 use crate::load_fleets::load_fleets;
@@ -29,8 +29,33 @@ mod load_fleets;
 
 slint::include_modules!();
 
+const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
+
 fn default_saves_dir() -> PathBuf {
-    PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\"#)
+    if let Ok(Ok(Some(path))) = steamlocate::SteamDir::locate()
+        .inspect_err(|err| warn!(%err, "Could not locate steam directory"))
+        .map(|steam_dir| {
+            steam_dir
+                .find_app(NEBULOUS_GAME_ID_STEAM)
+                .inspect_err(|err| warn!(%err, "Could not search for app"))
+                .map(|r| match r {
+                    Some((app, lib)) => Some(lib.resolve_app_dir(&app)),
+                    None => {
+                        warn!("Nebulous installation was not found");
+                        None
+                    }
+                })
+        })
+    {
+        info!(
+            "Automatically detected nebulous install directory at '{}'",
+            path.display()
+        );
+        path.join("Saves")
+    } else {
+        warn!("Could not automatically detected nebulous installation directory, falling back to default. This most likely means the app will fail");
+        PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\"#)
+    }
 }
 
 #[derive(Deserialize)]
@@ -78,7 +103,6 @@ fn main() -> color_eyre::Result<()> {
         })
         .init();
 
-    info!("Starting NebTools");
     debug!(
         "Writing logs to '{}'",
         std::env::current_exe()
@@ -88,6 +112,7 @@ fn main() -> color_eyre::Result<()> {
             .join("log.txt")
             .display()
     );
+    info!("Starting NebTools");
 
     let main_window = MainWindow::new()?;
     let (app_config, excluded_patterns, fleets_model) =
