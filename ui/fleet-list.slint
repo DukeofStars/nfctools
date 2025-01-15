@@ -163,18 +163,20 @@ export component MainWindow inherits Window {
             HorizontalLayout {
                 Rectangle {}
                 Rectangle {
-                    width: 25%;
+                    max-width: 600px;
                     height: 25%;
                     border-radius: 4px;
                     background: rgba(0, 0, 0, 0.8);
                     VerticalLayout {
                         padding: 10px;
                         Text {
+                            wrap: char-wrap;
                             text: error-popup-title;
                             font-size: 24px;
                         }
 
                         Text {
+                            wrap: word-wrap;
                             text: error-popup-message;
                             font-size: 12px;
                         }

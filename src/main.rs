@@ -6,8 +6,8 @@
 
 use std::{fs::File, path::PathBuf};
 
-use color_eyre::eyre::OptionExt;
-use error::wrap_errorable_function;
+use color_eyre::eyre::eyre;
+use error::{wrap_errorable_function, Error};
 use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
 use serde::Deserialize;
@@ -25,7 +25,7 @@ mod load_fleets;
 slint::include_modules!();
 
 fn default_saves_dir() -> PathBuf {
-    PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\"#)
+    PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Save\"#)
 }
 
 #[derive(Deserialize)]
@@ -36,16 +36,20 @@ struct AppConfig {
     excluded_dirs: Vec<String>,
 }
 
-fn load_app_config() -> color_eyre::Result<AppConfig> {
+fn load_app_config() -> Result<AppConfig, Error> {
     let config_path = directories::ProjectDirs::from("", "", "NebTools")
-        .ok_or_eyre("Failed to retrieve config dir")?
+        .ok_or(my_error!(
+            "Failed to retrieve config dir",
+            "OS not recognised?"
+        ))?
         .preference_dir()
         .join("config.toml");
     trace!("Loading config from '{}'", config_path.display());
     let config_file = std::fs::read_to_string(&config_path)
         .inspect_err(|_| trace!("No config file found, using default config values"))
         .unwrap_or_default();
-    let app_config: AppConfig = toml::from_str(&config_file)?;
+    let app_config: AppConfig = toml::from_str(&config_file)
+        .map_err(|err| my_error!("Failed to parse config file", err))?;
 
     Ok(app_config)
 }
@@ -60,21 +64,32 @@ fn main() -> color_eyre::Result<()> {
     info!("Starting NebTools");
 
     let main_window = MainWindow::new()?;
+    let (app_config, excluded_patterns, fleets_model) =
+        wrap_errorable_function(&main_window, || {
+            debug!("Loading app configuration");
+            let app_config = load_app_config()?;
 
-    debug!("Loading app configuration");
-    let app_config = load_app_config()?;
+            let excluded_patterns = app_config
+                .excluded_dirs
+                .iter()
+                .map(|s| {
+                    Pattern::new(s.as_str()).map_err(|err| my_error!("Failed to parse glob", err))
+                })
+                .collect::<Result<Vec<Pattern>, Error>>()?;
 
-    let excluded_patterns = app_config
-        .excluded_dirs
-        .iter()
-        .map(|s| Pattern::new(s.as_str()))
-        .collect::<Result<Vec<Pattern>, _>>()?;
+            let fleets = load_fleets(app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
 
-    let fleets = load_fleets(app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
+            let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
+            main_window.set_fleets(fleets_model.clone().into());
+            debug!("Fleets passed to UI");
 
-    let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
-    main_window.set_fleets(fleets_model.clone().into());
-    debug!("Fleets passed to UI");
+            Ok((app_config, excluded_patterns, fleets_model))
+        })
+        .map_err(|err| eyre!("{}", err.error).wrap_err(err.title))
+        .inspect_err(|_| {
+            // run the main window to get the error screen.
+            let _ = main_window.run();
+        })?;
 
     debug!("Setting up callbacks");
 

@@ -16,6 +16,12 @@ impl Debug for Error {
             .finish()
     }
 }
+impl Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.title, self.error)
+    }
+}
+impl std::error::Error for Error {}
 
 #[macro_export]
 macro_rules! my_error {
