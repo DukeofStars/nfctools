@@ -6,18 +6,22 @@
 
 use std::{
     fs::{File, OpenOptions},
-    io::stderr,
     path::PathBuf,
 };
 
+use clap::{Parser, ValueEnum};
 use color_eyre::eyre::eyre;
 use error::{wrap_errorable_function, Error};
 use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
 use serde::Deserialize;
 use slint::{ComponentHandle, Model};
-use tracing::{debug, info, level_filters::LevelFilter, trace, warn};
-use tracing_subscriber::fmt::writer::{BoxMakeWriter, MakeWriterExt};
+use tracing::{debug, info, trace, warn, Level};
+use tracing_subscriber::{
+    fmt::{writer::MakeWriterExt, Layer},
+    layer::SubscriberExt,
+    Registry,
+};
 
 use crate::load_fleets::load_fleets;
 
@@ -84,8 +88,24 @@ fn load_app_config() -> Result<AppConfig, Error> {
     Ok(app_config)
 }
 
+#[derive(Parser)]
+struct Cli {
+    #[clap(short, long)]
+    #[clap(default_value = "debug")]
+    logging_level: LoggingLevel,
+}
+#[derive(Clone, ValueEnum)]
+enum LoggingLevel {
+    Full,
+    Debug,
+    Info,
+    None,
+}
+
 fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
+
+    let cli = Cli::parse();
 
     let log_file = std::env::current_exe().map(|p| {
         p.parent().map(|p| {
@@ -95,23 +115,45 @@ fn main() -> color_eyre::Result<()> {
                 .open(p.join("log.txt"))
         })
     });
-    tracing_subscriber::fmt()
-        .with_max_level(LevelFilter::TRACE)
-        .map_writer(|w| match log_file {
-            Ok(Some(Ok(file))) => w.and(BoxMakeWriter::new(file)),
-            _ => w.and(BoxMakeWriter::new(stderr)),
-        })
-        .init();
 
-    info!(
-        "Writing logs to '{}'",
-        std::env::current_exe()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("log.txt")
-            .display()
-    );
+    if let Ok(Some(Ok(file))) = log_file {
+        let subscriber = Registry::default()
+            .with(Layer::new().map_writer(|w| {
+                w.with_max_level(match cli.logging_level {
+                    LoggingLevel::Full => Level::TRACE,
+                    LoggingLevel::Debug => Level::DEBUG,
+                    LoggingLevel::Info => Level::INFO,
+                    LoggingLevel::None => Level::ERROR,
+                })
+            }))
+            .with(
+                Layer::new()
+                    .with_writer(file.with_max_level(Level::TRACE))
+                    .with_ansi(false),
+            );
+        tracing::subscriber::set_global_default(subscriber).unwrap();
+        info!(
+            "Writing logs to '{}'",
+            std::env::current_exe()
+                .unwrap()
+                .parent()
+                .unwrap()
+                .join("log.txt")
+                .display()
+        );
+    } else {
+        warn!("Could not open log file. Only printing logs to stdout now.");
+        let subscriber = Registry::default().with(Layer::new().map_writer(|w| {
+            w.with_max_level(match cli.logging_level {
+                LoggingLevel::Full => Level::TRACE,
+                LoggingLevel::Debug => Level::DEBUG,
+                LoggingLevel::Info => Level::INFO,
+                LoggingLevel::None => Level::ERROR,
+            })
+        }));
+        tracing::subscriber::set_global_default(subscriber).unwrap();
+    }
+
     info!("Starting NebTools");
 
     let main_window = MainWindow::new()?;
