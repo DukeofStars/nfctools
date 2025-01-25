@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs::File, rc::Rc};
 
 use lazy_static::lazy_static;
 use slint::{ComponentHandle, Model, ToSharedString, VecModel, Weak};
-use tracing::{debug, trace};
+use tracing::{debug, info, instrument, trace};
 use xmltree::Element;
 
 use crate::{
@@ -82,111 +82,122 @@ pub fn on_open_fleet_editor_handler(
     move || {
         let main_window = main_window_weak.unwrap();
         let _ = wrap_errorable_function(&main_window, || {
-            debug!("Initialising fleet editor");
-
-            let main_window = main_window_weak.unwrap();
-            let window = FleetEditorWindow::new()
-                .map_err(|err| my_error!("Failed to create fleet editor window", err))
-                .unwrap();
-
-            let cur_idx = main_window.get_cur_fleet_idx();
-            if cur_idx == -1 {
-                return Err(my_error!("No fleet selected", ""));
-            }
-            let fleet = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
-                "Selected fleet doesn't exist",
-                "cur_fleet_idx points to a nonexistant fleet"
-            ))?;
-            let fleet_name = fleet.name.clone();
-
-            window.set_fleet_name(fleet.name);
-
-            debug!("Getting ships list");
-            let element = {
-                trace!("Opening fleet file");
-                let fleet_file = File::open(&fleet.path).map_err(|err| {
-                    my_error!(
-                        format!("Failed to open fleet '{}'", fleet.path.to_string()),
-                        err
-                    )
-                })?;
-                trace!("Parsing fleet file");
-                Element::parse(fleet_file)
-                    .map_err(|err| my_error!("Failed to parse fleet file", err))?
-            };
-            let ships_elem = element
-                .get_child("Ships")
-                .ok_or(my_error!("Failed to get ships list", "Fleet has no ships"))?;
-
-            let ships = ships_elem
-                .children
-                .iter()
-                .map(|ship_elem| {
-                    let ship_elem = ship_elem
-                        .as_element()
-                        .ok_or(my_error!("Invalid fleet file", "Ship is not an element"))?;
-
-                    let name = ship_elem
-                        .get_child("Name")
-                        .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
-                        .get_text()
-                        .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
-                        .to_shared_string();
-                    let hulltype = ship_elem
-                        .get_child("HullType")
-                        .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                        .get_text()
-                        .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                        .to_shared_string();
-                    let cost: i32 = ship_elem
-                        .get_child("Cost")
-                        .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                        .get_text()
-                        .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                        .parse()
-                        .map_err(|err| {
-                            my_error!(
-                                "Invalid fleet file",
-                                format!("Failed to parse cost: {}", err)
-                            )
-                        })?;
-
-                    Ok(ShipData {
-                        class: hulltype,
-                        name,
-                        cost,
-                    })
-                })
-                .collect::<Result<Vec<ShipData>, Error>>()?;
-
-            debug!(?ships, "Found {} ships", ships.len());
-
-            let ships_model = std::rc::Rc::new(slint::VecModel::from(ships));
-            window.set_ships(ships_model.clone().into());
-            trace!("Ships passed to ui");
-
-            debug!("Setting up callbacks");
-            window.on_save_liner_config(liner_hull_config::on_save_liner_config_handler(
-                main_window.as_weak(),
-                window.as_weak(),
-                fleets_model.clone(),
-            ));
-            window.on_get_liner_config(liner_hull_config::on_get_liner_config_handler(
-                main_window.as_weak(),
-                window.as_weak(),
-                fleets_model.clone(),
-            ));
-            window.on_load_dressings(liner_hull_config::on_load_dressings_handler(
-                main_window.as_weak(),
-                window.as_weak(),
-            ));
-
-            debug!("Opening fleet editor for '{}'", fleet_name);
-            window
-                .show()
-                .map_err(|err| my_error!("Could not show fleet editor window.", err))
-                .unwrap();
-            Ok(())
+            open_fleet_editor(&main_window, fleets_model.clone())
         });
     }
+}
+
+#[instrument(skip(main_window, fleets_model))]
+fn open_fleet_editor(
+    main_window: &MainWindow,
+    fleets_model: Rc<VecModel<FleetData>>,
+) -> Result<(), Error> {
+    info!("Initialising fleet editor");
+    trace!("Creating window");
+    let window = FleetEditorWindow::new()
+        .map_err(|err| my_error!("Failed to create fleet editor window", err))
+        .unwrap();
+
+    let cur_idx = main_window.get_cur_fleet_idx();
+    debug!("Loading fleet '{}'", cur_idx);
+    if cur_idx == -1 {
+        return Err(my_error!("No fleet selected", ""));
+    }
+    let fleet = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
+        "Selected fleet doesn't exist",
+        "cur_fleet_idx points to a nonexistant fleet"
+    ))?;
+    let fleet_name = fleet.name.clone();
+
+    trace!(%fleet_name, "Setting window name");
+    window.set_fleet_name(fleet.name);
+
+    debug!("Getting ships list");
+    let element = {
+        trace!("Opening fleet file");
+        let fleet_file = File::open(&fleet.path).map_err(|err| {
+            my_error!(
+                format!("Failed to open fleet '{}'", fleet.path.to_string()),
+                err
+            )
+        })?;
+        trace!("Parsing fleet file");
+        Element::parse(fleet_file).map_err(|err| my_error!("Failed to parse fleet file", err))?
+    };
+    let ships_elem = element
+        .get_child("Ships")
+        .ok_or(my_error!("Failed to get ships list", "Fleet has no ships"))?;
+
+    debug!("Parsing ship data");
+    let ships = ships_elem
+        .children
+        .iter()
+        .map(|ship_elem| {
+            let ship_elem = ship_elem
+                .as_element()
+                .ok_or(my_error!("Invalid fleet file", "Ship is not an element"))?;
+
+            let name = ship_elem
+                .get_child("Name")
+                .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
+                .get_text()
+                .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
+                .to_shared_string();
+            let hulltype = ship_elem
+                .get_child("HullType")
+                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                .get_text()
+                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                .to_shared_string();
+            let cost: i32 = ship_elem
+                .get_child("Cost")
+                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                .get_text()
+                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
+                .parse()
+                .map_err(|err| {
+                    my_error!(
+                        "Invalid fleet file",
+                        format!("Failed to parse cost: {}", err)
+                    )
+                })?;
+
+            let ship_data = ShipData {
+                class: hulltype,
+                name,
+                cost,
+            };
+            trace!("Parsed ship: {:?}", ship_data);
+            Ok(ship_data)
+        })
+        .collect::<Result<Vec<ShipData>, Error>>()?;
+
+    info!("Found {} ships", ships.len());
+
+    trace!("Passing ships to ui");
+    let ships_model = std::rc::Rc::new(slint::VecModel::from(ships));
+    window.set_ships(ships_model.clone().into());
+
+    debug!("Setting up callbacks");
+    window.on_save_liner_config(liner_hull_config::on_save_liner_config_handler(
+        main_window.as_weak(),
+        window.as_weak(),
+        fleets_model.clone(),
+    ));
+    window.on_get_liner_config(liner_hull_config::on_get_liner_config_handler(
+        main_window.as_weak(),
+        window.as_weak(),
+        fleets_model.clone(),
+    ));
+    window.on_load_dressings(liner_hull_config::on_load_dressings_handler(
+        main_window.as_weak(),
+        window.as_weak(),
+    ));
+
+    info!("Opening fleet editor");
+    window
+        .show()
+        .map_err(|err| my_error!("Could not show fleet editor window.", err))
+        .unwrap();
+    Ok(())
 }

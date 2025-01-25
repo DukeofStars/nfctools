@@ -103,7 +103,7 @@ fn main() -> color_eyre::Result<()> {
         })
         .init();
 
-    debug!(
+    info!(
         "Writing logs to '{}'",
         std::env::current_exe()
             .unwrap()
@@ -117,7 +117,7 @@ fn main() -> color_eyre::Result<()> {
     let main_window = MainWindow::new()?;
     let (app_config, excluded_patterns, fleets_model) =
         wrap_errorable_function(&main_window, || {
-            debug!("Loading app configuration");
+            info!("Loading app configuration");
             let app_config = load_app_config()?;
 
             let excluded_patterns = app_config
@@ -205,7 +205,9 @@ fn main() -> color_eyre::Result<()> {
                         )
                     })?);
                 let description = fleet_info_reader.get_value("Fleet/Description");
-                trace!(%description, "Found description");
+                if !description.is_empty() {
+                    trace!(%description, "Found description");
+                }
 
                 main_window.invoke_update_description(description.into());
 
