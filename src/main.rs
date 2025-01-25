@@ -89,6 +89,7 @@ fn load_app_config() -> Result<AppConfig, Error> {
 }
 
 #[derive(Parser)]
+#[clap(about, version)]
 struct Cli {
     #[clap(short, long)]
     #[clap(default_value = "debug")]
