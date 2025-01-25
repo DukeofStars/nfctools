@@ -1,4 +1,4 @@
-import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView, StandardButton, SpinBox, ComboBox, TextEdit, CheckBox } from "std-widgets.slint";
+import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView, StandardButton, SpinBox, ComboBox, TextEdit, CheckBox, GroupBox } from "std-widgets.slint";
 
 export struct FleetData {
     path: string,
@@ -99,8 +99,6 @@ component ActionsPane inherits VerticalLayout {
     }
 
     desc-input := TextEdit {
-        width: 100%;
-        height: 100%;
         font-size: 12px;
         wrap: word-wrap;
         text: "";
@@ -108,8 +106,6 @@ component ActionsPane inherits VerticalLayout {
 }
 
 export component MainWindow inherits Window {
-    height: 600px;
-    width: 800px;
     title: "NebTools";
     
     in-out property <[FleetData]> fleets;
@@ -154,8 +150,8 @@ export component MainWindow inherits Window {
     }
 
     error-popup := PopupWindow {
-        height: 600px;
-        width: 800px;
+        height: a.height;
+        width: a.width;
         x: 0;
         y: 0;
         close-policy: no-auto-close;
@@ -197,13 +193,11 @@ export component MainWindow inherits Window {
         }
     }
 
-    HorizontalLayout {
-        padding: 5px;
-        spacing: 5px;
-
+    a := HorizontalLayout {
+        padding: 2px;
         VerticalLayout {
             alignment: start;
-            HorizontalLayout{
+            b := HorizontalBox {
                 Text {
                     text: "Fleets";
                     font-size: 24px;
@@ -221,10 +215,8 @@ export component MainWindow inherits Window {
             }
 
             ScrollView {
-                // width: 68%;
-                height: 600px - 40px;
+                height: a.height - b.preferred-height - 4px;
                 VerticalLayout {
-                    padding-top: 15px;
                     for fleet[idx] in fleets: FleetListItem {
                         name: fleet.name;
                         short-path: fleet.short-path;
@@ -255,14 +247,13 @@ export component MainWindow inherits Window {
         }
 
         VerticalLayout {
-            alignment: start;
             width: 30%;
             max-width: 240px;
+            
             Text {
-                text: "Actions";
-                width: 100%;
+                height: b.height;
                 font-size: 24px;
-                padding-bottom: 10px;
+                text: "Actions";
             }
 
             actions-pane := ActionsPane {
