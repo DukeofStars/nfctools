@@ -4,6 +4,7 @@ version = "0.1.4"
 edition = "2021"
 
 [dependencies]
+chumsky = "0.9.3"
 clap = { version = "4.5.27", features = ["derive"] }
 color-eyre = "0.6"
 directories = "6.0"

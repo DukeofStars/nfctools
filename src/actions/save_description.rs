@@ -4,32 +4,36 @@ use std::{
     rc::Rc,
 };
 
-use slint::{Model, SharedString, VecModel, Weak};
+use slint::{Model, VecModel};
 use tracing::{debug, info, instrument, trace};
 use xml::EmitterConfig;
 use xmltree::{AttributeMap, Element};
 
-use crate::{
-    error::{wrap_errorable_function, Error},
-    my_error, FleetData, MainWindow,
-};
+use crate::{error::Error, my_error, FleetData, MainWindow, Tag};
 
-pub fn on_save_description_handler(
-    main_window_weak: Weak<MainWindow>,
-    fleets_model: Rc<VecModel<FleetData>>,
-) -> impl Fn(SharedString) {
-    move |description| {
-        let main_window = main_window_weak.unwrap();
-        let _ = wrap_errorable_function(&main_window, || {
-            save_description(&main_window, fleets_model.clone(), description.to_string())
-        });
-    }
-}
+// pub fn on_save_description_handler(
+//     main_window_weak: Weak<MainWindow>,
+//     fleets_model: Rc<VecModel<FleetData>>,
+//     tags_model: Rc<VecModel<Tag>>,
+// ) -> impl Fn(SharedString) {
+//     move |description| {
+//         let main_window = main_window_weak.unwrap();
+//         let _ = wrap_errorable_function(&main_window, || {
+//             save_fleet_data(
+//                 &main_window,
+//                 fleets_model.clone(),
+//                 tags_model.clone(),
+//                 description.to_string(),
+//             )
+//         });
+//     }
+// }
 
-#[instrument(skip(main_window, fleets_model, description))]
-fn save_description(
+#[instrument(skip(main_window, fleets_model, description, tags_model))]
+pub fn save_fleet_data(
     main_window: &MainWindow,
     fleets_model: Rc<VecModel<FleetData>>,
+    tags_model: Rc<VecModel<Tag>>,
     description: String,
 ) -> Result<(), Error> {
     let cur_fleet_idx = main_window.get_cur_fleet_idx();
@@ -44,6 +48,23 @@ fn save_description(
             "Selected fleet doesn't exist",
             "cur_fleet_idx points to a nonexistant fleet"
         ))?;
+
+    debug!("Inserting tags into description");
+    let description = format!(
+        "Tags: {}\n{}",
+        tags_model
+            .iter()
+            .map(|tag| format!(
+                "<color=#{:02x}{:02x}{:02x}>{}</color>",
+                tag.color.red(),
+                tag.color.green(),
+                tag.color.blue(),
+                tag.name
+            ))
+            .collect::<Vec<_>>()
+            .join(" "),
+        description,
+    );
 
     let mut element = {
         debug!("Opening fleet file");

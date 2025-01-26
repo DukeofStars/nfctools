@@ -7,15 +7,17 @@
 use std::{
     fs::{File, OpenOptions},
     path::PathBuf,
+    rc::Rc,
 };
 
+use actions::save_description;
 use clap::{Parser, ValueEnum};
 use color_eyre::eyre::eyre;
 use error::{wrap_errorable_function, Error};
 use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
 use serde::Deserialize;
-use slint::{ComponentHandle, Model};
+use slint::{CloseRequestResponse, ComponentHandle, Model, VecModel};
 use tracing::{debug, info, trace, warn, Level};
 use tracing_subscriber::{
     fmt::{writer::MakeWriterExt, Layer},
@@ -30,6 +32,7 @@ mod error;
 mod fleet_editor;
 mod fleet_info_reader;
 mod load_fleets;
+mod tags;
 
 slint::include_modules!();
 
@@ -173,7 +176,7 @@ fn main() -> color_eyre::Result<()> {
 
             let fleets = load_fleets(app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
 
-            let fleets_model = std::rc::Rc::new(slint::VecModel::from(fleets));
+            let fleets_model = Rc::new(slint::VecModel::from(fleets));
             main_window.set_fleets(fleets_model.clone().into());
             debug!("Fleets passed to UI");
 
@@ -187,6 +190,14 @@ fn main() -> color_eyre::Result<()> {
 
     debug!("Setting up callbacks");
 
+    let tags = Vec::new();
+    let tags_model = Rc::new(VecModel::from(tags));
+    main_window.set_tags(tags_model.clone().into());
+
+    main_window.on_add_tag(tags::on_add_tag_handler(tags_model.clone()));
+
+    main_window.on_remove_tag(tags::on_remove_tag_handler(tags_model.clone()));
+
     main_window.on_open_fleet_editor(fleet_editor::on_open_fleet_editor_handler(
         main_window.as_weak(),
         fleets_model.clone(),
@@ -197,10 +208,11 @@ fn main() -> color_eyre::Result<()> {
         fleets_model.clone(),
     ));
 
-    main_window.on_save_description(actions::save_description::on_save_description_handler(
-        main_window.as_weak(),
-        fleets_model.clone(),
-    ));
+    // main_window.on_save_description(actions::save_description::on_save_description_handler(
+    //     main_window.as_weak(),
+    //     fleets_model.clone(),
+    //     tags_model.clone(),
+    // ));
 
     main_window.on_reload_fleets(load_fleets::on_reload_fleets_handler(
         main_window.as_weak(),
@@ -212,9 +224,18 @@ fn main() -> color_eyre::Result<()> {
     {
         let main_window_weak = main_window.as_weak();
         let fleets_model = fleets_model.clone();
+        let tags_model = tags_model.clone();
         main_window.on_viewing(move |idx| {
             let main_window = main_window_weak.unwrap();
             let _ = wrap_errorable_function(&main_window_weak.unwrap(), || {
+                let description = main_window.invoke_get_description().to_string();
+                save_description::save_fleet_data(
+                    &main_window,
+                    fleets_model.clone(),
+                    tags_model.clone(),
+                    description,
+                )?;
+
                 if !main_window.get_multi_selecting() {
                     fleets_model.set_vec(
                         fleets_model
@@ -252,10 +273,32 @@ fn main() -> color_eyre::Result<()> {
                     trace!(%description, "Found description");
                 }
 
-                main_window.invoke_update_description(description.into());
+                let (tags, description) = tags::get_tags_from_description(&description)?;
+                main_window.invoke_set_description(description.into());
+                tags_model.set_vec(tags);
 
                 Ok(())
             });
+        });
+    }
+
+    {
+        let main_window_weak = main_window.as_weak();
+        let fleets_model = fleets_model.clone();
+        let tags_model = tags_model.clone();
+        main_window.window().on_close_requested(move || {
+            let main_window = main_window_weak.unwrap();
+            let _ = wrap_errorable_function(&main_window_weak.unwrap(), || {
+                let description = main_window.invoke_get_description().to_string();
+                save_description::save_fleet_data(
+                    &main_window,
+                    fleets_model.clone(),
+                    tags_model.clone(),
+                    description,
+                )
+            });
+
+            CloseRequestResponse::HideWindow
         });
     }
 

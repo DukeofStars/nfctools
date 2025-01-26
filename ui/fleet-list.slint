@@ -7,6 +7,11 @@ export struct FleetData {
     selected: bool,
 }
 
+export struct Tag {
+    name: string,
+    color: color,
+}
+
 component FleetListItem inherits TouchArea {
     in-out property <string> name;
     in property <string> short-path;
@@ -51,15 +56,22 @@ component FleetListItem inherits TouchArea {
 }
 
 component ActionsPane inherits VerticalLayout {
-    callback merge(string);
-    callback save-description(string);
-    callback open-fleet-editor();
+    in-out property <[Tag]> tags;
 
-    public function update-description(description: string) {
-        desc-input.text = description;
+    callback merge(string);
+    callback open-fleet-editor();
+    callback add-tag(Tag);
+    callback remove-tag(int);
+
+    public function get-description() -> string {
+        desc-input.text
+    }
+    public function set-description(desc: string) {
+        desc-input.text = desc;
     }
 
     spacing: 5px;
+    max-width: 240px;
 
     Button {
         text: "Open Fleet Editor";
@@ -81,6 +93,154 @@ component ActionsPane inherits VerticalLayout {
         }
     }
 
+    Text {
+        text: "Tags";
+        font-size: 16px;
+    }
+    
+    HorizontalLayout {
+        tag-name := LineEdit {
+            placeholder-text: "Tag Name";
+        }
+        Button {
+            text: "Add";
+            clicked => {
+                root.add-tag({
+                    name: tag-name.text,
+                    color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float())
+                });
+            }
+        }
+    }
+    t := HorizontalLayout{
+        r := LineEdit {
+            width: t.width/4;
+            horizontal-stretch: 0.0;
+            placeholder-text: "R";
+        }
+        g := LineEdit {
+            width: t.width/4;
+            horizontal-stretch: 0.0;
+            placeholder-text: "G";
+        }
+        b := LineEdit {
+            width: t.width/4;
+            horizontal-stretch: 0.0;
+            placeholder-text: "B";
+        }
+        Rectangle {
+            Text {
+                color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float());
+                text: "PREVIEW";
+            }
+        }
+    }
+     
+    a := GridLayout {
+        Row {
+            HorizontalLayout {
+                spacing: 2px;
+                padding-bottom: 2px;
+                for i in 4: ta1 := TouchArea {
+                    width: 60px;
+                    clicked => {
+                        root.remove-tag(i);
+                    }
+
+                    Rectangle {
+                        width: 60px;
+                        property <Tag> tag: tags[i];
+                        border-radius: 2px;
+                        Text {
+                            horizontal-alignment: center;
+                            width: 60px;
+                            overflow: clip;
+                            text: tag.name;
+                            color: tag.color;
+                        }
+
+                        states [
+                            selected when ta1.has-hover: {
+                                background: Colors.lightgrey;
+                            }
+                            unselected when !ta1.has-hover: {
+                                background: transparent;
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        Row {
+            HorizontalLayout {
+                spacing: 2px;
+                padding-bottom: 2px;
+                for i in 4: ta2 := TouchArea {
+                    width: 60px;
+                    clicked => {
+                        root.remove-tag(i+4);
+                    }
+
+                    Rectangle {
+                        width: 60px;
+                        property <Tag> tag: tags[i+4];
+                        border-radius: 2px;
+                        Text {
+                            horizontal-alignment: center;
+                            width: 60px;
+                            overflow: clip;
+                            text: tag.name;
+                            color: tag.color;
+                        }
+
+                        states [
+                            selected when ta2.has-hover: {
+                                background: Colors.lightgrey;
+                            }
+                            unselected when !ta2.has-hover: {
+                                background: transparent;
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        Row {
+            HorizontalLayout {
+                spacing: 2px;
+                padding-bottom: 2px;
+                for i in 4: ta3 := TouchArea {
+                    width: 60px;
+                    clicked => {
+                        root.remove-tag(i+8);
+                    }
+
+                    Rectangle {
+                        width: 60px;
+                        property <Tag> tag: tags[i+8];
+                        border-radius: 2px;
+                        Text {
+                            horizontal-alignment: center;
+                            width: 60px;
+                            overflow: clip;
+                            text: tag.name;
+                            color: tag.color;
+                        }
+
+                        states [
+                            selected when ta3.has-hover: {
+                                background: Colors.lightgrey;
+                            }
+                            unselected when !ta3.has-hover: {
+                                background: transparent;
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+
     HorizontalLayout {
         Text {
             vertical-alignment: center;
@@ -88,14 +248,14 @@ component ActionsPane inherits VerticalLayout {
             font-size: 16px;
         }
 
-        Button {
-            width: 40%;
-            text: "Save";
-            clicked => {
-                desc-input.text;
-                root.save-description(desc-input.text);
-            }
-        }
+        // Button {
+        //     width: 40%;
+        //     text: "Save";
+        //     clicked => {
+        //         desc-input.text;
+        //         root.save-description(desc-input.text);
+        //     }
+        // }
     }
 
     desc-input := TextEdit {
@@ -107,21 +267,24 @@ component ActionsPane inherits VerticalLayout {
 
 export component MainWindow inherits Window {
     title: "NebTools";
+
+    preferred-width: 800px;
+    preferred-height: 600px;
     
     in-out property <[FleetData]> fleets;
     in-out property <bool> multi-selecting: false;
+
+    in-out property <[Tag]> tags;
 
     out property <int> cur-fleet-idx;
     
     callback merge(string);
     callback viewing(int);
-    callback save-description(string);
+    callback save-description();
     callback reload-fleets();
     callback open-fleet-editor();
-    
-    public function update-description(description: string) {
-        actions-pane.update-description(description);
-    }
+    callback add-tag(Tag);
+    callback remove-tag(int);
 
     property <string> error-popup-title;
     property <string> error-popup-message;
@@ -129,6 +292,13 @@ export component MainWindow inherits Window {
         error-popup-title = title;
         error-popup-message = message;
         error-popup.show();
+    }
+
+    public function get-description() -> string {
+        actions-pane.get-description()
+    }
+    public function set-description(desc: string) {
+        actions-pane.set-description(desc);
     }
 
     forward-focus: key-handler;
@@ -223,14 +393,14 @@ export component MainWindow inherits Window {
 
                         viewing => {
                             fleet.selected = !fleet.selected;
-                            if fleet.selected {
+                            if fleet.selected && cur-fleet-idx >= 0 {
+                                root.viewing(idx);
                                 cur-fleet-idx = idx;
-                                root.viewing(idx)
                             }
                             else {
-                                cur-fleet-idx = -1;
                                 root.viewing(-1);
-                                root.update-description("");
+                                cur-fleet-idx = -1;
+                                root.set-description("");
                             }
                         }
                         states [
@@ -247,8 +417,7 @@ export component MainWindow inherits Window {
         }
 
         VerticalLayout {
-            width: 30%;
-            max-width: 240px;
+            width: 240px;
             
             Text {
                 height: b.height;
@@ -257,16 +426,22 @@ export component MainWindow inherits Window {
             }
 
             actions-pane := ActionsPane {
+                tags: root.tags;
+
                 merge(output-name) => {
                     root.merge(output-name);
                 }
 
-                save-description(description) => {
-                    root.save-description(description);
-                }
-
                 open-fleet-editor => {
                     root.open-fleet-editor();
+                }
+
+                add-tag(tag) => {
+                    root.add-tag(tag);
+                }
+
+                remove-tag(idx) => {
+                    root.remove-tag(idx);
                 }
             }
         }
