@@ -8,6 +8,7 @@ An all-in-one toolkit for managing and editing Nebulous: Fleet Command fleets.
  - [x] Merge fleets together
  - [x] Support custom fleet directories
  - [x] Supports filtering fleets based on Unix shell-style patterns
+ - [x] Support tagging fleets, which are visible in game with colours. (Searching by tag is something I hope to add in the future)
  - [ ] Search through fleets
  - [ ] Edit fleet formations geometrically
 
