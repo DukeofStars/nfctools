@@ -1,9 +1,3 @@
-// On windows, disable logging to stdout (which will open a terminal window) when built in release mode.
-#![cfg_attr(
-    all(not(debug_assertions), target_os = "windows"),
-    windows_subsystem = "windows"
-)]
-
 use std::{
     fs::{File, OpenOptions},
     path::PathBuf,
