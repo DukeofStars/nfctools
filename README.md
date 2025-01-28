@@ -17,7 +17,7 @@ An all-in-one toolkit for managing and editing Nebulous: Fleet Command fleets.
 
 ## Known bugs
  - Dressing descriptions don't match moorline hull segments.
- - Selecting a fleet with - ships crashes the program.
+ - Selecting a fleet with 0 ships crashes the program.
 
 ## Installation
 ### Via installer (Windows)
