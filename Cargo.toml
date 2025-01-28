@@ -10,6 +10,7 @@ color-eyre = "0.6"
 directories = "6.0"
 glob = "0.3"
 lazy_static = "1.5"
+metrohash = "1.0.7"
 serde = { version = "1.0", features = ["derive"] }
 slint = { version = "1.9", features = ["serde"] }
 steamlocate = "2.0"

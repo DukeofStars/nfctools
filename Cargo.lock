@@ -2840,6 +2840,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrohash"
+version = "1.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a84011bfadc339f60fbcc38181da8a0a91cd16375394dd52edf9da80deacd8c5"
+
+[[package]]
 name = "minimal-lexical"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2904,6 +2910,7 @@ dependencies = [
  "directories",
  "glob",
  "lazy_static",
+ "metrohash",
  "serde",
  "slint",
  "slint-build",

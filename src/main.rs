@@ -12,6 +12,7 @@ use color_eyre::eyre::eyre;
 use error::{wrap_errorable_function, Error};
 use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
+use missile_templates::UsedMissilesCache;
 use serde::Deserialize;
 use slint::{CloseRequestResponse, ComponentHandle, Model, VecModel};
 use tags::TagsRepository;
@@ -29,6 +30,7 @@ mod error;
 mod fleet_editor;
 mod fleet_info_reader;
 mod load_fleets;
+mod missile_templates;
 mod tags;
 
 slint::include_modules!();
@@ -105,7 +107,7 @@ fn load_tags() -> Result<TagsRepository, Error> {
     Ok(tags_repo)
 }
 fn save_tags(tags_repo: Rc<RefCell<TagsRepository>>) -> Result<(), Error> {
-    debug!("Saving tags!");
+    debug!("Saving tags");
     let tags_path = directories::ProjectDirs::from("", "", "NebTools")
         .ok_or(my_error!(
             "Failed to retrieve config dir",
@@ -120,10 +122,71 @@ fn save_tags(tags_repo: Rc<RefCell<TagsRepository>>) -> Result<(), Error> {
         .open(&tags_path)
         .map_err(|err| my_error!("Failed to open tags file", err))?;
     let toml = toml::to_string(tags_repo.as_ref())
-        .map_err(|err| my_error!("Failed to serialize tags to toml", err))?;
+        .map_err(|err| my_error!("Failed to serialize tags", err))?;
     tags_file
         .write_all(toml.as_bytes())
         .map_err(|err| my_error!("Failed to write tags file", err))?;
+
+    Ok(())
+}
+fn load_missiles_cache() -> Result<UsedMissilesCache, Error> {
+    debug!("Loading UsedMissilesCache");
+    let missiles_cache_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or(my_error!(
+            "Failed to retrieve cache dir",
+            "OS not recognised?"
+        ))?
+        .cache_dir()
+        .join("missile_cache.toml");
+    trace!(
+        "Loading UsedMissilesCache from '{}'",
+        missiles_cache_path.display()
+    );
+    let missiles_cache_text = std::fs::read_to_string(&missiles_cache_path)
+        .map_err(|err| my_error!("Failed to read missiles cache file", err))?;
+    let missiles_cache = toml::from_str(&missiles_cache_text)
+        .map_err(|err| my_error!("Failed to deserialize UsedMissilesCache", err))?;
+
+    Ok(missiles_cache)
+}
+fn save_missiles_cache(used_missiles_cache: &UsedMissilesCache) -> Result<(), Error> {
+    debug!("Saving UsedMissilesCache");
+    let missiles_cache_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or(my_error!(
+            "Failed to retrieve cache dir",
+            "OS not recognised?"
+        ))?
+        .cache_dir()
+        .join("missile_cache.toml");
+    trace!(
+        "Writing UsedMissilesCache to '{}'",
+        missiles_cache_path.display()
+    );
+    if missiles_cache_path
+        .parent()
+        .is_some_and(|parent| !parent.exists())
+    {
+        debug!("Creating cache dir");
+        std::fs::create_dir_all(&missiles_cache_path.parent().unwrap())
+            .map_err(|err| my_error!("Failed to create cache dir", err))?;
+    }
+
+    if missiles_cache_path.exists() {
+        trace!("Deleting old cache");
+        std::fs::remove_file(&missiles_cache_path)
+            .map_err(|err| my_error!("Failed to remove old cache", err))?;
+    }
+
+    let mut missiles_cache_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(&missiles_cache_path)
+        .map_err(|err| my_error!("Failed to open missiles cache file", err))?;
+    let toml = toml::to_string(used_missiles_cache)
+        .map_err(|err| my_error!("Failed to serialize UsedMissilesCache", err))?;
+    missiles_cache_file
+        .write_all(toml.as_bytes())
+        .map_err(|err| my_error!("Failed to write UsedMissilesCache file", err))?;
 
     Ok(())
 }
@@ -198,6 +261,13 @@ fn main() -> color_eyre::Result<()> {
     info!("Starting NebTools");
 
     let main_window = MainWindow::new()?;
+
+    // Initialise this first so it works even if an error occurs during configuration loading.
+    main_window.on_close_without_saving(|| {
+        warn!("Saving data failed, closing without saving");
+        std::process::exit(1);
+    });
+
     let (app_config, excluded_patterns, fleets_model) =
         wrap_errorable_function(&main_window, || {
             info!("Loading app configuration");
@@ -217,11 +287,27 @@ fn main() -> color_eyre::Result<()> {
             main_window.set_fleets(fleets_model.clone().into());
             debug!("Fleets passed to UI");
 
+            // Generate UsedMissilesCache
+            let used_missiles_cache = load_missiles_cache();
+            let used_missiles_cache = if let Ok(mut used_missiles_cache) = used_missiles_cache {
+                used_missiles_cache.update(&app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
+
+                used_missiles_cache
+            } else {
+                warn!(error = %used_missiles_cache.unwrap_err(), "Failed to load previous missile cache, generating a fresh cache");
+                missile_templates::UsedMissilesCache::generate_from_fleets(
+                    &app_config.saves_dir.join("Fleets"),
+                    &excluded_patterns,
+                )?
+            };
+            save_missiles_cache(&used_missiles_cache)?;
+
             Ok((app_config, excluded_patterns, fleets_model))
         })
         .map_err(|err| eyre!("{}", err.error).wrap_err(err.title))
         .inspect_err(|_| {
             // run the main window to get the error screen.
+            main_window.set_shutdown_state(true);
             let _ = main_window.run();
         })?;
 
@@ -331,11 +417,6 @@ fn main() -> color_eyre::Result<()> {
             });
         });
     }
-
-    main_window.on_close_without_saving(|| {
-        warn!("Saving data failed, closing without saving");
-        std::process::exit(1);
-    });
 
     {
         let main_window_weak = main_window.as_weak();
