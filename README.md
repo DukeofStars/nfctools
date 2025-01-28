@@ -4,13 +4,16 @@ An all-in-one toolkit for managing and editing Nebulous: Fleet Command fleets.
 
 ## Features
  - [x] Edit fleet descriptions
- - [x] Edit liner hulls and dressings
+ - [x] Edit liner hulls and dressings (the app will stop you from creating a broken liner layout, no need to worry about putting a bridge on the wrong segment and crashing the game)
  - [x] Merge fleets together
- - [x] Support custom fleet directories
+ - [x] Supports custom saves directories (with automatic detection)
  - [x] Supports filtering fleets based on Unix shell-style patterns
- - [x] Support tagging fleets, which are visible in game with colours. (Searching by tag is something I hope to add in the future)
+ - [x] Supports tagging fleets, which are visible in game with colours. (Searching by tag is something I hope to add in the future)
  - [ ] Search through fleets
  - [ ] Edit fleet formations geometrically
+ - [ ] Apply updated missile templates to multiple fleets at once.
+ - [ ] Integrated win predictor.
+ - [ ] Saving and re-using liner hull config templates
 
 ## Known bugs
  - Dressing descriptions don't match moorline hull segments.
@@ -36,7 +39,7 @@ Now, navigate to the downloaded repository root in a terminal (There should be a
 
 ## Configuration
 NebTools supports a couple of configuration options which can be set at `%APPDATA%/NebTools/config/config.toml` (or equivalent on other platforms. If you aren't sure, you can check the logs by running the app manually from a terminal). Currently, those are:
- - `saves_dir`: The path to the Nebulous saves directory. On windows this is usually at `C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves`. Note that this does not point to the Fleets directory, but to it's parent.
+ - `saves_dir`: The path to the Nebulous saves directory. On windows this is usually at `C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves`. Note that this does not point to the Fleets directory, but to it's parent. There shouldn't ever be a reason to set this unless your system is really wacky, the app should be able to detect the nebulous saves directory universally (if it doesn't, please let me know as well as providing information on your setup).
  - `excluded_dirs`: A list of Unix shell-style patterns that will not be displayed in the app. e.g. If you like to keep your old fleets around but don't like them cluttering the app, you could set this to: `excluded_dirs = ["**/Old/**/*"]`. Or, if you don't want to show the starter fleets, something like this: `excluded_dirs = ["**/Starter Fleets - Alliance/*", "**/Starter Fleets - Protectorate/*"]`.
  If you aren't familiar with Unix shell-style patterns, here is a quick start. `**` means any subdirectory and it's subdirectories, `*` means any file within a directory. There is a lot more you can do with this however, for example matching different variations of a file or folder name.
 
