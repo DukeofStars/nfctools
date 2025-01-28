@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use tracing::error;
 
-use crate::MainWindow;
+use crate::{FleetEditorWindow, MainWindow};
 
 pub struct Error {
     pub title: String,
@@ -49,6 +49,19 @@ pub fn wrap_errorable_function<T>(
             error!(%err.error, "{}", err.title);
             main_window
                 .invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
+            return Err(err);
+        }
+    }
+}
+pub fn wrap_errorable_function_fe<T>(
+    window: &FleetEditorWindow,
+    mut f: impl FnMut() -> Result<T, Error>,
+) -> Result<T, Error> {
+    match f() {
+        Ok(t) => Ok(t),
+        Err(err) => {
+            error!(%err.error, "{}", err.title);
+            window.invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
             return Err(err);
         }
     }

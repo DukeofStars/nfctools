@@ -1,4 +1,4 @@
-import { ScrollView, Button, ComboBox, CheckBox } from "std-widgets.slint";
+import { ScrollView, Button, ComboBox, CheckBox, StandardButton } from "std-widgets.slint";
 
 import { FleetData } from "./fleet-list.slint";
 
@@ -95,7 +95,60 @@ export component FleetEditorWindow inherits Window {
 
     property <bool> checkbox_toggle: true;
 
-    HorizontalLayout {
+    // Error popup
+    property <string> error-popup-title;
+    property <string> error-popup-message;
+    public function show-error-popup(title: string, message: string) {
+        error-popup-title = title;
+        error-popup-message = message;
+        error-popup.show();
+    }
+    error-popup := PopupWindow {
+        height: main-window.height;
+        width: main-window.width;
+        x: 0;
+        y: 0;
+        close-policy: no-auto-close;
+
+        VerticalLayout {
+            Rectangle {}
+            HorizontalLayout {
+                Rectangle {}
+                Rectangle {
+                    max-width: 600px;
+                    height: 25%;
+                    border-radius: 4px;
+                    background: rgba(0, 0, 0, 0.8);
+                    VerticalLayout {
+                        padding: 10px;
+                        Text {
+                            wrap: char-wrap;
+                            text: error-popup-title;
+                            font-size: 24px;
+                        }
+
+                        Text {
+                            wrap: word-wrap;
+                            text: error-popup-message;
+                            font-size: 12px;
+                        }
+
+                        StandardButton {
+                            kind: ok;
+                            clicked => {
+                                error-popup.close();
+                            }
+                        }
+                    }
+                }
+                Rectangle {}
+            }
+            Rectangle {}
+        }
+    }
+
+    // Main window
+    main-window := HorizontalLayout {
         padding: 5px;
         VerticalLayout {
             alignment: start;

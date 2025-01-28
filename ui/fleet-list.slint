@@ -286,20 +286,14 @@ export component MainWindow inherits Window {
     callback add-tag(Tag);
     callback remove-tag(int);
 
-    property <string> error-popup-title;
-    property <string> error-popup-message;
-    public function show-error-popup(title: string, message: string) {
-        error-popup-title = title;
-        error-popup-message = message;
-        error-popup.show();
-    }
-
     public function get-description() -> string {
         actions-pane.get-description()
     }
     public function set-description(desc: string) {
         actions-pane.set-description(desc);
     }
+
+    
 
     forward-focus: key-handler;
     key-handler := FocusScope {
@@ -319,6 +313,14 @@ export component MainWindow inherits Window {
         }
     }
 
+    // Error popup
+    property <string> error-popup-title;
+    property <string> error-popup-message;
+    public function show-error-popup(title: string, message: string) {
+        error-popup-title = title;
+        error-popup-message = message;
+        error-popup.show();
+    }
     error-popup := PopupWindow {
         height: a.height;
         width: a.width;
@@ -363,6 +365,7 @@ export component MainWindow inherits Window {
         }
     }
 
+    // Main window
     a := HorizontalLayout {
         padding: 2px;
         VerticalLayout {

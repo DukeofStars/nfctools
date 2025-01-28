@@ -11,7 +11,7 @@ use xmltree::{AttributeMap, Element, Traversable};
 
 use super::{BULKER_SEGMENTS, CONTAINER_BOWS, CONTAINER_CORES, CONTAINER_STERNS};
 use crate::{
-    error::wrap_errorable_function,
+    error::{wrap_errorable_function, wrap_errorable_function_fe},
     fleet_editor::{BRIDGE_MODELS, BULK_BOWS, BULK_CORES, BULK_STERNS},
     my_error, DressingSelections, DressingSlot, DressingSlots, FleetData, FleetEditorWindow,
     LinerHullConfig, MainWindow,
@@ -385,18 +385,19 @@ pub fn on_save_liner_config_handler(
     window_weak: Weak<FleetEditorWindow>,
     fleets_model: Rc<VecModel<FleetData>>,
 ) -> impl Fn(LinerHullConfig) {
-    move |LinerHullConfig {
-              segment_bow,
-              segment_core,
-              segment_stern,
-              bridge_model,
-              bridge_segment,
-              bridge_snappoint,
-              dressings,
-          }| {
+    move |hull_config| {
         let main_window = main_window_weak.unwrap();
-        let _ = wrap_errorable_function(&main_window, || {
-            let window = window_weak.unwrap();
+        let window = window_weak.unwrap();
+        let LinerHullConfig {
+            segment_bow,
+            segment_core,
+            segment_stern,
+            bridge_model,
+            bridge_segment,
+            bridge_snappoint,
+            dressings,
+        } = &hull_config;
+        let _ = wrap_errorable_function_fe(&window, || {
             let cur_idx = main_window.get_cur_fleet_idx();
             let fleet = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
                 "Selected fleet doesn't exist",
@@ -445,10 +446,22 @@ pub fn on_save_liner_config_handler(
                 "Stock/Bulk Hauler" => "Bulk",
                 "Stock/Container Hauler" => "Container",
                 "Stock/Container Hauler Refit" => "Container",
-                _ => {
-                    panic!()
+                hull_type => {
+                    // This should never occur unless the UI is broken.
+                    return Err(my_error!(
+                        "Invalid HullType",
+                        format!("'{}' is not a liner ship", hull_type)
+                    ));
                 }
             };
+            if let Some(err) = match liner_type {
+                "Bulk" => is_marauder_config_allowed(&hull_config),
+                "Container" => is_moorline_config_allowed(&hull_config),
+                // Already checked
+                _ => panic!(),
+            } {
+                return Err(my_error!("Liner hull config not allowed", err));
+            }
 
             trace!("HullType is '{}'", &liner_type);
 
@@ -612,5 +625,59 @@ pub fn on_save_liner_config_handler(
 
             Ok(())
         });
+    }
+}
+
+fn is_marauder_config_allowed(hull_config: &LinerHullConfig) -> Option<&'static str> {
+    match hull_config.bridge_segment {
+        // Bow
+        0 => {
+            // C
+            if hull_config.segment_bow == 2 {
+                Some("Bridge cannot be placed on bow section C")
+            } else {
+                None
+            }
+        }
+        // Core
+        1 => {
+            // All cores are valid
+            None
+        }
+        // Stern
+        2 => {
+            // B
+            if hull_config.segment_stern == 1 {
+                Some("Bridge cannot be placed on stern section B")
+            } else {
+                None
+            }
+        }
+        _ => Some("Bridge assigned to non-existant section"),
+    }
+}
+
+fn is_moorline_config_allowed(hull_config: &LinerHullConfig) -> Option<&'static str> {
+    match hull_config.bridge_segment {
+        // Bow
+        0 => {
+            // A
+            if hull_config.segment_bow == 0 {
+                Some("Bridge cannot be placed on bow section A")
+            } else {
+                None
+            }
+        }
+        // Core
+        1 => {
+            // All cores are valid
+            None
+        }
+        // Stern
+        2 => {
+            // All sterns are valid
+            None
+        }
+        _ => Some("Bridge assigned to non-existant section"),
     }
 }
