@@ -2169,6 +2169,7 @@ dependencies = [
  "rustybuzz 0.20.1",
  "scoped-tls-hkt",
  "scopeguard",
+ "serde",
  "slab",
  "static_assertions",
  "strum",

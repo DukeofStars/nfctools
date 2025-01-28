@@ -1,16 +1,43 @@
-use std::rc::Rc;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use chumsky::prelude::*;
-use slint::{Color, VecModel};
+use serde::{Deserialize, Serialize};
+use slint::{Color, SharedString, VecModel, Weak};
 use text::whitespace;
-use tracing::debug;
+use tracing::{debug, trace};
 
-use crate::{error::Error, my_error, Tag};
+use crate::{error::Error, my_error, MainWindow, Tag};
 
-pub fn on_add_tag_handler(tags: Rc<VecModel<Tag>>) -> impl Fn(Tag) {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct TagsRepository {
+    tags: HashMap<String, Color>,
+}
+impl TagsRepository {
+    pub fn add_tag(&mut self, name: String, color: Color) {
+        self.tags.insert(name, color);
+    }
+    pub fn get_tag(&self, name: &String) -> Option<&Color> {
+        self.tags.get(name)
+    }
+}
+impl Default for TagsRepository {
+    fn default() -> Self {
+        Self {
+            tags: Default::default(),
+        }
+    }
+}
+
+pub fn on_add_tag_handler(
+    tags: Rc<VecModel<Tag>>,
+    tags_repo: Rc<RefCell<TagsRepository>>,
+) -> impl Fn(Tag) {
     move |tag| {
         debug!("Adding tag {:?}", tag);
-        tags.push(tag)
+        tags_repo
+            .borrow_mut()
+            .add_tag(tag.name.to_string(), tag.color.clone());
+        tags.push(tag);
     }
 }
 
@@ -18,6 +45,20 @@ pub fn on_remove_tag_handler(tags: Rc<VecModel<Tag>>) -> impl Fn(i32) {
     move |idx| {
         debug!("Removing tag {}", idx);
         tags.remove(idx as usize);
+    }
+}
+
+pub fn on_lookup_tag_handler(
+    main_window_weak: Weak<MainWindow>,
+    tags_repo: Rc<RefCell<TagsRepository>>,
+) -> impl Fn(SharedString) {
+    move |name| {
+        trace!("Looking up tag '{}'", &name);
+        if let Some(color) = tags_repo.borrow().get_tag(&name.to_string()) {
+            trace!("Tag '{}' found: {:?}", &name, color);
+            let main_window = main_window_weak.unwrap();
+            main_window.invoke_set_tag_color(color.clone());
+        }
     }
 }
 

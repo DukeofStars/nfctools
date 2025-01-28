@@ -62,12 +62,18 @@ component ActionsPane inherits VerticalLayout {
     callback open-fleet-editor();
     callback add-tag(Tag);
     callback remove-tag(int);
+    callback lookup-tag(string);
 
     public function get-description() -> string {
         desc-input.text
     }
     public function set-description(desc: string) {
         desc-input.text = desc;
+    }
+    public function set-tag-color(color: color) {
+        r.text = color.red;
+        g.text = color.green;
+        b.text = color.blue;
     }
 
     spacing: 5px;
@@ -101,6 +107,10 @@ component ActionsPane inherits VerticalLayout {
     HorizontalLayout {
         tag-name := LineEdit {
             placeholder-text: "Tag Name";
+
+            edited(text) => {
+                root.lookup-tag(text);
+            }
         }
         Button {
             text: "Add";
@@ -274,6 +284,8 @@ export component MainWindow inherits Window {
     in-out property <[FleetData]> fleets;
     in-out property <bool> multi-selecting: false;
 
+    in property <bool> shutdown-state: false; 
+
     in-out property <[Tag]> tags;
 
     out property <int> cur-fleet-idx;
@@ -285,6 +297,8 @@ export component MainWindow inherits Window {
     callback open-fleet-editor();
     callback add-tag(Tag);
     callback remove-tag(int);
+    callback lookup-tag(string);
+    callback close-without-saving();
 
     public function get-description() -> string {
         actions-pane.get-description()
@@ -292,8 +306,9 @@ export component MainWindow inherits Window {
     public function set-description(desc: string) {
         actions-pane.set-description(desc);
     }
-
-    
+    public function set-tag-color(color: color) {
+        actions-pane.set-tag-color(color);
+    }
 
     forward-focus: key-handler;
     key-handler := FocusScope {
@@ -322,6 +337,7 @@ export component MainWindow inherits Window {
         error-popup.show();
     }
     error-popup := PopupWindow {
+
         height: a.height;
         width: a.width;
         x: 0;
@@ -354,6 +370,9 @@ export component MainWindow inherits Window {
                         StandardButton {
                             kind: ok;
                             clicked => {
+                                if root.shutdown-state {
+                                    root.close-without-saving();
+                                }
                                 error-popup.close();
                             }
                         }
@@ -445,6 +464,10 @@ export component MainWindow inherits Window {
 
                 remove-tag(idx) => {
                     root.remove-tag(idx);
+                }
+
+                lookup-tag(name) => {
+                    root.lookup-tag(name);
                 }
             }
         }

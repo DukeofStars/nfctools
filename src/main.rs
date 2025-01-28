@@ -1,5 +1,7 @@
 use std::{
+    cell::RefCell,
     fs::{File, OpenOptions},
+    io::Write,
     path::PathBuf,
     rc::Rc,
 };
@@ -12,6 +14,7 @@ use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
 use serde::Deserialize;
 use slint::{CloseRequestResponse, ComponentHandle, Model, VecModel};
+use tags::TagsRepository;
 use tracing::{debug, info, trace, warn, Level};
 use tracing_subscriber::{
     fmt::{writer::MakeWriterExt, Layer},
@@ -83,6 +86,46 @@ fn load_app_config() -> Result<AppConfig, Error> {
         .map_err(|err| my_error!("Failed to parse config file", err))?;
 
     Ok(app_config)
+}
+fn load_tags() -> Result<TagsRepository, Error> {
+    let tags_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or(my_error!(
+            "Failed to retrieve config dir",
+            "OS not recognised?"
+        ))?
+        .preference_dir()
+        .join("tags.toml");
+    trace!("Loading tags from '{}'", tags_path.display());
+    let tags_file = std::fs::read_to_string(&tags_path)
+        .inspect_err(|_| trace!("No tags file found, using default config values"))
+        .unwrap_or_default();
+    let tags_repo: TagsRepository =
+        toml::from_str(&tags_file).map_err(|err| my_error!("Failed to parse tags file", err))?;
+
+    Ok(tags_repo)
+}
+fn save_tags(tags_repo: Rc<RefCell<TagsRepository>>) -> Result<(), Error> {
+    debug!("Saving tags!");
+    let tags_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or(my_error!(
+            "Failed to retrieve config dir",
+            "OS not recognised?"
+        ))?
+        .preference_dir()
+        .join("tags.toml");
+    trace!("Writing tags to '{}'", tags_path.display());
+    let mut tags_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(&tags_path)
+        .map_err(|err| my_error!("Failed to open tags file", err))?;
+    let toml = toml::to_string(tags_repo.as_ref())
+        .map_err(|err| my_error!("Failed to serialize tags to toml", err))?;
+    tags_file
+        .write_all(toml.as_bytes())
+        .map_err(|err| my_error!("Failed to write tags file", err))?;
+
+    Ok(())
 }
 
 #[derive(Parser)]
@@ -184,13 +227,26 @@ fn main() -> color_eyre::Result<()> {
 
     debug!("Setting up callbacks");
 
+    let tags_repo = Rc::new(RefCell::new(
+        load_tags()
+            .inspect_err(|err| warn!("{}", err))
+            .unwrap_or_default(),
+    ));
     let tags = Vec::new();
     let tags_model = Rc::new(VecModel::from(tags));
     main_window.set_tags(tags_model.clone().into());
 
-    main_window.on_add_tag(tags::on_add_tag_handler(tags_model.clone()));
+    main_window.on_add_tag(tags::on_add_tag_handler(
+        tags_model.clone(),
+        tags_repo.clone(),
+    ));
 
     main_window.on_remove_tag(tags::on_remove_tag_handler(tags_model.clone()));
+
+    main_window.on_lookup_tag(tags::on_lookup_tag_handler(
+        main_window.as_weak(),
+        tags_repo.clone(),
+    ));
 
     main_window.on_open_fleet_editor(fleet_editor::on_open_fleet_editor_handler(
         main_window.as_weak(),
@@ -276,23 +332,42 @@ fn main() -> color_eyre::Result<()> {
         });
     }
 
+    main_window.on_close_without_saving(|| {
+        warn!("Saving data failed, closing without saving");
+        std::process::exit(1);
+    });
+
     {
         let main_window_weak = main_window.as_weak();
         let fleets_model = fleets_model.clone();
         let tags_model = tags_model.clone();
+        let tags_repo = tags_repo.clone();
         main_window.window().on_close_requested(move || {
             let main_window = main_window_weak.unwrap();
-            let _ = wrap_errorable_function(&main_window_weak.unwrap(), || {
+            let res = wrap_errorable_function(&main_window_weak.unwrap(), || {
                 let description = main_window.invoke_get_description().to_string();
-                save_description::save_fleet_data(
+                let res1 = save_description::save_fleet_data(
                     &main_window,
                     fleets_model.clone(),
                     tags_model.clone(),
                     description,
-                )
+                );
+                let res2 = save_tags(tags_repo.clone());
+
+                // Batch the results together so both tags and fleet data have a chance to save.
+                res1?;
+                res2?;
+
+                Ok(())
             });
 
-            CloseRequestResponse::HideWindow
+            match res {
+                Ok(_) => CloseRequestResponse::HideWindow,
+                Err(_) => {
+                    main_window.set_shutdown_state(true);
+                    CloseRequestResponse::KeepWindowShown
+                }
+            }
         });
     }
 
