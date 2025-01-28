@@ -393,7 +393,7 @@ export component MainWindow inherits Window {
 
                         viewing => {
                             fleet.selected = !fleet.selected;
-                            if fleet.selected && cur-fleet-idx >= 0 {
+                            if fleet.selected {
                                 root.viewing(idx);
                                 cur-fleet-idx = idx;
                             }

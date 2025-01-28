@@ -37,10 +37,10 @@ pub fn save_fleet_data(
     description: String,
 ) -> Result<(), Error> {
     let cur_fleet_idx = main_window.get_cur_fleet_idx();
-    info!("Saving description for fleet {}", cur_fleet_idx);
     if cur_fleet_idx == -1 {
-        return Err(my_error!("No fleet selected", ""));
+        return Ok(());
     }
+    info!("Saving description for fleet {}", cur_fleet_idx);
     let fleet = fleets_model
         .iter()
         .nth(cur_fleet_idx as usize)
