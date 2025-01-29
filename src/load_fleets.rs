@@ -8,12 +8,11 @@ use std::{
 use color_eyre::eyre::WrapErr;
 use glob::Pattern;
 use slint::{VecModel, Weak};
-use tracing::{debug, trace};
-use xmltree::Element;
+use tracing::debug;
 
 use crate::{
     error::{wrap_errorable_function, Error},
-    my_error, FleetData, MainWindow,
+    my_error, FleetData, FleetInfoReader, MainWindow,
 };
 
 pub fn on_reload_fleets_handler(
@@ -93,24 +92,14 @@ fn load_fleets_rec(
             if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
                 continue;
             }
-            let element = {
-                trace!("Opening fleet file");
-                let fleet_file = File::open(child.path()).map_err(|err| {
+            let fleet_info_reader =
+                FleetInfoReader::new(File::open(child.path()).map_err(|err| {
                     my_error!(
-                        format!("Failed to open fleet '{}'", child.path().display()),
+                        format!("Failed to open file '{}'", child.path().display()),
                         err
                     )
-                })?;
-                trace!("Parsing fleet file");
-                Element::parse(fleet_file)
-                    .map_err(|err| my_error!("Failed to parse fleet file", err))?
-            };
-            let fleet_name = element
-                .get_child("Name")
-                .ok_or(my_error!("Invalid fleet file", "Fleet has no name"))?
-                .get_text()
-                .ok_or(my_error!("Invalid fleet file", "Name is not text"))?
-                .to_string();
+                })?);
+            let fleet_name = fleet_info_reader.get_value("Fleet/Name");
             for pattern in excluded_patterns {
                 if pattern.matches_path(child.path().as_path()) {
                     continue 'child_loop;

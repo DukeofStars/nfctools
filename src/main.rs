@@ -10,6 +10,7 @@ use actions::save_description;
 use clap::{Parser, ValueEnum};
 use color_eyre::eyre::eyre;
 use error::{wrap_errorable_function, Error};
+use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
 use missile_templates::UsedMissilesCache;
 use serde::Deserialize;
@@ -21,13 +22,13 @@ use tracing_subscriber::{
     layer::SubscriberExt,
     Registry,
 };
-use xmltree::Element;
 
 use crate::load_fleets::load_fleets;
 
 mod actions;
 mod error;
 mod fleet_editor;
+mod fleet_info_reader;
 mod load_fleets;
 mod missile_templates;
 mod tags;
@@ -410,23 +411,14 @@ fn main() -> color_eyre::Result<()> {
                     "cur_fleet_idx points to a nonexistant fleet"
                 ))?;
                 trace!("Viewing fleet {}: '{}'", idx, fleet.name);
-                let element = {
-                    trace!("Opening fleet file");
-                    let fleet_file = File::open(&fleet.path).map_err(|err| {
+                let fleet_info_reader =
+                    FleetInfoReader::new(File::open(fleet.path.to_string()).map_err(|err| {
                         my_error!(
                             format!("Failed to open fleet '{}'", fleet.path.to_string()),
                             err
                         )
-                    })?;
-                    trace!("Parsing fleet file");
-                    Element::parse(fleet_file)
-                        .map_err(|err| my_error!("Failed to parse fleet file", err))?
-                };
-                let description = element
-                    .get_child("Description")
-                    .map(|child| child.get_text())
-                    .flatten()
-                    .unwrap_or_default();
+                    })?);
+                let description = fleet_info_reader.get_value("Fleet/Description");
                 if !description.is_empty() {
                     trace!(%description, "Found description");
                 }
