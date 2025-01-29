@@ -1,0 +1,157 @@
+import { HorizontalBox, Button, ScrollView, StandardButton } from "std-widgets.slint";
+export struct MissileData {
+    path: string,
+    designation: string,
+    nickname: string,
+    template-name: string,
+    selected: bool
+}
+
+component MissileListItem inherits TouchArea {
+    in-out property <string> designation;
+    in-out property <string> nickname;
+    in-out property <string> template-name;
+    in property <color> background-colour;
+
+    callback viewing();
+
+    clicked => {
+        root.viewing();
+    }
+
+    Rectangle {
+        height: 18px;
+        background: background-colour;
+    
+        HorizontalLayout {
+            spacing: 100px;
+            padding-right: 5px;
+            Text {
+                overflow: elide;
+                wrap: no-wrap;
+                text: designation + " " + nickname;
+                horizontal-stretch: 1.0;
+                font-size: 16px;
+            }
+        }
+
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+export component MissileWindow inherits Window {
+    title: "Missiles";
+
+    preferred-width: 800px;
+    preferred-height: 600px;
+
+    in-out property <[MissileData]> missiles;
+    out property <int> cur-missile-idx;
+
+    callback viewing(int);
+    callback reload-missiles();
+
+    // Error popup
+    property <string> error-popup-title;
+    property <string> error-popup-message;
+    public function show-error-popup(title: string, message: string) {
+        error-popup-title = title;
+        error-popup-message = message;
+        error-popup.show();
+    }
+    error-popup := PopupWindow {
+        height: main-window.height;
+        width: main-window.width;
+        x: 0;
+        y: 0;
+        close-policy: no-auto-close;
+
+        VerticalLayout {
+            Rectangle {}
+            HorizontalLayout {
+                Rectangle {}
+                Rectangle {
+                    max-width: 600px;
+                    height: 25%;
+                    border-radius: 4px;
+                    background: rgba(0, 0, 0, 0.8);
+                    VerticalLayout {
+                        padding: 10px;
+                        Text {
+                            wrap: char-wrap;
+                            text: error-popup-title;
+                            font-size: 24px;
+                        }
+
+                        Text {
+                            wrap: word-wrap;
+                            text: error-popup-message;
+                            font-size: 12px;
+                        }
+
+                        StandardButton {
+                            kind: ok;
+                            clicked => {
+                                error-popup.close();
+                            }
+                        }
+                    }
+                }
+                Rectangle {}
+            }
+            Rectangle {}
+        }
+    }
+
+    main-window := HorizontalLayout {
+        VerticalLayout {
+            alignment: start;
+            b := HorizontalLayout {
+                Text {
+                    text: "Missiles";
+                    font-size: 24px;
+                }
+                HorizontalLayout {
+                    alignment: end;
+                    Button {
+                        text: "Refresh";
+                        clicked => {
+                        }
+                    }
+                }
+            }
+
+            ScrollView {
+                height: main-window.height - b.preferred-height - 4px;
+                VerticalLayout {
+                    for missile[idx] in missiles: MissileListItem {
+                        designation: missile.designation;
+                        nickname: missile.nickname;
+                        template-name: missile.template-name;
+
+                        viewing => {
+                            missile.selected = !missile.selected;
+                            if missile.selected {
+                                root.viewing(idx);
+                                cur-missile-idx = idx;
+                            }
+                            else {
+                                root.viewing(-1);
+                                cur-missile-idx = -1;
+                            }
+                        }
+                        states [
+                            selected when missile.selected: {
+                                background-colour: rgba(204, 134, 092, 1);
+                            }
+                            unselected when !missile.selected: {
+                                background-colour: rgba(0, 0, 0, 0);
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}

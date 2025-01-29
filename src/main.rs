@@ -334,6 +334,13 @@ fn main() -> color_eyre::Result<()> {
         tags_repo.clone(),
     ));
 
+    main_window.on_open_missiles_view(
+        missile_templates::missiles_window::on_open_missiles_view_handler(
+            main_window.as_weak(),
+            app_config.saves_dir.join("MissileTemplates"),
+        ),
+    );
+
     main_window.on_open_fleet_editor(fleet_editor::on_open_fleet_editor_handler(
         main_window.as_weak(),
         fleets_model.clone(),

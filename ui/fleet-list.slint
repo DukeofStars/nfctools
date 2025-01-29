@@ -282,6 +282,7 @@ export component MainWindow inherits Window {
     preferred-height: 600px;
     
     in-out property <[FleetData]> fleets;
+    
     in-out property <bool> multi-selecting: false;
 
     in property <bool> shutdown-state: false; 
@@ -299,6 +300,8 @@ export component MainWindow inherits Window {
     callback remove-tag(int);
     callback lookup-tag(string);
     callback close-without-saving();
+
+    callback open-missiles-view();
 
     public function get-description() -> string {
         actions-pane.get-description()
@@ -337,9 +340,8 @@ export component MainWindow inherits Window {
         error-popup.show();
     }
     error-popup := PopupWindow {
-
-        height: a.height;
-        width: a.width;
+        height: main-window.height;
+        width: main-window.width;
         x: 0;
         y: 0;
         close-policy: no-auto-close;
@@ -385,89 +387,107 @@ export component MainWindow inherits Window {
     }
 
     // Main window
-    a := HorizontalLayout {
-        padding: 2px;
-        VerticalLayout {
-            alignment: start;
-            b := HorizontalBox {
-                Text {
-                    text: "Fleets";
-                    font-size: 24px;
-                }
-                HorizontalLayout {
-                    padding-right: 5px;
-                    alignment: end;
-                    Button {
-                        text: "Refresh";
-                        clicked => {
-                            root.reload-fleets();
-                        }
-                    }
+    main-window := VerticalLayout {
+        padding-left: 2px;
+        padding-right: 2px;
+        spacing: 2px;
+        top-bar := HorizontalLayout {
+            height: missiles-button.preferred-height;
+            missiles-button := Button {
+                text: "Missiles";
+                clicked => {
+                    root.open-missiles-view();
                 }
             }
-
-            ScrollView {
-                height: a.height - b.preferred-height - 4px;
-                VerticalLayout {
-                    for fleet[idx] in fleets: FleetListItem {
-                        name: fleet.name;
-                        short-path: fleet.short-path;
-
-                        viewing => {
-                            fleet.selected = !fleet.selected;
-                            if fleet.selected {
-                                root.viewing(idx);
-                                cur-fleet-idx = idx;
-                            }
-                            else {
-                                root.viewing(-1);
-                                cur-fleet-idx = -1;
-                                root.set-description("");
-                            }
-                        }
-                        states [
-                            selected when fleet.selected: {
-                                background-colour: rgba(204, 134, 092, 1);
-                            }
-                            unselected when !fleet.selected: {
-                                background-colour: rgba(0, 0, 0, 0);
-                            }
-                        ]
-                    }
-                }
+            Rectangle {
+                horizontal-stretch: 1.0;
             }
         }
+        a := HorizontalLayout {
+            padding-bottom: 2px;
+            spacing: 2px;
+            height: main-window.height - top-bar.height - 2px; // -2px to adjust for spacing and padding
+            VerticalLayout {
+                alignment: start;
+                b := HorizontalLayout {
+                    Text {
+                        text: "Fleets";
+                        font-size: 24px;
+                    }
+                    HorizontalLayout {
+                        alignment: end;
+                        Button {
+                            text: "Refresh";
+                            clicked => {
+                                root.reload-fleets();
+                            }
+                        }
+                    }
+                }
 
-        VerticalLayout {
-            width: 240px;
-            
-            Text {
-                height: b.height;
-                font-size: 24px;
-                text: "Actions";
+                ScrollView {
+                    height: a.height - b.preferred-height - 4px;
+                    VerticalLayout {
+                        for fleet[idx] in fleets: FleetListItem {
+                            name: fleet.name;
+                            short-path: fleet.short-path;
+
+                            viewing => {
+                                fleet.selected = !fleet.selected;
+                                if fleet.selected {
+                                    root.viewing(idx);
+                                    cur-fleet-idx = idx;
+                                }
+                                else {
+                                    root.viewing(-1);
+                                    cur-fleet-idx = -1;
+                                    root.set-description("");
+                                }
+                            }
+                            states [
+                                selected when fleet.selected: {
+                                    background-colour: rgba(204, 134, 092, 1);
+                                }
+                                unselected when !fleet.selected: {
+                                    background-colour: rgba(0, 0, 0, 0);
+                                }
+                            ]
+                        }
+                    }
+                }
             }
 
-            actions-pane := ActionsPane {
-                tags: root.tags;
-
-                merge(output-name) => {
-                    root.merge(output-name);
+            VerticalLayout {
+                width: 240px;
+                
+                Text {
+                    height: b.height;
+                    font-size: 24px;
+                    text: "Actions";
                 }
 
-                open-fleet-editor => {
-                    root.open-fleet-editor();
-                }
+                actions-pane := ActionsPane {
+                    tags: root.tags;
 
-                add-tag(tag) => {
-                    root.add-tag(tag);
-                }
+                    merge(output-name) => {
+                        root.merge(output-name);
+                    }
 
-                remove-tag(idx) => {
-                    root.remove-tag(idx);
-                }
+                    open-fleet-editor => {
+                        root.open-fleet-editor();
+                    }
 
-                lookup-tag(name) => {
-                    root.lookup-tag(name);
+                    add-tag(tag) => {
+                        root.add-tag(tag);
+                    }
+
+                    remove-tag(idx) => {
+                        root.remove-tag(idx);
+                    }
+
+                    lookup-tag(name) => {
+                        root.lookup-tag(name);
+                    }
                 }
             }
         }

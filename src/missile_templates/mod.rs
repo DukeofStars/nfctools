@@ -12,6 +12,9 @@ use xmltree::Element;
 
 use crate::{error::Error, my_error};
 
+pub mod load_missiles;
+pub mod missiles_window;
+
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct UsedMissilesCache {
     fleets: HashMap<PathBuf, FleetsUsedMissiles>,
@@ -81,7 +84,7 @@ impl UsedMissilesCache {
                         hasher.finish()
                     };
                     if hash == old_fleet_data.hash {
-                        trace!("'{}' hasn't changed, skipping", child.path().display());
+                        trace!("Skipping '{}'", child.path().display());
                         continue;
                     }
                 }
