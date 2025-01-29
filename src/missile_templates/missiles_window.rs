@@ -35,7 +35,7 @@ fn open_missiles_view(
     trace!("Creating window");
 
     let window = crate::MissileWindow::new()
-        .map_err(|err| my_error!("Failed to create fleet editor window", err))
+        .map_err(|err| my_error!("Failed to create missiles window", err))
         .unwrap();
 
     let missiles = load_missiles(missiles_path)?;

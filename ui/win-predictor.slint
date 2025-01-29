@@ -1,0 +1,89 @@
+import { LineEdit } from "std-widgets.slint";
+export component WinPredictorWindow inherits Window {
+    callback update-prediction();
+
+    in-out property <int> points-1;
+    in-out property <int> points-2;
+    in-out property <int> caps-1;
+    in-out property <int> caps-2;
+    in-out property <int> victory-points;
+
+    in-out property <string> prediction;
+
+    VerticalLayout {
+        Text {
+            text: "Win Predictor";
+            font-size: 24px;
+        }
+        Text {
+            text: prediction;
+            font-size: 18px;
+        }
+        GridLayout {
+            Row {
+                HorizontalLayout {
+                    Text {
+                        text: "Team 1 Points: ";
+                    }
+                    points-1 := LineEdit {
+                        width: 60px;
+                        edited(text) => {
+                            root.points-1 = text.to-float();
+                            root.update-prediction();
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    Text {
+                        text: "Team 2 Points: ";
+                    }
+                    points-2 := LineEdit {
+                        width: 60px;
+                        edited(text) => {
+                            root.points-2 = text.to-float();
+                            root.update-prediction();
+                        }
+                    }
+                }
+            }
+            Row {
+                HorizontalLayout {
+                    Text {
+                        text: "Team 1 Capture Points: ";
+                    }
+                    caps-1 := LineEdit {
+                        width: 60px;
+                        edited(text) => {
+                            root.caps-1 = text.to-float();
+                            root.update-prediction();
+                        }
+                    }
+                }
+                HorizontalLayout {
+                    Text {
+                        text: "Team 2 Capture Points: ";
+                    }
+                    caps-2 := LineEdit {
+                        width: 60px;
+                        edited(text) => {
+                            root.caps-2 = text.to-float();
+                            root.update-prediction();
+                        }
+                    }
+                }
+            }
+            HorizontalLayout {
+                Text {
+                    text: "Victory Points: ";
+                }
+                victory-points := LineEdit {
+                    width: 60px;
+                    edited(text) => {
+                        root.victory-points = text.to-float();
+                        root.update-prediction();
+                    }
+                }
+            }
+        }
+    }
+}

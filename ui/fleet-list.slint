@@ -302,6 +302,7 @@ export component MainWindow inherits Window {
     callback close-without-saving();
 
     callback open-missiles-view();
+    callback open-win-predictor();
 
     public function get-description() -> string {
         actions-pane.get-description()
@@ -397,6 +398,12 @@ export component MainWindow inherits Window {
                 text: "Missiles";
                 clicked => {
                     root.open-missiles-view();
+                }
+            }
+            Button {
+                text: "Win Predictor";
+                clicked => {
+                    root.open-win-predictor();
                 }
             }
             Rectangle {

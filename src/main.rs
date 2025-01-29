@@ -32,6 +32,7 @@ mod fleet_info_reader;
 mod load_fleets;
 mod missile_templates;
 mod tags;
+mod win_predictor;
 
 slint::include_modules!();
 
@@ -342,6 +343,10 @@ fn main() -> color_eyre::Result<()> {
             excluded_patterns.clone(),
         ),
     );
+
+    main_window.on_open_win_predictor(win_predictor::on_open_win_predictor_handler(
+        main_window.as_weak(),
+    ));
 
     main_window.on_open_fleet_editor(fleet_editor::on_open_fleet_editor_handler(
         main_window.as_weak(),
