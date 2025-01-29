@@ -27,6 +27,14 @@ impl UsedMissilesCache {
         missiles_dir: &PathBuf,
         excluded_patterns: &Vec<Pattern>,
     ) -> Result<(), Error> {
+        debug!("Purging missile cache of deleted fleets");
+        for path in self.fleets.keys().cloned().collect::<Vec<_>>() {
+            if !path.exists() {
+                trace!("Removing '{}' from the cache", path.display());
+                self.fleets.remove(&path);
+            }
+        }
+        debug!("Updating existing cache entries");
         self.recurse_fleets(missiles_dir, excluded_patterns)?;
 
         Ok(())
