@@ -91,13 +91,21 @@ pub fn load_missiles(path: impl AsRef<Path>) -> Result<Vec<MissileData>, Error> 
                 .get_child("Nickname")
                 .map(|elem| elem.get_text())
                 .flatten()
-                .ok_or(my_error!("Invalid missile", "Missile has no designation"))?;
+                .ok_or(my_error!("Invalid missile", "Missile has no nickname"))?;
+            let cost = element
+                .get_child("Cost")
+                .map(|elem| elem.get_text())
+                .flatten()
+                .map(|s| s.parse::<i32>().ok())
+                .flatten()
+                .ok_or(my_error!("Invalid missile", "Missile has no point cost"))?;
 
             output.push(MissileData {
                 template_name: template_name.to_shared_string(),
                 designation: designation.to_shared_string(),
                 nickname: nickname.to_shared_string(),
                 path: child.path().display().to_string().to_shared_string(),
+                cost,
                 selected: false,
             });
         }
@@ -107,80 +115,3 @@ pub fn load_missiles(path: impl AsRef<Path>) -> Result<Vec<MissileData>, Error> 
 
     Ok(output)
 }
-// fn load_fleets_rec(
-//     root_path: &PathBuf,
-//     excluded_patterns: &Vec<Pattern>,
-//     path: impl AsRef<Path>,
-//     output: &mut Vec<FleetData>,
-// ) -> Result<(), Error> {
-//     let path = path.as_ref();
-//     let mut children = path
-//         .read_dir()
-//         .map_err(|err| {
-//             my_error!(
-//                 format!("Failed to read directory '{}'", path.display()),
-//                 err
-//             )
-//         })?
-//         .filter_map(|c| c.ok())
-//         .collect::<Vec<_>>();
-//     children.sort_by(|a, b| {
-//         if a.path().is_dir() {
-//             Ordering::Greater
-//         } else if b.path().is_dir() {
-//             Ordering::Less
-//         } else {
-//             Ordering::Equal
-//         }
-//     });
-//     'child_loop: for child in children {
-//         let file_type = child
-//             .file_type()
-//             .wrap_err(format!(
-//                 "Failed to determine filed type of '{}'",
-//                 child.path().display()
-//             ))
-//             .map_err(|err| my_error!("Failed to determine file type", err))?;
-//         if file_type.is_dir() {
-//             load_fleets_rec(root_path, excluded_patterns, child.path(), output)?;
-//         }
-//         if file_type.is_file() {
-//             if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
-//                 continue;
-//             }
-//             let fleet_info_reader =
-//                 FleetInfoReader::new(File::open(child.path()).map_err(|err| {
-//                     my_error!(
-//                         format!("Failed to open file '{}'", child.path().display()),
-//                         err
-//                     )
-//                 })?);
-//             let fleet_name = fleet_info_reader.get_value("Fleet/Name");
-//             for pattern in excluded_patterns {
-//                 if pattern.matches_path(child.path().as_path()) {
-//                     continue 'child_loop;
-//                 }
-//             }
-//             let path = child.path();
-//             let short_path = path
-//                 .strip_prefix(root_path)
-//                 .map_err(|err| {
-//                     my_error!(
-//                         format!("Failed to strip prefix from '{}'", path.display()),
-//                         err
-//                     )
-//                 })?
-//                 .parent()
-//                 .map(|p| p.to_str().unwrap().to_string())
-//                 .unwrap_or_default();
-//             let fleet_data = FleetData {
-//                 path: path.to_str().unwrap().into(),
-//                 short_path: short_path.into(),
-//                 selected: false,
-//                 name: fleet_name.into(),
-//             };
-//             output.push(fleet_data);
-//         }
-//     }
-//     Ok(())
-// }

@@ -310,6 +310,7 @@ fn main() -> color_eyre::Result<()> {
             main_window.set_shutdown_state(true);
             let _ = main_window.run();
         })?;
+    let excluded_patterns = Rc::new(excluded_patterns);
 
     debug!("Setting up callbacks");
 
@@ -338,6 +339,7 @@ fn main() -> color_eyre::Result<()> {
         missile_templates::missiles_window::on_open_missiles_view_handler(
             main_window.as_weak(),
             app_config.saves_dir.join("MissileTemplates"),
+            excluded_patterns.clone(),
         ),
     );
 
@@ -361,7 +363,7 @@ fn main() -> color_eyre::Result<()> {
         main_window.as_weak(),
         fleets_model.clone(),
         app_config.saves_dir.join("Fleets"),
-        excluded_patterns,
+        excluded_patterns.clone(),
     ));
 
     {

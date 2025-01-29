@@ -19,7 +19,7 @@ pub fn on_reload_fleets_handler(
     main_window_weak: Weak<MainWindow>,
     fleets_model: Rc<VecModel<FleetData>>,
     fleets_dir: PathBuf,
-    excluded_patterns: Vec<Pattern>,
+    excluded_patterns: Rc<Vec<Pattern>>,
 ) -> impl Fn() {
     move || {
         let main_window = main_window_weak.unwrap();

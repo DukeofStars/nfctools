@@ -1,26 +1,36 @@
 use std::{path::PathBuf, rc::Rc};
 
+use glob::Pattern;
 use slint::{ComponentHandle, Model, VecModel, Weak};
 use tracing::{debug, info, instrument, trace};
 
 use crate::{
     error::{wrap_errorable_function, Error},
-    missile_templates::load_missiles::{self, load_missiles},
+    missile_templates::{
+        load_missiles::{self, load_missiles},
+        update_fleets,
+    },
     my_error, MainWindow,
 };
 
 pub fn on_open_missiles_view_handler(
     main_window_weak: Weak<MainWindow>,
     missiles_path: PathBuf,
+    excluded_patterns: Rc<Vec<Pattern>>,
 ) -> impl Fn() {
     move || {
         let main_window = main_window_weak.unwrap();
-        let _ = wrap_errorable_function(&main_window, || open_missiles_view(&missiles_path));
+        let _ = wrap_errorable_function(&main_window, || {
+            open_missiles_view(&missiles_path, excluded_patterns.clone())
+        });
     }
 }
 
-#[instrument(skip())]
-fn open_missiles_view(missiles_path: &PathBuf) -> Result<(), Error> {
+#[instrument(skip(missiles_path, excluded_patterns))]
+fn open_missiles_view(
+    missiles_path: &PathBuf,
+    excluded_patterns: Rc<Vec<Pattern>>,
+) -> Result<(), Error> {
     info!("Initialising missiles view");
     trace!("Creating window");
 
@@ -50,10 +60,18 @@ fn open_missiles_view(missiles_path: &PathBuf) -> Result<(), Error> {
             );
         });
     }
+
     window.on_reload_missiles(load_missiles::on_reload_missiles_handler(
         window.as_weak(),
         missiles_model.clone(),
         missiles_path.to_path_buf(),
+    ));
+
+    window.on_update_fleets_with_missile(update_fleets::on_update_fleets_with_missile_handler(
+        missiles_path.to_path_buf(),
+        excluded_patterns.clone(),
+        window.as_weak(),
+        missiles_model.clone(),
     ));
 
     info!("Opening missiles window");

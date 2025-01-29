@@ -12,8 +12,9 @@ use xmltree::Element;
 
 use crate::{error::Error, my_error};
 
-pub mod load_missiles;
+mod load_missiles;
 pub mod missiles_window;
+mod update_fleets;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
 pub struct UsedMissilesCache {
@@ -23,23 +24,23 @@ pub struct UsedMissilesCache {
 impl UsedMissilesCache {
     pub fn update(
         &mut self,
-        saves_dir: &PathBuf,
+        missiles_dir: &PathBuf,
         excluded_patterns: &Vec<Pattern>,
     ) -> Result<(), Error> {
-        self.recurse_fleets(saves_dir, excluded_patterns)?;
+        self.recurse_fleets(missiles_dir, excluded_patterns)?;
 
         Ok(())
     }
 
     pub fn generate_from_fleets(
-        saves_dir: &PathBuf,
+        missiles_dir: &PathBuf,
         excluded_patterns: &Vec<Pattern>,
     ) -> Result<UsedMissilesCache, Error> {
         info!("Generating fresh UsedMissilesCache");
 
         let mut missile_cache = UsedMissilesCache::default();
 
-        missile_cache.recurse_fleets(saves_dir, excluded_patterns)?;
+        missile_cache.recurse_fleets(missiles_dir, excluded_patterns)?;
 
         Ok(missile_cache)
     }
@@ -101,6 +102,7 @@ impl UsedMissilesCache {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct FleetsUsedMissiles {
+    name: String,
     #[serde(
         serialize_with = "serialize_hash",
         deserialize_with = "deserialize_hash"
@@ -168,8 +170,16 @@ impl FleetsUsedMissiles {
                 .map_err(|err| my_error!("Failed to parse fleet file", err))?
         };
 
+        let name = element
+            .get_child("Name")
+            .map(|elem| elem.get_text())
+            .flatten()
+            .ok_or(my_error!("Invalid fleet", "Fleet has no name"))?
+            .to_string();
+
         let Some(missile_types_elem) = element.get_child("MissileTypes") else {
             return Ok(FleetsUsedMissiles {
+                name,
                 hash,
                 used_missiles: Vec::new(),
             });
@@ -198,6 +208,7 @@ impl FleetsUsedMissiles {
         }
 
         Ok(FleetsUsedMissiles {
+            name,
             hash,
             used_missiles,
         })

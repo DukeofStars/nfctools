@@ -426,8 +426,8 @@ export component MainWindow inherits Window {
                 }
 
                 ScrollView {
-                    height: a.height - b.preferred-height - 4px;
-                    VerticalLayout {
+                    height: min(main-window.height - b.preferred-height - 4px, h.preferred-height);
+                    h := VerticalLayout {
                         for fleet[idx] in fleets: FleetListItem {
                             name: fleet.name;
                             short-path: fleet.short-path;
