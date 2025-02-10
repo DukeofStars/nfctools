@@ -116,24 +116,30 @@ fn open_fleet_editor(
     let ships = &fleet.ships;
 
     debug!("Parsing ship data");
-    let ships = match ships.ship.as_ref().map(|ships| {
-        ships
-            .iter()
-            .map(|ship| {
-                let ship_data = ShipData {
-                    class: (&ship.hull_type).into(),
-                    name: (&ship.name).into(),
-                    cost: ship.cost.parse().map_err(|err| {
-                        my_error!(
-                            "Invalid fleet file",
-                            format!("Failed to parse cost: {}", err)
-                        )
-                    })?,
-                };
-                Ok(ship_data)
+    let ships = match ships
+        .as_ref()
+        .map(|ships| {
+            ships.ship.as_ref().map(|ships| {
+                ships
+                    .iter()
+                    .map(|ship| {
+                        let ship_data = ShipData {
+                            class: (&ship.hull_type).into(),
+                            name: (&ship.name).into(),
+                            cost: ship.cost.parse().map_err(|err| {
+                                my_error!(
+                                    "Invalid fleet file",
+                                    format!("Failed to parse cost: {}", err)
+                                )
+                            })?,
+                        };
+                        Ok(ship_data)
+                    })
+                    .collect::<Result<Vec<ShipData>, Error>>()
             })
-            .collect::<Result<Vec<ShipData>, Error>>()
-    }) {
+        })
+        .flatten()
+    {
         Some(t) => t?,
         None => Vec::new(),
     };

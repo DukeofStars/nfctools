@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Fleet {
     #[serde(rename = "@xmlns:xsd")]
@@ -21,17 +23,19 @@ pub struct Fleet {
     #[serde(rename = "SortOverrideOrder")]
     pub sort_override_order: SortOverrideOrder,
     #[serde(rename = "Ships")]
-    pub ships: Ships,
+    pub ships: Option<Ships>,
     #[serde(rename = "MissileTypes")]
     pub missile_types: Option<MissileTypes>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SortOverrideOrder {
     #[serde(rename = "@nil")]
     pub xsi_nil: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Ships {
     #[serde(rename = "$text")]
@@ -40,6 +44,7 @@ pub struct Ships {
     pub ship: Option<Vec<Ship>>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Ship {
     #[serde(rename = "$text")]
@@ -72,15 +77,18 @@ pub struct Ship {
     pub template_spacecraft_types: Option<TemplateSpacecraftTypes>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SaveId {
     #[serde(rename = "@nil")]
     pub xsi_nil: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Callsign {}
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HullConfig {
     #[serde(rename = "@type")]
@@ -97,6 +105,7 @@ pub struct HullConfig {
     pub texture_variation: TextureVariation,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct PrimaryStructure {
     #[serde(rename = "$text")]
@@ -105,6 +114,7 @@ pub struct PrimaryStructure {
     pub segment_configuration: Vec<SegmentConfiguration>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SegmentConfiguration {
     #[serde(rename = "$text")]
@@ -115,6 +125,7 @@ pub struct SegmentConfiguration {
     pub dressing: Dressing,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dressing {
     #[serde(rename = "$text")]
@@ -122,6 +133,7 @@ pub struct Dressing {
     pub int: Option<Vec<String>>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SecondaryStructure {
     #[serde(rename = "$text")]
@@ -130,6 +142,7 @@ pub struct SecondaryStructure {
     pub secondary_structure_config: SecondaryStructureConfig,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SecondaryStructureConfig {
     #[serde(rename = "$text")]
@@ -142,6 +155,7 @@ pub struct SecondaryStructureConfig {
     pub snap_point: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HullTint {
     #[serde(rename = "$text")]
@@ -152,6 +166,7 @@ pub struct HullTint {
     pub a: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TextureVariation {
     #[serde(rename = "$text")]
@@ -161,6 +176,7 @@ pub struct TextureVariation {
     pub z: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SocketMap {
     #[serde(rename = "$text")]
@@ -169,6 +185,7 @@ pub struct SocketMap {
     pub hull_socket: Vec<HullSocket>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HullSocket {
     #[serde(rename = "$text")]
@@ -181,6 +198,7 @@ pub struct HullSocket {
     pub component_name: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ComponentData {
     #[serde(rename = "@type")]
@@ -193,6 +211,7 @@ pub struct ComponentData {
     pub load: Option<Load>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MissileLoad {
     #[serde(rename = "$text")]
@@ -201,6 +220,7 @@ pub struct MissileLoad {
     pub mag_save_data: Option<Vec<MissileLoadMagSaveData>>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MissileLoadMagSaveData {
     #[serde(rename = "$text")]
@@ -213,6 +233,7 @@ pub struct MissileLoadMagSaveData {
     pub quantity: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Load {
     #[serde(rename = "$text")]
@@ -221,6 +242,7 @@ pub struct Load {
     pub mag_save_data: Option<Vec<LoadMagSaveData>>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LoadMagSaveData {
     #[serde(rename = "$text")]
@@ -233,6 +255,7 @@ pub struct LoadMagSaveData {
     pub quantity: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WeaponGroups {
     #[serde(rename = "$text")]
@@ -241,6 +264,7 @@ pub struct WeaponGroups {
     pub wep_group: Option<Vec<WepGroup>>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WepGroup {
     #[serde(rename = "@Name")]
@@ -251,6 +275,7 @@ pub struct WepGroup {
     pub member_keys: MemberKeys,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MemberKeys {
     #[serde(rename = "$text")]
@@ -258,12 +283,15 @@ pub struct MemberKeys {
     pub string: Option<Vec<String>>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TemplateMissileTypes {}
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TemplateSpacecraftTypes {}
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MissileTypes {
     #[serde(rename = "$text")]
@@ -272,6 +300,7 @@ pub struct MissileTypes {
     pub missile_template: Option<Vec<MissileTemplate>>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MissileTemplate {
     #[serde(rename = "$text")]
@@ -300,6 +329,7 @@ pub struct MissileTemplate {
     pub sockets: Sockets,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BaseColor {
     #[serde(rename = "$text")]
@@ -310,6 +340,7 @@ pub struct BaseColor {
     pub a: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct StripeColor {
     #[serde(rename = "$text")]
@@ -320,6 +351,7 @@ pub struct StripeColor {
     pub a: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Sockets {
     #[serde(rename = "$text")]
@@ -328,6 +360,7 @@ pub struct Sockets {
     pub missile_socket: Vec<MissileSocket>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MissileSocket {
     #[serde(rename = "$text")]
@@ -338,6 +371,7 @@ pub struct MissileSocket {
     pub installed_component: Option<InstalledComponent>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InstalledComponent {
     #[serde(rename = "@type")]
@@ -368,6 +402,7 @@ pub struct InstalledComponent {
     pub balance_values: Option<BalanceValues>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DefensiveDoctrine {
     #[serde(rename = "$text")]
@@ -375,7 +410,7 @@ pub struct DefensiveDoctrine {
     #[serde(rename = "TargetSizeMask")]
     pub target_size_mask: String,
     #[serde(rename = "TargetType")]
-    pub target_type: String,
+    pub target_type: Option<String>,
     #[serde(rename = "TargetSizeOrdering")]
     pub target_size_ordering: String,
     #[serde(rename = "SalvoSize")]
@@ -384,6 +419,7 @@ pub struct DefensiveDoctrine {
     pub farthest_first: String,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BalanceValues {
     #[serde(rename = "$text")]

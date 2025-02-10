@@ -199,9 +199,14 @@ pub fn on_get_liner_config_handler(
             let ship_idx = window.get_selected_ship_idx();
             let ship = fleet
                 .ships
-                .ship
                 .as_mut()
-                .map(|ships| ships.get_mut(ship_idx as usize))
+                .map(|ships| {
+                    ships
+                        .ship
+                        .as_mut()
+                        .map(|ships| ships.get_mut(ship_idx as usize))
+                })
+                .flatten()
                 .flatten()
                 .ok_or(my_error!(
                     "The selected ship idx doesn't exist",
@@ -338,9 +343,14 @@ pub fn on_save_liner_config_handler(
             let ship_idx = window.get_selected_ship_idx();
             let ship = fleet
                 .ships
-                .ship
                 .as_mut()
-                .map(|ships| ships.get_mut(ship_idx as usize))
+                .map(|ships| {
+                    ships
+                        .ship
+                        .as_mut()
+                        .map(|ships| ships.get_mut(ship_idx as usize))
+                })
+                .flatten()
                 .flatten()
                 .ok_or(my_error!(
                     "The selected ship idx doesn't exist",

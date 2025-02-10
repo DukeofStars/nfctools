@@ -56,7 +56,11 @@ fn merge_fleets(merge_output_name: String, selected_fleets: &[FleetData]) -> Res
         .into_iter()
         .map(|fleet| {
             (
-                fleet.ships.ship.unwrap_or_default(),
+                fleet
+                    .ships
+                    .map(|ships| ships.ship)
+                    .flatten()
+                    .unwrap_or_default(),
                 fleet
                     .missile_types
                     .map(|m| m.missile_template)
@@ -69,7 +73,12 @@ fn merge_fleets(merge_output_name: String, selected_fleets: &[FleetData]) -> Res
     let mut missiles: Vec<MissileTemplate> = missiles_iter.into_iter().flatten().collect();
 
     let mut primary_fleet = read_fleet(&first_fleet.path)?;
-    if let Some(ship) = primary_fleet.ships.ship.as_mut() {
+    if let Some(ship) = primary_fleet
+        .ships
+        .as_mut()
+        .map(|ships| ships.ship.as_mut())
+        .flatten()
+    {
         ship.append(&mut ships);
     }
     if let Some(missile_types) = primary_fleet.missile_types.as_mut() {
