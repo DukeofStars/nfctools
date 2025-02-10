@@ -95,13 +95,17 @@ impl UsedMissilesCache {
                         continue;
                     }
                 }
-                if let Ok(used_missiles) = FleetsUsedMissiles::from_fleet_file(child.path()) {
-                    self.fleets.insert(child.path(), used_missiles);
-                } else {
-                    warn!(
-                        "Skipping invalid fleet: Failed to pull used missiles from '{}'",
-                        child.path().display()
-                    );
+                match FleetsUsedMissiles::from_fleet_file(child.path()) {
+                    Ok(used_missiles) => {
+                        self.fleets.insert(child.path(), used_missiles);
+                    }
+                    Err(err) => {
+                        warn!(
+                            %err,
+                            "Skipping invalid fleet: Failed to pull used missiles from '{}'",
+                            child.path().display()
+                        );
+                    }
                 }
             }
         }
@@ -181,9 +185,11 @@ impl FleetsUsedMissiles {
         };
 
         let mut used_missiles = Vec::new();
-        for missile_template in &missile_types_elem.missile_template {
-            used_missiles.push(MissileTemplateId::from_missile(&missile_template))
-        }
+        missile_types_elem.missile_template.map(|x| {
+            x.iter().for_each(|missile_template| {
+                used_missiles.push(MissileTemplateId::from_missile(&missile_template))
+            })
+        });
 
         Ok(FleetsUsedMissiles {
             name: fleet.name,

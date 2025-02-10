@@ -116,12 +116,19 @@ pub fn on_update_fleets_with_missile_handler(
                             ))?;
                             let old_missile = missile_types
                                 .missile_template
-                                .iter_mut()
-                                .filter(|child| {
-                                    MissileTemplateId::from_missile(child)
-                                        == MissileTemplateId::from_missile_data(&missile_data)
+                                .as_mut()
+                                .map(|missile_template| {
+                                    missile_template
+                                        .iter_mut()
+                                        .filter(|child| {
+                                            MissileTemplateId::from_missile(child)
+                                                == MissileTemplateId::from_missile_data(
+                                                    &missile_data,
+                                                )
+                                        })
+                                        .next()
                                 })
-                                .next()
+                                .flatten()
                                 .unwrap();
                             *old_missile = new_missile.clone();
 

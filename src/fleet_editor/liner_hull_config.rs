@@ -200,7 +200,9 @@ pub fn on_get_liner_config_handler(
             let ship = fleet
                 .ships
                 .ship
-                .get_mut(ship_idx as usize)
+                .as_mut()
+                .map(|ships| ships.get_mut(ship_idx as usize))
+                .flatten()
                 .ok_or(my_error!(
                     "The selected ship idx doesn't exist",
                     "This is a bug"
@@ -243,9 +245,13 @@ pub fn on_get_liner_config_handler(
             let segment_bow_dressing = segment_bow
                 .dressing
                 .int
-                .iter()
-                .map(|child| child.parse::<i32>().unwrap() + 1)
-                .collect::<Vec<_>>();
+                .as_ref()
+                .map(|x| {
+                    x.iter()
+                        .map(|child| child.parse::<i32>().unwrap() + 1)
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
             trace!(dressings = ?segment_bow_dressing, "Loaded bow dressing");
 
             // Core
@@ -256,9 +262,13 @@ pub fn on_get_liner_config_handler(
             let segment_core_dressing = segment_core
                 .dressing
                 .int
-                .iter()
-                .map(|child| child.parse::<i32>().unwrap() + 1)
-                .collect::<Vec<_>>();
+                .as_ref()
+                .map(|x| {
+                    x.iter()
+                        .map(|child| child.parse::<i32>().unwrap() + 1)
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
             trace!(dressings = ?segment_core_dressing, "Loaded core dressing");
 
             // Stern
@@ -329,7 +339,9 @@ pub fn on_save_liner_config_handler(
             let ship = fleet
                 .ships
                 .ship
-                .get_mut(ship_idx as usize)
+                .as_mut()
+                .map(|ships| ships.get_mut(ship_idx as usize))
+                .flatten()
                 .ok_or(my_error!(
                     "The selected ship idx doesn't exist",
                     "This is a bug"
@@ -378,7 +390,10 @@ pub fn on_save_liner_config_handler(
                 .enumerate()
             {
                 trace!("Clearing previous dressings");
-                let dressing = &mut child.dressing.int;
+                let dressing = match child.dressing.int.as_mut() {
+                    Some(dressing) => dressing,
+                    None => &mut Vec::new(),
+                };
                 dressing.clear();
 
                 let segment_type_idx;
