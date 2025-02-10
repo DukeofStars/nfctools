@@ -1,5 +1,4 @@
 use std::{
-    fs::File,
     path::{Path, PathBuf},
     rc::Rc,
 };
@@ -7,10 +6,10 @@ use std::{
 use color_eyre::eyre::WrapErr;
 use slint::{ToSharedString, VecModel, Weak};
 use tracing::{debug, instrument, trace};
-use xmltree::Element;
 
 use crate::{
     error::{wrap_errorable_function_m, Error},
+    fleet_io::read_missile,
     my_error, MissileData, MissileWindow,
 };
 
@@ -58,54 +57,29 @@ pub fn load_missiles(path: impl AsRef<Path>) -> Result<Vec<MissileData>, Error> 
             .map_err(|err| my_error!("Failed to determine file type", err))?;
 
         if file_type.is_file() {
-            if child.path().extension().map(|s| s.to_str()) != Some(Some("missile".into())) {
+            let path = child.path();
+            if path.extension().map(|s| s.to_str()) != Some(Some("missile".into())) {
                 continue;
             }
 
-            trace!("Loading missile from '{}'", child.path().display());
+            trace!("Loading missile from '{}'", path.display());
 
-            let element = {
-                trace!("Opening missile file");
-                let missile_file = File::open(child.path()).map_err(|err| {
-                    my_error!(
-                        format!("Failed to open missile '{}'", child.path().display()),
-                        err
-                    )
-                })?;
-                trace!("Parsing missile file");
-                Element::parse(missile_file)
-                    .map_err(|err| my_error!("Failed to parse missile file", err))?
-            };
-
-            let template_name = element
-                .get_child("AssociatedTemplateName")
-                .map(|elem| elem.get_text())
-                .flatten()
-                .unwrap_or_default();
-            let designation = element
-                .get_child("Designation")
-                .map(|elem| elem.get_text())
-                .flatten()
-                .ok_or(my_error!("Invalid missile", "Missile has no designation"))?;
-            let nickname = element
-                .get_child("Nickname")
-                .map(|elem| elem.get_text())
-                .flatten()
-                .ok_or(my_error!("Invalid missile", "Missile has no nickname"))?;
-            let cost = element
-                .get_child("Cost")
-                .map(|elem| elem.get_text())
-                .flatten()
-                .map(|s| s.parse::<i32>().ok())
-                .flatten()
-                .ok_or(my_error!("Invalid missile", "Missile has no point cost"))?;
+            let missile = read_missile(&path)?;
 
             output.push(MissileData {
-                template_name: template_name.to_shared_string(),
-                designation: designation.to_shared_string(),
-                nickname: nickname.to_shared_string(),
+                template_name: missile
+                    .associated_template_name
+                    .unwrap_or_default()
+                    .to_shared_string(),
+                designation: missile.designation.to_shared_string(),
+                nickname: missile.nickname.to_shared_string(),
                 path: child.path().display().to_string().to_shared_string(),
-                cost,
+                cost: missile.cost.parse::<i32>().map_err(|err| {
+                    my_error!(
+                        "Invalid fleet file",
+                        format!("Failed to parse cost: {}", err)
+                    )
+                })?,
                 selected: false,
             });
         }

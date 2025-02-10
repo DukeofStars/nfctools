@@ -3,6 +3,9 @@ name = "nfctools"
 version = "0.2.0"
 edition = "2021"
 
+[workspace]
+members = ["schemas"]
+
 [dependencies]
 chumsky = "0.9.3"
 clap = { version = "4.5.27", features = ["derive"] }
@@ -11,14 +14,14 @@ directories = "6.0"
 glob = "0.3"
 lazy_static = "1.5"
 metrohash = "1.0.7"
-serde = { version = "1.0", features = ["derive"] }
+quick-xml = { version = "0.37.2", features = ["serialize"] }
 slint = { version = "1.9", features = ["serde"] }
+serde = { version = "1.0", features = ["derive"] }
 steamlocate = "2.0"
 toml = "0.8"
 tracing = "0.1"
 tracing-subscriber = "0.3"
-xml = "0.8"
-xmltree = { version = "0.11", git = "https://github.com/MFEK/xmltree.rlib" }
+schemas = { path = "./schemas" }
 
 [build-dependencies]
 slint-build = "1"

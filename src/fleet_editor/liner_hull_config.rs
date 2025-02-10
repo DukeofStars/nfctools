@@ -1,18 +1,13 @@
-use std::{
-    collections::HashMap,
-    fs::{File, OpenOptions},
-    rc::Rc,
-};
+use std::rc::Rc;
 
 use slint::{Model, ModelRc, ToSharedString, VecModel, Weak};
 use tracing::{debug, trace};
-use xml::EmitterConfig;
-use xmltree::{AttributeMap, Element, Traversable};
 
 use super::{BULKER_SEGMENTS, CONTAINER_BOWS, CONTAINER_CORES, CONTAINER_STERNS};
 use crate::{
     error::{wrap_errorable_function, wrap_errorable_function_fe},
     fleet_editor::{BRIDGE_MODELS, BULK_BOWS, BULK_CORES, BULK_STERNS},
+    fleet_io::{read_fleet, write_fleet},
     my_error, DressingSelections, DressingSlot, DressingSlots, FleetData, FleetEditorWindow,
     LinerHullConfig, MainWindow,
 };
@@ -195,56 +190,32 @@ pub fn on_get_liner_config_handler(
         wrap_errorable_function(&main_window, || {
             let window = window_weak.unwrap();
             let cur_idx = main_window.get_cur_fleet_idx();
-            let fleet = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
+            let fleet_data = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
                 "Selected fleet doesn't exist",
                 "cur_fleet_idx points to a nonexistant fleet"
             ))?;
 
-            let element = {
-                trace!("Opening fleet file");
-                let fleet_file = File::open(&fleet.path).map_err(|err| {
-                    my_error!(
-                        format!("Failed to open fleet '{}'", fleet.path.to_string()),
-                        err
-                    )
-                })?;
-                trace!("Parsing fleet file");
-                Element::parse(fleet_file)
-                    .map_err(|err| my_error!("Failed to parse fleet file", err))?
-            };
+            let mut fleet = read_fleet(&fleet_data.path)?;
             let ship_idx = window.get_selected_ship_idx();
-            let selected_ship_element = element
-                .get_child("Ships")
-                .unwrap()
-                .children
-                .get(ship_idx as usize)
-                .unwrap()
-                .as_element()
-                .unwrap();
+            let ship = fleet
+                .ships
+                .ship
+                .get_mut(ship_idx as usize)
+                .ok_or(my_error!(
+                    "The selected ship idx doesn't exist",
+                    "This is a bug"
+                ))?;
 
             debug!(
                 "Reading liner config for '{}' in '{}'",
-                selected_ship_element
-                    .get_child("Name")
-                    .unwrap()
-                    .get_text()
-                    .unwrap(),
-                &fleet.name
+                &ship.name, &fleet.name
             );
 
             let bow_key_list;
             let core_key_list;
             let stern_key_list;
 
-            if selected_ship_element
-                .get_child("HullType")
-                .unwrap()
-                .get_text()
-                .unwrap()
-                .to_string()
-                .as_str()
-                == "Stock/Bulk Hauler"
-            {
+            if ship.hull_type.as_str() == "Stock/Bulk Hauler" {
                 trace!("Selected ship is a Marauder. Loading segment lists");
                 bow_key_list = BULK_BOWS.iter();
                 core_key_list = BULK_CORES.iter();
@@ -256,106 +227,56 @@ pub fn on_get_liner_config_handler(
                 stern_key_list = CONTAINER_STERNS.iter();
             }
 
-            let hull_config = selected_ship_element.get_child("HullConfig").unwrap();
+            let hull_config = ship
+                .hull_config
+                .as_mut()
+                .expect("expected liner to have a HullConfig");
             debug!("Reading segment configurations");
-            let primary_structure = hull_config.get_child("PrimaryStructure").unwrap();
-            let mut children = primary_structure.get_children().into_iter();
+            let mut segment_configurations =
+                hull_config.primary_structure.segment_configuration.iter();
 
             // Bow
-            let segment_bow_elem = children.next().unwrap();
-            let segment_bow_key = segment_bow_elem
-                .get_child("Key")
-                .unwrap()
-                .get_text()
-                .unwrap()
-                .to_string();
+            let segment_bow = segment_configurations.next().unwrap();
             let segment_bow_model_idx = bow_key_list
-                .take_while(|skey| **skey != segment_bow_key.as_str())
+                .take_while(|skey| **skey != segment_bow.key.as_str())
                 .count() as i32;
-            let segment_bow_dressing = segment_bow_elem
-                .get_child("Dressing")
-                .unwrap()
-                .get_children()
+            let segment_bow_dressing = segment_bow
+                .dressing
+                .int
                 .iter()
-                .map(|child| {
-                    child
-                        .get_text()
-                        .unwrap()
-                        .to_string()
-                        .parse::<i32>()
-                        .unwrap()
-                        + 1
-                })
+                .map(|child| child.parse::<i32>().unwrap() + 1)
                 .collect::<Vec<_>>();
             trace!(dressings = ?segment_bow_dressing, "Loaded bow dressing");
 
             // Core
-            let segment_core_elem = children.next().unwrap();
-            let segment_core_key = segment_core_elem
-                .get_child("Key")
-                .unwrap()
-                .get_text()
-                .unwrap()
-                .to_string();
-            let segment_core = core_key_list
-                .take_while(|skey| **skey != segment_core_key.as_str())
+            let segment_core = segment_configurations.next().unwrap();
+            let segment_core_model_idx = core_key_list
+                .take_while(|skey| **skey != segment_core.key.as_str())
                 .count() as i32;
-            let segment_core_dressing = segment_core_elem
-                .get_child("Dressing")
-                .unwrap()
-                .get_children()
+            let segment_core_dressing = segment_core
+                .dressing
+                .int
                 .iter()
-                .map(|child| {
-                    child
-                        .get_text()
-                        .unwrap()
-                        .to_string()
-                        .parse::<i32>()
-                        .unwrap()
-                        + 1
-                })
+                .map(|child| child.parse::<i32>().unwrap() + 1)
                 .collect::<Vec<_>>();
             trace!(dressings = ?segment_core_dressing, "Loaded core dressing");
 
             // Stern
-            let segment_stern = children
-                .next()
-                .unwrap()
-                .get_child("Key")
-                .unwrap()
-                .get_text()
-                .unwrap()
-                .to_string();
-            let segment_stern = stern_key_list
-                .take_while(|skey| **skey != segment_stern.as_str())
+            let segment_stern = segment_configurations.next().unwrap();
+            let segment_stern_model_idx = stern_key_list
+                .take_while(|skey| **skey != segment_stern.key.as_str())
                 .count() as i32;
 
             debug!("Reading superstructure configuration");
-            let secondary_structure = hull_config.get_child("SecondaryStructure").unwrap();
-            let secondary_structure_config = secondary_structure
-                .get_child("SecondaryStructureConfig")
-                .unwrap();
-            let key = secondary_structure_config
-                .get_child("Key")
-                .unwrap()
-                .get_text()
-                .unwrap();
+            let secondary_structure_config =
+                &hull_config.secondary_structure.secondary_structure_config;
             let key_idx = BRIDGE_MODELS
                 .iter()
-                .take_while(|skey| skey.to_string() != key.to_string())
+                .take_while(|skey| skey != &&&secondary_structure_config.key)
                 .count();
-            let bridge_segment = secondary_structure_config
-                .get_child("Segment")
-                .unwrap()
-                .get_text()
-                .unwrap()
-                .parse::<i32>()
-                .unwrap();
+            let bridge_segment = secondary_structure_config.segment.parse::<i32>().unwrap();
             let bridge_snappoint = secondary_structure_config
-                .get_child("SnapPoint")
-                .unwrap()
-                .get_text()
-                .unwrap()
+                .snap_point
                 .parse::<i32>()
                 .unwrap();
 
@@ -364,8 +285,8 @@ pub fn on_get_liner_config_handler(
                 bridge_segment,
                 bridge_snappoint,
                 segment_bow: segment_bow_model_idx,
-                segment_core,
-                segment_stern,
+                segment_core: segment_core_model_idx,
+                segment_stern: segment_stern_model_idx,
                 dressings: DressingSelections {
                     bow: segment_bow_dressing.as_slice().into(),
                     core: segment_core_dressing.as_slice().into(),
@@ -399,50 +320,27 @@ pub fn on_save_liner_config_handler(
         } = &hull_config;
         let _ = wrap_errorable_function_fe(&window, || {
             let cur_idx = main_window.get_cur_fleet_idx();
-            let fleet = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
+            let fleet_data = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
                 "Selected fleet doesn't exist",
                 "cur_fleet_idx points to a nonexistant fleet"
             ))?;
-            let mut element = {
-                trace!("Opening fleet file");
-                let fleet_file = File::open(&fleet.path).map_err(|err| {
-                    my_error!(
-                        format!("Failed to open fleet '{}'", fleet.path.to_string()),
-                        err
-                    )
-                })?;
-                trace!("Parsing fleet file");
-                Element::parse(fleet_file)
-                    .map_err(|err| my_error!("Failed to parse fleet file", err))?
-            };
+            let mut fleet = read_fleet(&fleet_data.path)?;
             let ship_idx = window.get_selected_ship_idx();
-            let selected_ship_element = element
-                .get_mut_child("Ships")
-                .unwrap()
-                .children
+            let ship = fleet
+                .ships
+                .ship
                 .get_mut(ship_idx as usize)
-                .unwrap()
-                .as_mut_element()
-                .unwrap();
+                .ok_or(my_error!(
+                    "The selected ship idx doesn't exist",
+                    "This is a bug"
+                ))?;
 
             debug!(
                 "Saving liner config for '{}' in '{}'",
-                selected_ship_element
-                    .get_child("Name")
-                    .unwrap()
-                    .get_text()
-                    .unwrap(),
-                &fleet.name
+                ship.name, &fleet_data.name
             );
 
-            let liner_type = match selected_ship_element
-                .get_child("HullType")
-                .unwrap()
-                .get_text()
-                .unwrap()
-                .to_string()
-                .as_str()
-            {
+            let liner_type = match ship.hull_type.as_str() {
                 "Stock/Bulk Hauler" => "Bulk",
                 "Stock/Container Hauler" => "Container",
                 "Stock/Container Hauler Refit" => "Container",
@@ -450,7 +348,7 @@ pub fn on_save_liner_config_handler(
                     // This should never occur unless the UI is broken.
                     return Err(my_error!(
                         "Invalid HullType",
-                        format!("'{}' is not a liner ship", hull_type)
+                        format!("'{}' is not a line ship", hull_type)
                     ));
                 }
             };
@@ -467,50 +365,22 @@ pub fn on_save_liner_config_handler(
 
             let dressing_slots = window.get_dressing_slots();
 
-            let hull_config = selected_ship_element.get_mut_child("HullConfig").unwrap();
-            let primary_structure = hull_config.get_mut_child("PrimaryStructure").unwrap();
-
-            let attr_map = [
-                (String::new(), String::new()),
-                (
-                    String::from("xml"),
-                    String::from("http://www.w3.org/XML/1998/namespace"),
-                ),
-                (
-                    String::from("xmlns"),
-                    String::from("http://www.w3.org/2000/xmlns/"),
-                ),
-                (
-                    String::from("xsd"),
-                    String::from("http://www.w3.org/2001/XMLSchema"),
-                ),
-                (
-                    String::from("xsd"),
-                    String::from("http://www.w3.org/2001/XMLSchema-instance"),
-                ),
-            ];
-            let mut namespace = xmltree::Namespace::empty();
-            for (prefix, uri) in attr_map {
-                namespace.put(prefix, uri);
-            }
-            // Template to be copied later.
-            let int_elem = Element {
-                prefix: None,
-                namespace: None,
-                namespaces: Some(namespace),
-                name: String::from("int"),
-                attributes: AttributeMap::new(),
-                children: vec![],
-                attribute_namespaces: HashMap::new(),
-            };
+            let hull_config = ship
+                .hull_config
+                .as_mut()
+                .expect("expected liner to have a HullConfig");
+            let primary_structure = &mut hull_config.primary_structure;
 
             debug!("Editing segment configurations");
-            for (idx, child) in primary_structure.children.iter_mut().enumerate() {
-                let child = child.as_mut_element().unwrap();
-
+            for (idx, child) in primary_structure
+                .segment_configuration
+                .iter_mut()
+                .enumerate()
+            {
                 trace!("Clearing previous dressings");
-                let dressing = child.get_mut_child("Dressing").unwrap();
-                dressing.children.clear();
+                let dressing = &mut child.dressing.int;
+                dressing.clear();
+
                 let segment_type_idx;
                 let segment_name;
 
@@ -525,14 +395,9 @@ pub fn on_save_liner_config_handler(
                             .bow
                             .iter()
                             .map(|i| i - 1)
-                            .map(|i| {
-                                let mut int_elem = int_elem.clone();
-                                int_elem.children = vec![xmltree::XMLNode::Text(i.to_string())];
-                                xmltree::XMLNode::Element(int_elem)
-                            })
                             .take(dressing_slots.bow.iter().count())
                         {
-                            dressing.children.push(elem);
+                            dressing.push(elem.to_string());
                         }
                     }
                     1 => {
@@ -545,14 +410,9 @@ pub fn on_save_liner_config_handler(
                             .core
                             .iter()
                             .map(|i| i - 1)
-                            .map(|i| {
-                                let mut int_elem = int_elem.clone();
-                                int_elem.children = vec![xmltree::XMLNode::Text(i.to_string())];
-                                xmltree::XMLNode::Element(int_elem)
-                            })
                             .take(dressing_slots.core.iter().count())
                         {
-                            dressing.children.push(elem);
+                            dressing.push(elem.to_string());
                         }
                     }
                     2 => {
@@ -569,57 +429,25 @@ pub fn on_save_liner_config_handler(
                 let key_data = BULKER_SEGMENTS.get(&key_lookup_name.as_str()).unwrap();
                 trace!("Returned segment key '{}'", &key_data);
 
-                let text_node = xmltree::XMLNode::Text(key_data.to_string());
-                let key = child.get_mut_child("Key").unwrap();
-                key.children = vec![text_node];
+                child.key = key_data.to_string();
             }
 
             trace!("Setting superstructure configuration");
-            let secondary_structure = hull_config
-                .get_mut_child("SecondaryStructure")
-                .unwrap()
-                .get_mut_child("SecondaryStructureConfig")
-                .unwrap();
+            let secondary_structure =
+                &mut hull_config.secondary_structure.secondary_structure_config;
 
             let key_lookup_name = format!("Superstructure-{}", bridge_model);
             trace!("Looking up superstructure key '{}'", &key_lookup_name);
             let key_data = BULKER_SEGMENTS.get(&key_lookup_name.as_str()).unwrap();
             trace!("Returned key '{}'", &key_data);
-            let key = secondary_structure.get_mut_child("Key").unwrap();
-            key.children = vec![xmltree::XMLNode::Text(key_data.to_string())];
+            secondary_structure.key = key_data.to_string();
 
-            let segment = secondary_structure.get_mut_child("Segment").unwrap();
-            segment.children = vec![xmltree::XMLNode::Text(bridge_segment.to_string())];
-
-            let segment = secondary_structure.get_mut_child("SnapPoint").unwrap();
-            segment.children = vec![xmltree::XMLNode::Text(bridge_snappoint.to_string())];
+            secondary_structure.segment = bridge_segment.to_string();
+            secondary_structure.snap_point = bridge_snappoint.to_string();
 
             debug!("Hull configuration complete");
 
-            {
-                std::fs::remove_file(&fleet.path)
-                    .map_err(|err| my_error!("Failed to delete previous fleet file", err))?;
-                trace!("Saving file");
-                let fleet_file = OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .open(&fleet.path)
-                    .map_err(|err| {
-                        my_error!(
-                            format!("Failed to open fleet '{}'", fleet.path.to_string()),
-                            err
-                        )
-                    })?;
-                let config = EmitterConfig::new().perform_indent(true);
-                element
-                    .write_with_config(fleet_file, config)
-                    .map_err(|err| {
-                        my_error!(
-                            format!("Failed to write to fleet file '{}'", fleet.path.to_string()),
-                            err
-                        )
-                    })?;
-            }
+            write_fleet(&fleet_data.path, &fleet)?;
 
             debug!("Hull configuration saved");
 

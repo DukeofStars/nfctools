@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    fs::File,
     hash::Hasher,
     path::{Path, PathBuf},
 };
@@ -8,9 +7,8 @@ use std::{
 use glob::Pattern;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use tracing::{debug, info, trace, warn};
-use xmltree::Element;
 
-use crate::{error::Error, my_error};
+use crate::{error::Error, fleet_io::read_fleet, my_error, MissileData};
 
 mod load_missiles;
 pub mod missiles_window;
@@ -97,10 +95,14 @@ impl UsedMissilesCache {
                         continue;
                     }
                 }
-                self.fleets.insert(
-                    child.path(),
-                    FleetsUsedMissiles::from_fleet_file(child.path())?,
-                );
+                if let Ok(used_missiles) = FleetsUsedMissiles::from_fleet_file(child.path()) {
+                    self.fleets.insert(child.path(), used_missiles);
+                } else {
+                    warn!(
+                        "Skipping invalid fleet: Failed to pull used missiles from '{}'",
+                        child.path().display()
+                    );
+                }
             }
         }
 
@@ -168,60 +170,62 @@ impl FleetsUsedMissiles {
         // Pulling missile templates
         debug!("Pulling used missile templates from '{}'", path.display());
 
-        let element = {
-            trace!("Opening fleet file");
-            let fleet_file = File::open(&path).map_err(|err| {
-                my_error!(format!("Failed to open fleet '{}'", path.display()), err)
-            })?;
-            trace!("Parsing fleet file");
-            Element::parse(fleet_file)
-                .map_err(|err| my_error!("Failed to parse fleet file", err))?
-        };
+        let fleet = read_fleet(path)?;
 
-        let name = element
-            .get_child("Name")
-            .map(|elem| elem.get_text())
-            .flatten()
-            .ok_or(my_error!("Invalid fleet", "Fleet has no name"))?
-            .to_string();
-
-        let Some(missile_types_elem) = element.get_child("MissileTypes") else {
+        let Some(missile_types_elem) = fleet.missile_types else {
             return Ok(FleetsUsedMissiles {
-                name,
+                name: fleet.name.clone(),
                 hash,
                 used_missiles: Vec::new(),
             });
         };
 
         let mut used_missiles = Vec::new();
-        for missile_type_elem in &missile_types_elem.children {
-            if let Some(associated_missile_template_elem) = missile_type_elem
-                .as_element()
-                .map(|elem| elem.get_child("AssociatedTemplateName"))
-                .flatten()
-            {
-                let Some(associated_missile_template_name) =
-                    associated_missile_template_elem.get_text()
-                else {
-                    return Err(my_error!(
-                        "Invalid fleet file",
-                        "AssociatedTemplateName is not text"
-                    ));
-                };
-
-                used_missiles.push(MissileTemplateId(
-                    associated_missile_template_name.to_string(),
-                ));
-            }
+        for missile_template in &missile_types_elem.missile_template {
+            used_missiles.push(MissileTemplateId::from_missile(&missile_template))
         }
 
         Ok(FleetsUsedMissiles {
-            name,
+            name: fleet.name,
             hash,
             used_missiles,
         })
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct MissileTemplateId(pub String);
+#[derive(Deserialize, Serialize, Debug, PartialEq)]
+pub struct MissileTemplateId(String);
+impl MissileTemplateId {
+    pub fn from_associated_template_name(associated_template_name: String) -> MissileTemplateId {
+        MissileTemplateId(associated_template_name)
+    }
+
+    pub fn from_designation_and_nickname(
+        designation: String,
+        nickname: String,
+    ) -> MissileTemplateId {
+        MissileTemplateId(format!("{} {}", designation, nickname))
+    }
+
+    pub fn from_missile(missile: &schemas::MissileTemplate) -> MissileTemplateId {
+        if let Some(associated_template_name) = &missile.associated_template_name {
+            MissileTemplateId::from_associated_template_name(associated_template_name.clone())
+        } else {
+            MissileTemplateId::from_designation_and_nickname(
+                missile.designation.clone(),
+                missile.nickname.clone(),
+            )
+        }
+    }
+
+    pub fn from_missile_data(missile_data: &MissileData) -> MissileTemplateId {
+        if missile_data.template_name.as_str() == "" {
+            MissileTemplateId::from_designation_and_nickname(
+                missile_data.designation.to_string(),
+                missile_data.nickname.to_string(),
+            )
+        } else {
+            MissileTemplateId::from_associated_template_name(missile_data.template_name.to_string())
+        }
+    }
+}

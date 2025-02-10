@@ -1,0 +1,11 @@
+[package]
+name = "schemas"
+version = "1.0.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+
+[build-dependencies]
+xml_schema_generator = "0.6"
+quick-xml = { version = "0.37.2", features = ["serialize"] }

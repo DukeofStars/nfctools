@@ -1,18 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{
-    cell::RefCell,
-    fs::{File, OpenOptions},
-    io::Write,
-    path::PathBuf,
-    rc::Rc,
-};
+use std::{cell::RefCell, fs::OpenOptions, io::Write, path::PathBuf, rc::Rc};
 
 use actions::save_description;
 use clap::{Parser, ValueEnum};
 use color_eyre::eyre::eyre;
 use error::{wrap_errorable_function, Error};
-use fleet_info_reader::FleetInfoReader;
 use glob::Pattern;
 use missile_templates::UsedMissilesCache;
 use serde::Deserialize;
@@ -25,12 +18,12 @@ use tracing_subscriber::{
     Registry,
 };
 
-use crate::load_fleets::load_fleets;
+use crate::{fleet_io::read_fleet, load_fleets::load_fleets};
 
 mod actions;
 mod error;
 mod fleet_editor;
-mod fleet_info_reader;
+mod fleet_io;
 mod load_fleets;
 mod missile_templates;
 mod tags;
@@ -408,24 +401,20 @@ fn main() -> color_eyre::Result<()> {
                     return Ok(());
                 }
 
-                let fleet = fleets_model.iter().nth(idx as usize).ok_or(my_error!(
+                let fleet_data = fleets_model.iter().nth(idx as usize).ok_or(my_error!(
                     "Selected fleet doesn't exist",
                     "cur_fleet_idx points to a nonexistant fleet"
                 ))?;
-                trace!("Viewing fleet {}: '{}'", idx, fleet.name);
-                let fleet_info_reader =
-                    FleetInfoReader::new(File::open(fleet.path.to_string()).map_err(|err| {
-                        my_error!(
-                            format!("Failed to open fleet '{}'", fleet.path.to_string()),
-                            err
-                        )
-                    })?);
-                let description = fleet_info_reader.get_value("Fleet/Description");
-                if !description.is_empty() {
-                    trace!(%description, "Found description");
+                trace!("Viewing fleet {}: '{}'", idx, fleet_data.name);
+                let fleet = read_fleet(&fleet_data.path)?;
+                let description = &fleet.description;
+                if description.as_ref().is_some_and(|d| !d.is_empty()) {
+                    trace!(description = %description.as_ref().unwrap(), "Found description");
                 }
 
-                let (tags, description) = tags::get_tags_from_description(&description)?;
+                let (tags, description) = tags::get_tags_from_description(
+                    description.as_ref().unwrap_or(&String::new()),
+                )?;
                 main_window.invoke_set_description(description.into());
                 tags_model.set_vec(tags);
 

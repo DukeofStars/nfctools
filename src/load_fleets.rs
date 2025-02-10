@@ -1,6 +1,5 @@
 use std::{
     cmp::Ordering,
-    fs::File,
     path::{Path, PathBuf},
     rc::Rc,
 };
@@ -8,11 +7,12 @@ use std::{
 use color_eyre::eyre::WrapErr;
 use glob::Pattern;
 use slint::{VecModel, Weak};
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::{
     error::{wrap_errorable_function, Error},
-    my_error, FleetData, FleetInfoReader, MainWindow,
+    fleet_io::read_fleet,
+    my_error, FleetData, MainWindow,
 };
 
 pub fn on_reload_fleets_handler(
@@ -89,23 +89,22 @@ fn load_fleets_rec(
             load_fleets_rec(root_path, excluded_patterns, child.path(), output)?;
         }
         if file_type.is_file() {
-            if child.path().extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
-                continue;
-            }
-            let fleet_info_reader =
-                FleetInfoReader::new(File::open(child.path()).map_err(|err| {
-                    my_error!(
-                        format!("Failed to open file '{}'", child.path().display()),
-                        err
-                    )
-                })?);
-            let fleet_name = fleet_info_reader.get_value("Fleet/Name");
+            let path = child.path();
             for pattern in excluded_patterns {
-                if pattern.matches_path(child.path().as_path()) {
+                if pattern.matches_path(path.as_path()) {
                     continue 'child_loop;
                 }
             }
-            let path = child.path();
+            if path.extension().map(|s| s.to_str()) != Some(Some("fleet".into())) {
+                continue;
+            }
+            let fleet = match read_fleet(&path) {
+                Ok(fleet) => fleet,
+                Err(err) => {
+                    warn!("Skipping invalid fleet: {}", err);
+                    continue 'child_loop;
+                }
+            };
             let short_path = path
                 .strip_prefix(root_path)
                 .map_err(|err| {
@@ -121,7 +120,7 @@ fn load_fleets_rec(
                 path: path.to_str().unwrap().into(),
                 short_path: short_path.into(),
                 selected: false,
-                name: fleet_name.into(),
+                name: fleet.name.into(),
             };
             output.push(fleet_data);
         }

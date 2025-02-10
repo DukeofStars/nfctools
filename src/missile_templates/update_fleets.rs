@@ -1,17 +1,13 @@
-use std::{
-    fs::{File, OpenOptions},
-    path::PathBuf,
-    rc::Rc,
-};
+use std::{path::PathBuf, rc::Rc};
 
 use glob::Pattern;
 use slint::{ComponentHandle, Model, SharedString, ToSharedString, VecModel, Weak};
-use tracing::{debug, info, trace};
-use xml::EmitterConfig;
-use xmltree::{Element, XMLNode};
+use tracing::{debug, info};
 
 use crate::{
     error::{wrap_errorable_function_m, Error},
+    fleet_io::{read_fleet, read_missile, write_fleet},
+    missile_templates::MissileTemplateId,
     my_error, MissileData, MissileWindow, UpdateMissilesConfirmDialog,
 };
 
@@ -109,76 +105,29 @@ pub fn on_update_fleets_with_missile_handler(
                             .filter(|(_, f)| fleet_names.iter().any(|name| *name == *f.name))
                             .collect::<Vec<_>>();
 
-                        let new_missile_elem = {
-                            trace!("Opening missile file");
-                            let missile_file = File::open(&missile_data.path).map_err(|err| {
-                                my_error!(
-                                    format!("Failed to open missile '{}'", missile_data.path),
-                                    err
-                                )
-                            })?;
-                            trace!("Parsing missile file");
-                            Element::parse(missile_file)
-                                .map_err(|err| my_error!("Failed to parse missile file", err))?
-                        };
+                        let new_missile = read_missile(&missile_data.path)?;
 
-                        for fleet in &fleets {
-                            let mut fleet_elem = {
-                                trace!("Opening fleet file");
-                                let missile_file = File::open(&fleet.0).map_err(|err| {
-                                    my_error!(
-                                        format!("Failed to open fleet '{}'", fleet.0.display()),
-                                        err
-                                    )
-                                })?;
-                                trace!("Parsing fleet file");
-                                Element::parse(missile_file)
-                                    .map_err(|err| my_error!("Failed to parse fleet file", err))?
-                            };
+                        for (fleet_path, _) in &fleets {
+                            let mut fleet = read_fleet(fleet_path)?;
 
-                            let old_missile_elem = fleet_elem
-                                .get_mut_child("MissileTypes")
-                                .ok_or(my_error!(
-                                    "Updating fleet with no missiles",
-                                    "How did this happen?"
-                                ))?
-                                .children
+                            let missile_types = fleet.missile_types.as_mut().ok_or(my_error!(
+                                "Updating fleet with no missiles",
+                                "How did this happen?"
+                            ))?;
+                            let old_missile = missile_types
+                                .missile_template
                                 .iter_mut()
                                 .filter(|child| {
-                                    *child
-                                        .as_element()
-                                        .unwrap()
-                                        .get_child("AssociatedTemplateName")
-                                        .unwrap()
-                                        .get_text()
-                                        .unwrap()
-                                        == *missile_data.template_name
+                                    MissileTemplateId::from_missile(child)
+                                        == MissileTemplateId::from_missile_data(&missile_data)
                                 })
                                 .next()
                                 .unwrap();
-                            *old_missile_elem = XMLNode::Element(new_missile_elem.clone());
+                            *old_missile = new_missile.clone();
 
-                            trace!("Deleting old fleet file: '{}'", fleet.0.display());
-                            std::fs::remove_file(&fleet.0)
-                                .map_err(|err| my_error!("Failed to delete old fleet file", err))?;
-                            trace!("Creating new fleet file: '{}'", fleet.0.display());
-                            let missile_file = OpenOptions::new()
-                                .write(true)
-                                .create(true)
-                                .open(&fleet.0)
-                                .map_err(|err| {
-                                    my_error!(
-                                        format!("Failed to open fleet '{}'", fleet.0.display()),
-                                        err
-                                    )
-                                })?;
-                            trace!("Writing to fleet file: '{}'", fleet.0.display());
-                            let config = EmitterConfig::default().perform_indent(true);
-                            fleet_elem
-                                .write_with_config(missile_file, config)
-                                .map_err(|err| my_error!("Failed to write fleet file", err))?;
+                            write_fleet(fleet_path, &fleet)?;
 
-                            debug!("Successfully updated '{}'", fleet.0.display());
+                            debug!("Successfully updated '{}'", fleet_path.display());
                         }
 
                         info!(

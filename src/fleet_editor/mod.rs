@@ -1,12 +1,12 @@
-use std::{collections::HashMap, fs::File, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 use lazy_static::lazy_static;
-use slint::{ComponentHandle, Model, ToSharedString, VecModel, Weak};
+use slint::{ComponentHandle, Model, VecModel, Weak};
 use tracing::{debug, info, instrument, trace};
-use xmltree::Element;
 
 use crate::{
     error::{wrap_errorable_function, Error},
+    fleet_io::read_fleet,
     my_error, FleetData, FleetEditorWindow, MainWindow, ShipData,
 };
 
@@ -103,71 +103,33 @@ fn open_fleet_editor(
     if cur_idx == -1 {
         return Err(my_error!("No fleet selected", ""));
     }
-    let fleet = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
+    let fleet_data = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
         "Selected fleet doesn't exist",
         "cur_fleet_idx points to a nonexistant fleet"
     ))?;
-    let fleet_name = fleet.name.clone();
 
-    trace!(%fleet_name, "Setting window name");
-    window.set_fleet_name(fleet.name);
+    trace!(name = %fleet_data.name, "Setting window name");
+    window.set_fleet_name(fleet_data.name.into());
 
     debug!("Getting ships list");
-    let element = {
-        trace!("Opening fleet file");
-        let fleet_file = File::open(&fleet.path).map_err(|err| {
-            my_error!(
-                format!("Failed to open fleet '{}'", fleet.path.to_string()),
-                err
-            )
-        })?;
-        trace!("Parsing fleet file");
-        Element::parse(fleet_file).map_err(|err| my_error!("Failed to parse fleet file", err))?
-    };
-    let ships_elem = element
-        .get_child("Ships")
-        .ok_or(my_error!("Failed to get ships list", "Fleet has no ships"))?;
+    let fleet = read_fleet(&fleet_data.path)?;
+    let ships = &fleet.ships;
 
     debug!("Parsing ship data");
-    let ships = ships_elem
-        .children
+    let ships = ships
+        .ship
         .iter()
-        .map(|ship_elem| {
-            let ship_elem = ship_elem
-                .as_element()
-                .ok_or(my_error!("Invalid fleet file", "Ship is not an element"))?;
-
-            let name = ship_elem
-                .get_child("Name")
-                .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
-                .get_text()
-                .ok_or(my_error!("Invalid fleet file", "Ship has no name"))?
-                .to_shared_string();
-            let hulltype = ship_elem
-                .get_child("HullType")
-                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                .get_text()
-                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                .to_shared_string();
-            let cost: i32 = ship_elem
-                .get_child("Cost")
-                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                .get_text()
-                .ok_or(my_error!("Invalid fleet file", "Ship has no HullType"))?
-                .parse()
-                .map_err(|err| {
+        .map(|ship| {
+            let ship_data = ShipData {
+                class: (&ship.hull_type).into(),
+                name: (&ship.name).into(),
+                cost: ship.cost.parse().map_err(|err| {
                     my_error!(
                         "Invalid fleet file",
                         format!("Failed to parse cost: {}", err)
                     )
-                })?;
-
-            let ship_data = ShipData {
-                class: hulltype,
-                name,
-                cost,
+                })?,
             };
-            trace!("Parsed ship: {:?}", ship_data);
             Ok(ship_data)
         })
         .collect::<Result<Vec<ShipData>, Error>>()?;
