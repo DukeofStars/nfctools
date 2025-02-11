@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::Display,
     hash::Hasher,
     path::{Path, PathBuf},
 };
@@ -199,39 +200,38 @@ impl FleetsUsedMissiles {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug, PartialEq)]
-pub struct MissileTemplateId(String);
+#[derive(Deserialize, Serialize, Debug)]
+pub struct MissileTemplateId {
+    template_name: Option<String>,
+    name: String,
+}
+impl Display for MissileTemplateId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.template_name.as_ref().unwrap_or(&self.name))
+    }
+}
+impl PartialEq for MissileTemplateId {
+    fn eq(&self, other: &Self) -> bool {
+        (self.template_name.is_some() && self.template_name == other.template_name)
+            || self.name == other.name
+    }
+}
 impl MissileTemplateId {
-    pub fn from_associated_template_name(associated_template_name: String) -> MissileTemplateId {
-        MissileTemplateId(associated_template_name)
-    }
-
-    pub fn from_designation_and_nickname(
-        designation: String,
-        nickname: String,
-    ) -> MissileTemplateId {
-        MissileTemplateId(format!("{} {}", designation, nickname))
-    }
-
     pub fn from_missile(missile: &schemas::MissileTemplate) -> MissileTemplateId {
-        if let Some(associated_template_name) = &missile.associated_template_name {
-            MissileTemplateId::from_associated_template_name(associated_template_name.clone())
-        } else {
-            MissileTemplateId::from_designation_and_nickname(
-                missile.designation.clone(),
-                missile.nickname.clone(),
-            )
+        MissileTemplateId {
+            template_name: missile.associated_template_name.clone(),
+            name: format!("{} {}", missile.designation, missile.nickname),
         }
     }
 
     pub fn from_missile_data(missile_data: &MissileData) -> MissileTemplateId {
-        if missile_data.template_name.as_str() == "" {
-            MissileTemplateId::from_designation_and_nickname(
-                missile_data.designation.to_string(),
-                missile_data.nickname.to_string(),
-            )
-        } else {
-            MissileTemplateId::from_associated_template_name(missile_data.template_name.to_string())
+        MissileTemplateId {
+            template_name: if missile_data.template_name.as_str() == "" {
+                None
+            } else {
+                Some(missile_data.template_name.to_string())
+            },
+            name: format!("{} {}", missile_data.designation, missile_data.nickname),
         }
     }
 }

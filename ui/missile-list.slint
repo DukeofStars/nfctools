@@ -78,24 +78,31 @@ export component UpdateMissilesConfirmDialog inherits Window {
     callback confirm-fleet(string);
     callback unconfirm-fleet(string);
 
+    max-height: 600px;
+    width: 200px;
+
     VerticalLayout {
         Text {
             text: "Are you sure you want to update these fleets?";
             font-size: 18px;
         }
 
-        for name[idx] in fleet-names: CheckBox {
-            checked: true;
-            text: name;
+        ScrollView {
+            VerticalLayout {
+                for name[idx] in fleet-names: CheckBox {
+                    checked: true;
+                    text: name;
 
-            init => {
-                root.confirm-fleet(name);
-            }
-            toggled => {
-                if self.checked {
-                    root.confirm-fleet(name);
-                } else {
-                    root.unconfirm-fleet(name);
+                    init => {
+                        root.confirm-fleet(name);
+                    }
+                    toggled => {
+                        if self.checked {
+                            root.confirm-fleet(name);
+                        } else {
+                            root.unconfirm-fleet(name);
+                        }
+                    }
                 }
             }
         }

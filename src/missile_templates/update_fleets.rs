@@ -24,10 +24,7 @@ pub fn on_update_fleets_with_missile_handler(
                 return Err(my_error!("No missile selected", ""));
             }
             let missile_data = missiles_model.iter().nth(missile_idx as usize).unwrap();
-
-            if missile_data.template_name == "" {
-                return Err(my_error!("Missile has no associated template", ""));
-            }
+            let missile_id = MissileTemplateId::from_missile_data(&missile_data);
 
             let mut used_missiles_cache = crate::load_missiles_cache()
                 .map_err(|err| my_error!("Could not load missiles cache", err))?;
@@ -39,10 +36,7 @@ pub fn on_update_fleets_with_missile_handler(
                 .fleets
                 .into_iter()
                 .filter(|(_path, used_missiles)| {
-                    used_missiles
-                        .used_missiles
-                        .iter()
-                        .any(|a| *a.0 == *missile_data.template_name)
+                    used_missiles.used_missiles.iter().any(|a| a == &missile_id)
                 })
                 .collect::<Vec<_>>();
 
@@ -93,8 +87,8 @@ pub fn on_update_fleets_with_missile_handler(
                 let window_weak = window.as_weak();
                 confirm_dialog.on_confirmed_update_fleets(move |fleet_names| {
                     info!(
-                        "Updating template {} in {} fleets: {:?}",
-                        missile_data.template_name,
+                        "Updating template '{}' in {} fleets: {:?}",
+                        missile_id,
                         fleet_names.iter().count(),
                         fleet_names.iter().collect::<Vec<_>>()
                     );
@@ -130,7 +124,13 @@ pub fn on_update_fleets_with_missile_handler(
                                 })
                                 .flatten()
                                 .unwrap();
+                            let (old_designation, old_nickname) = (
+                                old_missile.designation.clone(),
+                                old_missile.nickname.clone(),
+                            );
                             *old_missile = new_missile.clone();
+                            old_missile.designation = old_designation;
+                            old_missile.nickname = old_nickname;
 
                             write_fleet(fleet_path, &fleet)?;
 
@@ -140,7 +140,7 @@ pub fn on_update_fleets_with_missile_handler(
                         info!(
                             "Successfully updated {} fleets with new missile: '{}'",
                             fleets.len(),
-                            missile_data.template_name
+                            missile_id
                         );
 
                         Ok(())
