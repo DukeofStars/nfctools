@@ -79,15 +79,18 @@ export component UpdateMissilesConfirmDialog inherits Window {
     callback unconfirm-fleet(string);
 
     max-height: 600px;
-    width: 200px;
+    min-height: 200px;
+    preferred-height: sv.preferred-height;
+    width: 300px;
 
     VerticalLayout {
         Text {
             text: "Are you sure you want to update these fleets?";
+            wrap: word-wrap;
             font-size: 18px;
         }
 
-        ScrollView {
+        sv := ScrollView {
             VerticalLayout {
                 for name[idx] in fleet-names: CheckBox {
                     checked: true;
