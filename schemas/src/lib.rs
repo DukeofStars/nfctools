@@ -70,9 +70,9 @@ pub struct Ship {
     #[serde(rename = "SocketMap")]
     pub socket_map: SocketMap,
     #[serde(rename = "WeaponGroups")]
-    pub weapon_groups: WeaponGroups,
+    pub weapon_groups: Option<WeaponGroups>,
     #[serde(rename = "TemplateMissileTypes")]
-    pub template_missile_types: TemplateMissileTypes,
+    pub template_missile_types: Option<TemplateMissileTypes>,
     #[serde(rename = "TemplateSpacecraftTypes")]
     pub template_spacecraft_types: Option<TemplateSpacecraftTypes>,
 }
@@ -397,7 +397,7 @@ pub struct InstalledComponent {
     #[serde(rename = "Role")]
     pub role: Option<String>,
     #[serde(rename = "ComponentKey")]
-    pub component_key: String,
+    pub component_key: Option<String>,
     #[serde(rename = "BalanceValues")]
     pub balance_values: Option<BalanceValues>,
 }
