@@ -31,7 +31,7 @@ pub struct Fleet {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SortOverrideOrder {
-    #[serde(rename = "@nil")]
+    #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
     pub xsi_nil: String,
 }
 
@@ -80,7 +80,7 @@ pub struct Ship {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SaveId {
-    #[serde(rename = "@nil")]
+    #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
     pub xsi_nil: String,
 }
 
@@ -91,7 +91,7 @@ pub struct Callsign {}
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct HullConfig {
-    #[serde(rename = "@type")]
+    #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -201,7 +201,7 @@ pub struct HullSocket {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ComponentData {
-    #[serde(rename = "@type")]
+    #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -374,7 +374,7 @@ pub struct MissileSocket {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InstalledComponent {
-    #[serde(rename = "@type")]
+    #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: Option<String>,
     #[serde(rename = "$text")]
     pub text: Option<String>,
