@@ -2,7 +2,7 @@ use std::{path::PathBuf, rc::Rc};
 
 use glob::Pattern;
 use slint::{ComponentHandle, Model, SharedString, ToSharedString, VecModel, Weak};
-use tracing::{debug, info};
+use tracing::{debug, info, trace};
 
 use crate::{
     error::{wrap_errorable_function_m, Error},
@@ -124,13 +124,44 @@ pub fn on_update_fleets_with_missile_handler(
                                 })
                                 .flatten()
                                 .unwrap();
-                            let (old_designation, old_nickname) = (
-                                old_missile.designation.clone(),
-                                old_missile.nickname.clone(),
-                            );
                             *old_missile = new_missile.clone();
-                            old_missile.designation = old_designation;
-                            old_missile.nickname = old_nickname;
+
+                            // JFC WTF DUKE
+                            fleet.ships.as_mut().map(|ships| {
+                                ships.ship.as_mut().map(|ships| {
+                                    ships.iter_mut().for_each(|ship| {
+                                        ship.socket_map.hull_socket.iter_mut().map(|hull_socket| {
+                                            hull_socket.component_data.as_mut().map(|component_data| {
+                                                if component_data.xsi_type == "CellLauncherData" {
+                                                    component_data.missile_load.as_mut().map(
+                                                        |missile_load| {
+                                                            missile_load.mag_save_data.as_mut().map(
+                                                                |mag_save_data| {
+                                                                    trace!("Updating magazine key");
+                                                                    mag_save_data
+                                                                        .iter_mut()
+                                                                        .filter(|mag_save_data| {
+                                                                            mag_save_data
+                                                                                .munition_key
+                                                                                == format!(
+                                                                                    "$MODMIS$/{} {}",
+                                                                                    old_missile.designation, old_missile.nickname
+                                                                                )
+                                                                        })
+                                                                        .map(|mag_save_data| mag_save_data.munition_key = format!(
+                                                                                    "$MODMIS$/{} {}",
+                                                                                    new_missile.designation, new_missile.nickname
+                                                                                )).count();
+                                                                },
+                                                            );
+                                                        },
+                                                    );
+                                                }
+                                            });
+                                        }).count();
+                                    });
+                                });
+                            });
 
                             write_fleet(fleet_path, &fleet)?;
 
