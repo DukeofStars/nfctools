@@ -40,12 +40,7 @@ pub fn load_fleets(
 ) -> Result<Vec<FleetData>, Error> {
     debug!("Loading fleets from {}", path.as_ref().display());
     let mut output = vec![];
-    load_fleets_rec(
-        &path.as_ref().to_path_buf(),
-        excluded_patterns,
-        path,
-        &mut output,
-    )?;
+    load_fleets_rec(&path.as_ref().to_path_buf(), excluded_patterns, path, &mut output)?;
 
     debug!("Loaded {} fleets", output.len());
 
@@ -60,12 +55,7 @@ fn load_fleets_rec(
     let path = path.as_ref();
     let mut children = path
         .read_dir()
-        .map_err(|err| {
-            my_error!(
-                format!("Failed to read directory '{}'", path.display()),
-                err
-            )
-        })?
+        .map_err(|err| my_error!(format!("Failed to read directory '{}'", path.display()), err))?
         .filter_map(|c| c.ok())
         .collect::<Vec<_>>();
     children.sort_by(|a, b| {
@@ -107,12 +97,7 @@ fn load_fleets_rec(
             };
             let short_path = path
                 .strip_prefix(root_path)
-                .map_err(|err| {
-                    my_error!(
-                        format!("Failed to strip prefix from '{}'", path.display()),
-                        err
-                    )
-                })?
+                .map_err(|err| my_error!(format!("Failed to strip prefix from '{}'", path.display()), err))?
                 .parent()
                 .map(|p| p.to_str().unwrap().to_string())
                 .unwrap_or_default();

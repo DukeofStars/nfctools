@@ -47,8 +47,7 @@ pub fn wrap_errorable_function<T>(
         Ok(t) => Ok(t),
         Err(err) => {
             error!("{}: {}", err.title, err.error);
-            main_window
-                .invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
+            main_window.invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
             return Err(err);
         }
     }

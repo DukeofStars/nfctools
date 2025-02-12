@@ -88,10 +88,7 @@ pub fn on_open_fleet_editor_handler(
 }
 
 #[instrument(skip(main_window, fleets_model))]
-fn open_fleet_editor(
-    main_window: &MainWindow,
-    fleets_model: Rc<VecModel<FleetData>>,
-) -> Result<(), Error> {
+fn open_fleet_editor(main_window: &MainWindow, fleets_model: Rc<VecModel<FleetData>>) -> Result<(), Error> {
     info!("Initialising fleet editor");
     trace!("Creating window");
     let window = FleetEditorWindow::new()
@@ -127,10 +124,7 @@ fn open_fleet_editor(
                             class: (&ship.hull_type).into(),
                             name: (&ship.name).into(),
                             cost: ship.cost.parse().map_err(|err| {
-                                my_error!(
-                                    "Invalid fleet file",
-                                    format!("Failed to parse cost: {}", err)
-                                )
+                                my_error!("Invalid fleet file", format!("Failed to parse cost: {}", err))
                             })?,
                         };
                         Ok(ship_data)

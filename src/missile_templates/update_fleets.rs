@@ -35,9 +35,7 @@ pub fn on_update_fleets_with_missile_handler(
             let fleets_that_use_missile = used_missiles_cache
                 .fleets
                 .into_iter()
-                .filter(|(_path, used_missiles)| {
-                    used_missiles.used_missiles.iter().any(|a| a == &missile_id)
-                })
+                .filter(|(_path, used_missiles)| used_missiles.used_missiles.iter().any(|a| a == &missile_id))
                 .collect::<Vec<_>>();
 
             debug!("Opening confirmation dialog");
@@ -116,9 +114,7 @@ pub fn on_update_fleets_with_missile_handler(
                                         .iter_mut()
                                         .filter(|child| {
                                             MissileTemplateId::from_missile(child)
-                                                == MissileTemplateId::from_missile_data(
-                                                    &missile_data,
-                                                )
+                                                == MissileTemplateId::from_missile_data(&missile_data)
                                         })
                                         .next()
                                 })
@@ -130,35 +126,43 @@ pub fn on_update_fleets_with_missile_handler(
                             fleet.ships.as_mut().map(|ships| {
                                 ships.ship.as_mut().map(|ships| {
                                     ships.iter_mut().for_each(|ship| {
-                                        ship.socket_map.hull_socket.iter_mut().map(|hull_socket| {
-                                            hull_socket.component_data.as_mut().map(|component_data| {
-                                                if component_data.xsi_type == "CellLauncherData" {
-                                                    component_data.missile_load.as_mut().map(
-                                                        |missile_load| {
-                                                            missile_load.mag_save_data.as_mut().map(
-                                                                |mag_save_data| {
-                                                                    trace!("Updating magazine key");
-                                                                    mag_save_data
-                                                                        .iter_mut()
-                                                                        .filter(|mag_save_data| {
-                                                                            mag_save_data
-                                                                                .munition_key
-                                                                                == format!(
-                                                                                    "$MODMIS$/{} {}",
-                                                                                    old_missile.designation, old_missile.nickname
-                                                                                )
-                                                                        })
-                                                                        .map(|mag_save_data| mag_save_data.munition_key = format!(
-                                                                                    "$MODMIS$/{} {}",
-                                                                                    new_missile.designation, new_missile.nickname
-                                                                                )).count();
-                                                                },
-                                                            );
-                                                        },
-                                                    );
-                                                }
-                                            });
-                                        }).count();
+                                        ship.socket_map
+                                            .hull_socket
+                                            .iter_mut()
+                                            .map(|hull_socket| {
+                                                hull_socket.component_data.as_mut().map(|component_data| {
+                                                    if component_data.xsi_type == "CellLauncherData" {
+                                                        component_data.missile_load.as_mut().map(
+                                                            |missile_load| {
+                                                                missile_load.mag_save_data.as_mut().map(
+                                                                    |mag_save_data| {
+                                                                        trace!("Updating magazine key");
+                                                                        mag_save_data
+                                                                    .iter_mut()
+                                                                    .filter(|mag_save_data| {
+                                                                        mag_save_data.munition_key
+                                                                            == format!(
+                                                                                "$MODMIS$/{} {}",
+                                                                                old_missile.designation,
+                                                                                old_missile.nickname
+                                                                            )
+                                                                    })
+                                                                    .map(|mag_save_data| {
+                                                                        mag_save_data.munition_key = format!(
+                                                                            "$MODMIS$/{} {}",
+                                                                            new_missile.designation,
+                                                                            new_missile.nickname
+                                                                        )
+                                                                    })
+                                                                    .count();
+                                                                    },
+                                                                );
+                                                            },
+                                                        );
+                                                    }
+                                                });
+                                            })
+                                            .count();
                                     });
                                 });
                             });

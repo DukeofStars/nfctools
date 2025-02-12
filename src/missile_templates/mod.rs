@@ -21,11 +21,7 @@ pub struct UsedMissilesCache {
 }
 
 impl UsedMissilesCache {
-    pub fn update(
-        &mut self,
-        missiles_dir: &PathBuf,
-        excluded_patterns: &Vec<Pattern>,
-    ) -> Result<(), Error> {
+    pub fn update(&mut self, missiles_dir: &PathBuf, excluded_patterns: &Vec<Pattern>) -> Result<(), Error> {
         debug!("Purging missile cache of deleted fleets");
         for path in self.fleets.keys().cloned().collect::<Vec<_>>() {
             if !path.exists() {
@@ -52,14 +48,9 @@ impl UsedMissilesCache {
         Ok(missile_cache)
     }
 
-    fn recurse_fleets(
-        &mut self,
-        path: &PathBuf,
-        excluded_patterns: &Vec<Pattern>,
-    ) -> Result<(), Error> {
+    fn recurse_fleets(&mut self, path: &PathBuf, excluded_patterns: &Vec<Pattern>) -> Result<(), Error> {
         trace!("Reading dir '{}'", path.display());
-        let read_dir =
-            std::fs::read_dir(path).map_err(|err| my_error!("Failed to read directory", err))?;
+        let read_dir = std::fs::read_dir(path).map_err(|err| my_error!("Failed to read directory", err))?;
 
         'child_loop: for child in read_dir {
             let Ok(child) = child else {
@@ -85,9 +76,8 @@ impl UsedMissilesCache {
                 if let Some(old_fleet_data) = self.fleets.get(&child.path()) {
                     let hash = {
                         let mut hasher = metrohash::MetroHash::new();
-                        let file_bytes = std::fs::read(child.path()).map_err(|err| {
-                            my_error!("Failed to read bytes from fleet file", err)
-                        })?;
+                        let file_bytes = std::fs::read(child.path())
+                            .map_err(|err| my_error!("Failed to read bytes from fleet file", err))?;
                         hasher.write(&file_bytes);
                         hasher.finish()
                     };
@@ -118,10 +108,7 @@ impl UsedMissilesCache {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct FleetsUsedMissiles {
     name: String,
-    #[serde(
-        serialize_with = "serialize_hash",
-        deserialize_with = "deserialize_hash"
-    )]
+    #[serde(serialize_with = "serialize_hash", deserialize_with = "deserialize_hash")]
     hash: u64,
     used_missiles: Vec<MissileTemplateId>,
 }
@@ -166,8 +153,8 @@ impl FleetsUsedMissiles {
         // Generate hash
         let hash = {
             let mut hasher = metrohash::MetroHash::new();
-            let file_bytes = std::fs::read(path)
-                .map_err(|err| my_error!("Failed to read bytes from fleet file", err))?;
+            let file_bytes =
+                std::fs::read(path).map_err(|err| my_error!("Failed to read bytes from fleet file", err))?;
             hasher.write(&file_bytes);
             hasher.finish()
         };
@@ -212,8 +199,7 @@ impl Display for MissileTemplateId {
 }
 impl PartialEq for MissileTemplateId {
     fn eq(&self, other: &Self) -> bool {
-        (self.template_name.is_some() && self.template_name == other.template_name)
-            || self.name == other.name
+        (self.template_name.is_some() && self.template_name == other.template_name) || self.name == other.name
     }
 }
 impl MissileTemplateId {

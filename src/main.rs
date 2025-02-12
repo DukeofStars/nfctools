@@ -55,7 +55,10 @@ fn default_saves_dir() -> PathBuf {
         );
         path.join("Saves")
     } else {
-        warn!("Could not automatically detected nebulous installation directory, falling back to default. This most likely means the app will fail");
+        warn!(
+            "Could not automatically detected nebulous installation directory, falling back to default. \
+             This most likely means the app will fail"
+        );
         PathBuf::from(r#"C:\Program Files (x86)\Steam\steamapps\common\Nebulous\Saves\"#)
     }
 }
@@ -70,27 +73,21 @@ struct AppConfig {
 
 fn load_app_config() -> Result<AppConfig, Error> {
     let config_path = directories::ProjectDirs::from("", "", "NebTools")
-        .ok_or(my_error!(
-            "Failed to retrieve config dir",
-            "OS not recognised?"
-        ))?
+        .ok_or(my_error!("Failed to retrieve config dir", "OS not recognised?"))?
         .preference_dir()
         .join("config.toml");
     trace!("Loading config from '{}'", config_path.display());
     let config_file = std::fs::read_to_string(&config_path)
         .inspect_err(|_| trace!("No config file found, using default config values"))
         .unwrap_or_default();
-    let app_config: AppConfig = toml::from_str(&config_file)
-        .map_err(|err| my_error!("Failed to parse config file", err))?;
+    let app_config: AppConfig =
+        toml::from_str(&config_file).map_err(|err| my_error!("Failed to parse config file", err))?;
 
     Ok(app_config)
 }
 fn load_tags() -> Result<TagsRepository, Error> {
     let tags_path = directories::ProjectDirs::from("", "", "NebTools")
-        .ok_or(my_error!(
-            "Failed to retrieve config dir",
-            "OS not recognised?"
-        ))?
+        .ok_or(my_error!("Failed to retrieve config dir", "OS not recognised?"))?
         .preference_dir()
         .join("tags.toml");
     trace!("Loading tags from '{}'", tags_path.display());
@@ -105,10 +102,7 @@ fn load_tags() -> Result<TagsRepository, Error> {
 fn save_tags(tags_repo: Rc<RefCell<TagsRepository>>) -> Result<(), Error> {
     debug!("Saving tags");
     let tags_path = directories::ProjectDirs::from("", "", "NebTools")
-        .ok_or(my_error!(
-            "Failed to retrieve config dir",
-            "OS not recognised?"
-        ))?
+        .ok_or(my_error!("Failed to retrieve config dir", "OS not recognised?"))?
         .preference_dir()
         .join("tags.toml");
     trace!("Writing tags to '{}'", tags_path.display());
@@ -117,8 +111,8 @@ fn save_tags(tags_repo: Rc<RefCell<TagsRepository>>) -> Result<(), Error> {
         .create(true)
         .open(&tags_path)
         .map_err(|err| my_error!("Failed to open tags file", err))?;
-    let toml = toml::to_string(tags_repo.as_ref())
-        .map_err(|err| my_error!("Failed to serialize tags", err))?;
+    let toml =
+        toml::to_string(tags_repo.as_ref()).map_err(|err| my_error!("Failed to serialize tags", err))?;
     tags_file
         .write_all(toml.as_bytes())
         .map_err(|err| my_error!("Failed to write tags file", err))?;
@@ -128,10 +122,7 @@ fn save_tags(tags_repo: Rc<RefCell<TagsRepository>>) -> Result<(), Error> {
 fn load_missiles_cache() -> Result<UsedMissilesCache, Error> {
     debug!("Loading UsedMissilesCache");
     let missiles_cache_path = directories::ProjectDirs::from("", "", "NebTools")
-        .ok_or(my_error!(
-            "Failed to retrieve cache dir",
-            "OS not recognised?"
-        ))?
+        .ok_or(my_error!("Failed to retrieve cache dir", "OS not recognised?"))?
         .cache_dir()
         .join("missile_cache.toml");
     trace!(
@@ -148,16 +139,10 @@ fn load_missiles_cache() -> Result<UsedMissilesCache, Error> {
 fn save_missiles_cache(used_missiles_cache: &UsedMissilesCache) -> Result<(), Error> {
     debug!("Saving UsedMissilesCache");
     let missiles_cache_path = directories::ProjectDirs::from("", "", "NebTools")
-        .ok_or(my_error!(
-            "Failed to retrieve cache dir",
-            "OS not recognised?"
-        ))?
+        .ok_or(my_error!("Failed to retrieve cache dir", "OS not recognised?"))?
         .cache_dir()
         .join("missile_cache.toml");
-    trace!(
-        "Writing UsedMissilesCache to '{}'",
-        missiles_cache_path.display()
-    );
+    trace!("Writing UsedMissilesCache to '{}'", missiles_cache_path.display());
     if missiles_cache_path
         .parent()
         .is_some_and(|parent| !parent.exists())
@@ -264,48 +249,42 @@ fn main() -> color_eyre::Result<()> {
         std::process::exit(1);
     });
 
-    let (app_config, excluded_patterns, fleets_model) =
-        wrap_errorable_function(&main_window, || {
-            info!("Loading app configuration");
-            let app_config = load_app_config()?;
+    let (app_config, excluded_patterns, fleets_model) = wrap_errorable_function(&main_window, || {
+        info!("Loading app configuration");
+        let app_config = load_app_config()?;
 
-            let excluded_patterns = app_config
-                .excluded_dirs
-                .iter()
-                .map(|s| {
-                    Pattern::new(s.as_str()).map_err(|err| my_error!("Failed to parse glob", err))
-                })
-                .collect::<Result<Vec<Pattern>, Error>>()?;
+        let excluded_patterns = app_config
+            .excluded_dirs
+            .iter()
+            .map(|s| Pattern::new(s.as_str()).map_err(|err| my_error!("Failed to parse glob", err)))
+            .collect::<Result<Vec<Pattern>, Error>>()?;
 
-            let fleets = load_fleets(app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
+        let fleets = load_fleets(app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
 
-            let fleets_model = Rc::new(slint::VecModel::from(fleets));
-            main_window.set_fleets(fleets_model.clone().into());
-            debug!("Fleets passed to UI");
+        let fleets_model = Rc::new(slint::VecModel::from(fleets));
+        main_window.set_fleets(fleets_model.clone().into());
+        debug!("Fleets passed to UI");
 
-            // Generate UsedMissilesCache
-            let used_missiles_cache = load_missiles_cache();
-            let used_missiles_cache = if let Ok(mut used_missiles_cache) = used_missiles_cache {
-                used_missiles_cache.update(&app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
+        // Generate UsedMissilesCache
+        let used_missiles_cache = load_missiles_cache();
+        let used_missiles_cache = if let Ok(mut used_missiles_cache) = used_missiles_cache {
+            used_missiles_cache.update(&app_config.saves_dir.join("Fleets"), &excluded_patterns)?;
 
-                used_missiles_cache
-            } else {
-                warn!(error = %used_missiles_cache.unwrap_err(), "Failed to load previous missile cache, generating a fresh cache");
-                missile_templates::UsedMissilesCache::generate_from_fleets(
-                    &app_config.saves_dir.join("Fleets"),
-                    &excluded_patterns,
-                )?
-            };
-            save_missiles_cache(&used_missiles_cache)?;
+            used_missiles_cache
+        } else {
+            warn!(error = %used_missiles_cache.unwrap_err(), "Failed to load previous missile cache, generating a fresh cache");
+            missile_templates::UsedMissilesCache::generate_from_fleets(&app_config.saves_dir.join("Fleets"), &excluded_patterns)?
+        };
+        save_missiles_cache(&used_missiles_cache)?;
 
-            Ok((app_config, excluded_patterns, fleets_model))
-        })
-        .map_err(|err| eyre!("{}", err.error).wrap_err(err.title))
-        .inspect_err(|_| {
-            // run the main window to get the error screen.
-            main_window.set_shutdown_state(true);
-            let _ = main_window.run();
-        })?;
+        Ok((app_config, excluded_patterns, fleets_model))
+    })
+    .map_err(|err| eyre!("{}", err.error).wrap_err(err.title))
+    .inspect_err(|_| {
+        // run the main window to get the error screen.
+        main_window.set_shutdown_state(true);
+        let _ = main_window.run();
+    })?;
     let excluded_patterns = Rc::new(excluded_patterns);
 
     debug!("Setting up callbacks");
@@ -319,10 +298,7 @@ fn main() -> color_eyre::Result<()> {
     let tags_model = Rc::new(VecModel::from(tags));
     main_window.set_tags(tags_model.clone().into());
 
-    main_window.on_add_tag(tags::on_add_tag_handler(
-        tags_model.clone(),
-        tags_repo.clone(),
-    ));
+    main_window.on_add_tag(tags::on_add_tag_handler(tags_model.clone(), tags_repo.clone()));
 
     main_window.on_remove_tag(tags::on_remove_tag_handler(tags_model.clone()));
 
@@ -331,13 +307,11 @@ fn main() -> color_eyre::Result<()> {
         tags_repo.clone(),
     ));
 
-    main_window.on_open_missiles_view(
-        missile_templates::missiles_window::on_open_missiles_view_handler(
-            main_window.as_weak(),
-            app_config.saves_dir.join("MissileTemplates"),
-            excluded_patterns.clone(),
-        ),
-    );
+    main_window.on_open_missiles_view(missile_templates::missiles_window::on_open_missiles_view_handler(
+        main_window.as_weak(),
+        app_config.saves_dir.join("MissileTemplates"),
+        excluded_patterns.clone(),
+    ));
 
     main_window.on_open_win_predictor(win_predictor::on_open_win_predictor_handler(
         main_window.as_weak(),
@@ -412,9 +386,8 @@ fn main() -> color_eyre::Result<()> {
                     trace!(description = %description.as_ref().unwrap(), "Found description");
                 }
 
-                let (tags, description) = tags::get_tags_from_description(
-                    description.as_ref().unwrap_or(&String::new()),
-                )?;
+                let (tags, description) =
+                    tags::get_tags_from_description(description.as_ref().unwrap_or(&String::new()))?;
                 main_window.invoke_set_description(description.into());
                 tags_model.set_vec(tags);
 

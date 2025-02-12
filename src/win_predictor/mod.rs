@@ -17,8 +17,8 @@ pub fn on_open_win_predictor_handler(main_window_weak: Weak<MainWindow>) -> impl
 fn open_win_predictor() -> Result<(), Error> {
     info!("Initialising win predictor");
     trace!("Creating window");
-    let window = WinPredictorWindow::new()
-        .map_err(|err| my_error!("Failed to create win predictor window", err))?;
+    let window =
+        WinPredictorWindow::new().map_err(|err| my_error!("Failed to create win predictor window", err))?;
     {
         let window_weak = window.as_weak();
         let _ = window.on_update_prediction(move || {

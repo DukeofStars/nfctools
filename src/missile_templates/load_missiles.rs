@@ -22,8 +22,8 @@ pub fn on_reload_missiles_handler(
         let window = window_weak.unwrap();
         let _ = wrap_errorable_function_m(&window, || {
             debug!("Reloading fleets list");
-            let missiles = load_missiles(&missiles_dir)
-                .map_err(|err| my_error!("Failed to load fleets", err))?;
+            let missiles =
+                load_missiles(&missiles_dir).map_err(|err| my_error!("Failed to load fleets", err))?;
             missiles_model.set_vec(missiles);
 
             Ok(())
@@ -40,12 +40,7 @@ pub fn load_missiles(path: impl AsRef<Path>) -> Result<Vec<MissileData>, Error> 
 
     let children = path
         .read_dir()
-        .map_err(|err| {
-            my_error!(
-                format!("Failed to read directory '{}'", path.display()),
-                err
-            )
-        })?
+        .map_err(|err| my_error!(format!("Failed to read directory '{}'", path.display()), err))?
         .filter_map(|c| c.ok());
     for child in children {
         let file_type = child
@@ -75,10 +70,7 @@ pub fn load_missiles(path: impl AsRef<Path>) -> Result<Vec<MissileData>, Error> 
                 nickname: missile.nickname.to_shared_string(),
                 path: child.path().display().to_string().to_shared_string(),
                 cost: missile.cost.parse::<i32>().map_err(|err| {
-                    my_error!(
-                        "Invalid fleet file",
-                        format!("Failed to parse cost: {}", err)
-                    )
+                    my_error!("Invalid fleet file", format!("Failed to parse cost: {}", err))
                 })?,
                 selected: false,
             });

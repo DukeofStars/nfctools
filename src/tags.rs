@@ -28,10 +28,7 @@ impl Default for TagsRepository {
     }
 }
 
-pub fn on_add_tag_handler(
-    tags: Rc<VecModel<Tag>>,
-    tags_repo: Rc<RefCell<TagsRepository>>,
-) -> impl Fn(Tag) {
+pub fn on_add_tag_handler(tags: Rc<VecModel<Tag>>, tags_repo: Rc<RefCell<TagsRepository>>) -> impl Fn(Tag) {
     move |tag| {
         debug!("Adding tag {:?}", tag);
         tags_repo

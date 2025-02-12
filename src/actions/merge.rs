@@ -17,14 +17,8 @@ pub fn on_merge_handler(
     move |merge_output_name| {
         let main_window = main_window_weak.unwrap();
         let _ = wrap_errorable_function(&main_window, || {
-            let selected_fleets = fleets_model
-                .iter()
-                .filter(|f| f.selected)
-                .collect::<Vec<_>>();
-            merge_fleets(
-                merge_output_name.to_string().trim().to_string(),
-                &selected_fleets,
-            )
+            let selected_fleets = fleets_model.iter().filter(|f| f.selected).collect::<Vec<_>>();
+            merge_fleets(merge_output_name.to_string().trim().to_string(), &selected_fleets)
         });
     }
 }
@@ -56,11 +50,7 @@ fn merge_fleets(merge_output_name: String, selected_fleets: &[FleetData]) -> Res
         .into_iter()
         .map(|fleet| {
             (
-                fleet
-                    .ships
-                    .map(|ships| ships.ship)
-                    .flatten()
-                    .unwrap_or_default(),
+                fleet.ships.map(|ships| ships.ship).flatten().unwrap_or_default(),
                 fleet
                     .missile_types
                     .map(|m| m.missile_template)

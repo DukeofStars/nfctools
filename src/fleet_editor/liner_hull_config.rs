@@ -8,8 +8,8 @@ use crate::{
     error::{wrap_errorable_function, wrap_errorable_function_fe},
     fleet_editor::{BRIDGE_MODELS, BULK_BOWS, BULK_CORES, BULK_STERNS},
     fleet_io::{read_fleet, write_fleet},
-    my_error, DressingSelections, DressingSlot, DressingSlots, FleetData, FleetEditorWindow,
-    LinerHullConfig, MainWindow,
+    my_error, DressingSelections, DressingSlot, DressingSlots, FleetData, FleetEditorWindow, LinerHullConfig,
+    MainWindow,
 };
 
 pub fn on_load_dressings_handler(
@@ -49,10 +49,7 @@ pub fn on_load_dressings_handler(
                 ]),
                 1 => ModelRc::from([
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Tanks".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Tanks".to_shared_string()]),
                     },
                     DressingSlot {
                         dressings: ModelRc::from([
@@ -114,10 +111,7 @@ pub fn on_load_dressings_handler(
                 ]),
                 1 => ModelRc::from([
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Tanks".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Tanks".to_shared_string()]),
                     },
                     DressingSlot {
                         dressings: ModelRc::from([
@@ -200,23 +194,12 @@ pub fn on_get_liner_config_handler(
             let ship = fleet
                 .ships
                 .as_mut()
-                .map(|ships| {
-                    ships
-                        .ship
-                        .as_mut()
-                        .map(|ships| ships.get_mut(ship_idx as usize))
-                })
+                .map(|ships| ships.ship.as_mut().map(|ships| ships.get_mut(ship_idx as usize)))
                 .flatten()
                 .flatten()
-                .ok_or(my_error!(
-                    "The selected ship idx doesn't exist",
-                    "This is a bug"
-                ))?;
+                .ok_or(my_error!("The selected ship idx doesn't exist", "This is a bug"))?;
 
-            debug!(
-                "Reading liner config for '{}' in '{}'",
-                &ship.name, &fleet.name
-            );
+            debug!("Reading liner config for '{}' in '{}'", &ship.name, &fleet.name);
 
             let bow_key_list;
             let core_key_list;
@@ -239,8 +222,7 @@ pub fn on_get_liner_config_handler(
                 .as_mut()
                 .expect("expected liner to have a HullConfig");
             debug!("Reading segment configurations");
-            let mut segment_configurations =
-                hull_config.primary_structure.segment_configuration.iter();
+            let mut segment_configurations = hull_config.primary_structure.segment_configuration.iter();
 
             // Bow
             let segment_bow = segment_configurations.next().unwrap();
@@ -283,17 +265,13 @@ pub fn on_get_liner_config_handler(
                 .count() as i32;
 
             debug!("Reading superstructure configuration");
-            let secondary_structure_config =
-                &hull_config.secondary_structure.secondary_structure_config;
+            let secondary_structure_config = &hull_config.secondary_structure.secondary_structure_config;
             let key_idx = BRIDGE_MODELS
                 .iter()
                 .take_while(|skey| skey != &&&secondary_structure_config.key)
                 .count();
             let bridge_segment = secondary_structure_config.segment.parse::<i32>().unwrap();
-            let bridge_snappoint = secondary_structure_config
-                .snap_point
-                .parse::<i32>()
-                .unwrap();
+            let bridge_snappoint = secondary_structure_config.snap_point.parse::<i32>().unwrap();
 
             let liner_hull_config = LinerHullConfig {
                 bridge_model: key_idx as i32,
@@ -344,18 +322,10 @@ pub fn on_save_liner_config_handler(
             let ship = fleet
                 .ships
                 .as_mut()
-                .map(|ships| {
-                    ships
-                        .ship
-                        .as_mut()
-                        .map(|ships| ships.get_mut(ship_idx as usize))
-                })
+                .map(|ships| ships.ship.as_mut().map(|ships| ships.get_mut(ship_idx as usize)))
                 .flatten()
                 .flatten()
-                .ok_or(my_error!(
-                    "The selected ship idx doesn't exist",
-                    "This is a bug"
-                ))?;
+                .ok_or(my_error!("The selected ship idx doesn't exist", "This is a bug"))?;
 
             debug!(
                 "Saving liner config for '{}' in '{}'",
@@ -394,11 +364,7 @@ pub fn on_save_liner_config_handler(
             let primary_structure = &mut hull_config.primary_structure;
 
             debug!("Editing segment configurations");
-            for (idx, child) in primary_structure
-                .segment_configuration
-                .iter_mut()
-                .enumerate()
-            {
+            for (idx, child) in primary_structure.segment_configuration.iter_mut().enumerate() {
                 trace!("Clearing previous dressings");
                 let dressing = match child.dressing.int.as_mut() {
                     Some(dressing) => dressing,
@@ -448,8 +414,7 @@ pub fn on_save_liner_config_handler(
                     _ => panic!(),
                 };
 
-                let key_lookup_name =
-                    format!("{}-{}-{}", liner_type, segment_type_idx, segment_name);
+                let key_lookup_name = format!("{}-{}-{}", liner_type, segment_type_idx, segment_name);
                 trace!("Looking up segment key '{}'", &key_lookup_name);
                 let key_data = BULKER_SEGMENTS.get(&key_lookup_name.as_str()).unwrap();
                 trace!("Returned segment key '{}'", &key_data);
@@ -458,8 +423,7 @@ pub fn on_save_liner_config_handler(
             }
 
             trace!("Setting superstructure configuration");
-            let secondary_structure =
-                &mut hull_config.secondary_structure.secondary_structure_config;
+            let secondary_structure = &mut hull_config.secondary_structure.secondary_structure_config;
 
             let key_lookup_name = format!("Superstructure-{}", bridge_model);
             trace!("Looking up superstructure key '{}'", &key_lookup_name);

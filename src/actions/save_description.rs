@@ -21,13 +21,10 @@ pub fn save_fleet_data(
         return Ok(());
     }
     info!("Saving description for fleet {}", cur_fleet_idx);
-    let fleet_data = fleets_model
-        .iter()
-        .nth(cur_fleet_idx as usize)
-        .ok_or(my_error!(
-            "Selected fleet doesn't exist",
-            "cur_fleet_idx points to a nonexistant fleet"
-        ))?;
+    let fleet_data = fleets_model.iter().nth(cur_fleet_idx as usize).ok_or(my_error!(
+        "Selected fleet doesn't exist",
+        "cur_fleet_idx points to a nonexistant fleet"
+    ))?;
 
     debug!("Inserting tags into description");
     let description = format!(

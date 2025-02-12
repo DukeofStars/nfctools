@@ -27,10 +27,7 @@ pub fn on_open_missiles_view_handler(
 }
 
 #[instrument(skip(missiles_path, excluded_patterns))]
-fn open_missiles_view(
-    missiles_path: &PathBuf,
-    excluded_patterns: Rc<Vec<Pattern>>,
-) -> Result<(), Error> {
+fn open_missiles_view(missiles_path: &PathBuf, excluded_patterns: Rc<Vec<Pattern>>) -> Result<(), Error> {
     info!("Initialising missiles view");
     trace!("Creating window");
 
