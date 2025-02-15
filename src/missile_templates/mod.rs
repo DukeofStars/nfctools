@@ -91,11 +91,7 @@ impl UsedMissilesCache {
                         self.fleets.insert(child.path(), used_missiles);
                     }
                     Err(err) => {
-                        warn!(
-                            %err,
-                            "Skipping invalid fleet: Failed to pull used missiles from '{}'",
-                            child.path().display()
-                        );
+                        warn!("Skipping invalid fleet '{}': {}", child.path().display(), err,);
                     }
                 }
             }

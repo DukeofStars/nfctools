@@ -74,13 +74,13 @@ export component UpdateMissilesConfirmDialog inherits Window {
     in-out property <[string]> fleet-names;
     in property <[string]> confirmed-fleets;
 
-    callback confirmed-update-fleets([string]);
+    callback confirmed-update-fleets([string], bool);
     callback confirm-fleet(string);
     callback unconfirm-fleet(string);
 
     max-height: 600px;
-    min-height: 200px;
-    preferred-height: sv.preferred-height;
+    min-height: 400px;
+    preferred-height: sv.height;
     width: 300px;
 
     VerticalLayout {
@@ -88,6 +88,19 @@ export component UpdateMissilesConfirmDialog inherits Window {
             text: "Are you sure you want to update these fleets?";
             wrap: word-wrap;
             font-size: 18px;
+        }
+        HorizontalLayout {
+            Text {
+                text: "Update missile names?";
+                font-size: 16px;
+            }
+            update-missile-names := CheckBox {
+                checked: true;
+            }
+        }
+        Rectangle {
+            border-width: 1px;
+            height: 1px;
         }
 
         sv := ScrollView {
@@ -116,7 +129,7 @@ export component UpdateMissilesConfirmDialog inherits Window {
                 text: "Confirm";
                 clicked => {
                     root.visible = false;
-                    root.confirmed-update-fleets(confirmed-fleets);
+                    root.confirmed-update-fleets(confirmed-fleets, update-missile-names.checked);
                 }
             }
         }

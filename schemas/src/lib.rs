@@ -3,6 +3,7 @@ use serde_with::skip_serializing_none;
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Fleet {
     #[serde(rename = "@xmlns:xsd")]
     pub xmlns_xsd: String,
@@ -26,10 +27,171 @@ pub struct Fleet {
     pub ships: Option<Ships>,
     #[serde(rename = "MissileTypes")]
     pub missile_types: Option<MissileTypes>,
+    #[serde(rename = "CraftTypes")]
+    pub craft_types: Option<CraftTypes>,
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CraftTypes {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "CraftTemplate")]
+    pub craft_template: Option<Vec<CraftTemplate>>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CraftTemplate {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "DesignationSuffix")]
+    pub designation_suffix: Option<String>,
+    #[serde(rename = "Nickname")]
+    pub nickname: String,
+    #[serde(rename = "LongDescription")]
+    pub long_description: String,
+    #[serde(rename = "Cost")]
+    pub cost: String,
+    #[serde(rename = "FrameKey")]
+    pub frame_key: String,
+    #[serde(rename = "TemplateKey")]
+    pub template_key: String,
+    #[serde(rename = "InstalledComponents")]
+    pub installed_components: InstalledComponents,
+    #[serde(rename = "Loadouts")]
+    pub loadouts: Loadouts,
+    #[serde(rename = "TemplateMissileTypes")]
+    pub template_missile_types: CraftTemplateTemplateMissileTypes,
+    #[serde(rename = "ModDependencies")]
+    pub mod_dependencies: ModDependencies,
+    #[serde(rename = "AssociatedTemplateName")]
+    pub associated_template_name: Option<String>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ModDependencies {}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CraftTemplateTemplateMissileTypes {}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct InstalledComponents {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "SerializedCraftSocket")]
+    pub serialized_craft_socket: Option<Vec<SerializedCraftSocket>>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct SerializedCraftSocket {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "SocketKey")]
+    pub socket_key: Option<String>,
+    #[serde(rename = "ComponentKey")]
+    pub component_key: String,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Loadouts {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "CraftLoadout")]
+    pub craft_loadout: Vec<CraftLoadout>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CraftLoadout {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "LoadoutName")]
+    pub loadout_name: String,
+    #[serde(rename = "Elements")]
+    pub elements: Elements,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Elements {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "GeneralLoadoutElement")]
+    pub general_loadout_element: Vec<GeneralLoadoutElement>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct GeneralLoadoutElement {
+    #[serde(rename = "@type")]
+    pub xsi_type: String,
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "AmmoKey")]
+    pub ammo_key: Option<String>,
+    #[serde(rename = "SocketKey")]
+    pub socket_key: Option<String>,
+    #[serde(rename = "Loadout")]
+    pub loadout: Option<Loadout>,
+    #[serde(rename = "ComponentKey")]
+    pub component_key: Option<String>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct Loadout {
+    #[serde(rename = "@type")]
+    pub xsi_type: String,
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    #[serde(rename = "AmmoKey")]
+    pub ammo_key: Option<String>,
+    #[serde(rename = "MissileKeys")]
+    pub missile_keys: Option<MissileKeys>,
+    #[serde(rename = "SocketKey")]
+    pub socket_key: Option<String>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct MissileKeys {
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+    pub string: Vec<StringX>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+#[serde(rename = "string")]
+pub struct StringX {
+    #[serde(rename = "@nil")]
+    pub xsi_nil: Option<String>,
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct SortOverrideOrder {
     #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
     pub xsi_nil: String,
@@ -37,6 +199,7 @@ pub struct SortOverrideOrder {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Ships {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -46,6 +209,7 @@ pub struct Ships {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Ship {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -75,10 +239,32 @@ pub struct Ship {
     pub template_missile_types: Option<TemplateMissileTypes>,
     #[serde(rename = "TemplateSpacecraftTypes")]
     pub template_spacecraft_types: Option<TemplateSpacecraftTypes>,
+    #[serde(rename = "InitialFormation")]
+    pub initial_formation: Option<InitialFormation>,
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct InitialFormation {
+    #[serde(rename = "GuideKey")]
+    pub guide_key: String,
+    #[serde(rename = "RelativePosition")]
+    pub relative_position: RelativePosition,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct RelativePosition {
+    x: f64,
+    y: f64,
+    z: f64,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct SaveId {
     #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
     pub xsi_nil: String,
@@ -86,10 +272,12 @@ pub struct SaveId {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Callsign {}
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct HullConfig {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
@@ -107,6 +295,7 @@ pub struct HullConfig {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct PrimaryStructure {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -116,6 +305,7 @@ pub struct PrimaryStructure {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct SegmentConfiguration {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -127,6 +317,7 @@ pub struct SegmentConfiguration {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Dressing {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -135,6 +326,7 @@ pub struct Dressing {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct SecondaryStructure {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -144,6 +336,7 @@ pub struct SecondaryStructure {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct SecondaryStructureConfig {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -157,6 +350,7 @@ pub struct SecondaryStructureConfig {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct HullTint {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -168,6 +362,7 @@ pub struct HullTint {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct TextureVariation {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -178,6 +373,7 @@ pub struct TextureVariation {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct SocketMap {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -187,6 +383,7 @@ pub struct SocketMap {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct HullSocket {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -200,6 +397,7 @@ pub struct HullSocket {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct ComponentData {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
@@ -209,10 +407,31 @@ pub struct ComponentData {
     pub missile_load: Option<MissileLoad>,
     #[serde(rename = "Load")]
     pub load: Option<Load>,
+    #[serde(rename = "StoredCraft")]
+    pub stored_craft: Option<StoredCraft>,
+    #[serde(rename = "FireOutsideLimits")]
+    pub fire_outside_limits: Option<bool>,
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct StoredCraft {
+    #[serde(rename = "SavedStoredCraft")]
+    pub saved_stored_craft: Option<Vec<SavedStoredCraft>>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct SavedStoredCraft {
+    #[serde(rename = "CraftTemplateKey")]
+    pub craft_template_key: String,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct MissileLoad {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -222,6 +441,7 @@ pub struct MissileLoad {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct MissileLoadMagSaveData {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -235,6 +455,7 @@ pub struct MissileLoadMagSaveData {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Load {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -244,6 +465,7 @@ pub struct Load {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct LoadMagSaveData {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -257,6 +479,7 @@ pub struct LoadMagSaveData {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct WeaponGroups {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -266,6 +489,7 @@ pub struct WeaponGroups {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct WepGroup {
     #[serde(rename = "@Name")]
     pub name: String,
@@ -277,6 +501,7 @@ pub struct WepGroup {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct MemberKeys {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -285,14 +510,17 @@ pub struct MemberKeys {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct TemplateMissileTypes {}
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct TemplateSpacecraftTypes {}
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct MissileTypes {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -302,6 +530,7 @@ pub struct MissileTypes {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct MissileTemplate {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -331,6 +560,7 @@ pub struct MissileTemplate {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct BaseColor {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -342,6 +572,7 @@ pub struct BaseColor {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct StripeColor {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -353,6 +584,7 @@ pub struct StripeColor {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct Sockets {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -362,6 +594,7 @@ pub struct Sockets {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct MissileSocket {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -373,6 +606,7 @@ pub struct MissileSocket {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct InstalledComponent {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: Option<String>,
@@ -400,10 +634,15 @@ pub struct InstalledComponent {
     pub component_key: Option<String>,
     #[serde(rename = "BalanceValues")]
     pub balance_values: Option<BalanceValues>,
+    #[serde(rename = "TargetType")]
+    pub target_type: Option<String>,
+    #[serde(rename = "TargetSizeMask")]
+    pub target_size_mask: Option<u8>,
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct DefensiveDoctrine {
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -421,6 +660,7 @@ pub struct DefensiveDoctrine {
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
 pub struct BalanceValues {
     #[serde(rename = "$text")]
     pub text: Option<String>,

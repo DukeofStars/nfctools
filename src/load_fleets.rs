@@ -91,7 +91,7 @@ fn load_fleets_rec(
             let fleet = match read_fleet(&path) {
                 Ok(fleet) => fleet,
                 Err(err) => {
-                    warn!("Skipping invalid fleet: {}", err);
+                    warn!("Skipping invalid fleet '{}': {}", path.display(), err);
                     continue 'child_loop;
                 }
             };

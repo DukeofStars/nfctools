@@ -45,6 +45,7 @@ pub fn read_missile(path: impl AsRef<Path>) -> Result<MissileTemplate, Error> {
     Ok(missile)
 }
 
+#[allow(dead_code)]
 pub fn write_missile(path: impl AsRef<Path>, missile: &MissileTemplate) -> Result<(), Error> {
     let path = path.as_ref();
 
