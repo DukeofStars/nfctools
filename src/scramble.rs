@@ -140,6 +140,9 @@ fn scramble_fleet(fleet: &mut Fleet) -> Result<(), Error> {
             // Scramble ship name
             let new_name = format!("{:X}", rng.random::<u32>());
             debug!("Scrambling ship '{}' to '{}'", &ship.name, &new_name);
+            if ship.callsign.is_none() || ship.callsign == Some("".to_string()) {
+                ship.callsign = Some(ship.name.clone());
+            }
             ship.name = new_name;
 
             // Apply new missile names to missiles in compartments or mounts
@@ -149,7 +152,9 @@ fn scramble_fleet(fleet: &mut Fleet) -> Result<(), Error> {
                 };
 
                 // Check for VLS/CLS/TLS
-                if component_data.xsi_type.as_str() == "CellLauncherData" {
+                if component_data.xsi_type.as_str() == "CellLauncherData"
+                    || component_data.xsi_type.as_str() == "ResizableCellLauncherData"
+                {
                     let Some(missile_load) = &mut component_data.missile_load else {
                         continue;
                     };

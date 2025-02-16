@@ -224,7 +224,7 @@ pub struct Ship {
     #[serde(rename = "Cost")]
     pub cost: String,
     #[serde(rename = "Callsign")]
-    pub callsign: Option<Callsign>,
+    pub callsign: Option<String>,
     #[serde(rename = "Number")]
     pub number: String,
     #[serde(rename = "SymbolOption")]
@@ -271,11 +271,6 @@ pub struct SaveId {
     #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
     pub xsi_nil: String,
 }
-
-#[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct Callsign {}
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
