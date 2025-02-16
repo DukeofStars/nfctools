@@ -63,6 +63,7 @@ component ActionsPane inherits VerticalLayout {
     callback add-tag(Tag);
     callback remove-tag(int);
     callback lookup-tag(string);
+    callback scramble-fleet();
 
     public function get-description() -> string {
         desc-input.text
@@ -83,6 +84,13 @@ component ActionsPane inherits VerticalLayout {
         text: "Open Fleet Editor";
         clicked => {
             root.open-fleet-editor();
+        }
+    }
+    
+    Button {
+        text: "Scramble Fleet";
+        clicked => {
+            root.scramble-fleet();
         }
     }
 
@@ -300,6 +308,7 @@ export component MainWindow inherits Window {
     callback remove-tag(int);
     callback lookup-tag(string);
     callback close-without-saving();
+    callback scramble-fleet();
 
     callback open-missiles-view();
     callback open-win-predictor();
@@ -475,6 +484,10 @@ export component MainWindow inherits Window {
 
                 actions-pane := ActionsPane {
                     tags: root.tags;
+
+                    scramble-fleet() => {
+                        root.scramble-fleet();
+                    }
 
                     merge(output-name) => {
                         root.merge(output-name);

@@ -26,8 +26,8 @@ pub fn on_update_fleets_with_missile_handler(
             let missile_data = missiles_model.iter().nth(missile_idx as usize).unwrap();
             let missile_id = MissileTemplateId::from_missile_data(&missile_data);
 
-            let mut used_missiles_cache = crate::load_missiles_cache()
-                .map_err(|err| my_error!("Could not load missiles cache", err))?;
+            let mut used_missiles_cache =
+                crate::load_missiles_cache().map_err(|err| my_error!("Could not load missiles cache", err))?;
             used_missiles_cache.update(&missiles_dir, &excluded_patterns)?;
             crate::save_missiles_cache(&used_missiles_cache)
                 .map_err(|err| my_error!("Failed to save missiles cache", err))?;
@@ -73,10 +73,7 @@ pub fn on_update_fleets_with_missile_handler(
                         .as_any()
                         .downcast_ref::<VecModel<SharedString>>()
                         .expect("We know we set a VecModel earlier");
-                    let idx = confirmed_fleets
-                        .iter()
-                        .position(|name| name == fleet_name)
-                        .unwrap();
+                    let idx = confirmed_fleets.iter().position(|name| name == fleet_name).unwrap();
                     confirmed_fleets.remove(idx);
                 });
             }
@@ -102,10 +99,10 @@ pub fn on_update_fleets_with_missile_handler(
                         for (fleet_path, _) in &fleets {
                             let mut fleet = read_fleet(fleet_path)?;
 
-                            let missile_types = fleet.missile_types.as_mut().ok_or(my_error!(
-                                "Updating fleet with no missiles",
-                                "How did this happen?"
-                            ))?;
+                            let missile_types = fleet
+                                .missile_types
+                                .as_mut()
+                                .ok_or(my_error!("Updating fleet with no missiles", "How did this happen?"))?;
                             let old_missile = missile_types
                                 .missile_template
                                 .as_mut()
@@ -124,21 +121,29 @@ pub fn on_update_fleets_with_missile_handler(
 
                             // JFC WTF DUKE
                             if update_missile_names {
-                                let mut update_missile_names = || {
-                                    for ship in fleet.ships.as_mut()?.ship.as_mut()? {
+                                'block: {
+                                    let Some(ships) = &mut fleet.ships else {
+                                        break 'block;
+                                    };
+                                    let Some(ships) = &mut ships.ship else {
+                                        break 'block;
+                                    };
+                                    for ship in ships {
                                         for hull_socket in &mut ship.socket_map.hull_socket {
-                                            if hull_socket.component_data.as_ref()?.xsi_type
-                                                == "CellLauncherData"
-                                                || hull_socket.component_data.as_ref()?.xsi_type
-                                                    == "BulkMagazineData"
+                                            let Some(component_data) = &mut hull_socket.component_data else {
+                                                continue;
+                                            };
+                                            if component_data.xsi_type == "CellLauncherData"
+                                                || component_data.xsi_type == "BulkMagazineData"
                                             {
-                                                for mag_save_data in hull_socket
-                                                    .component_data
-                                                    .as_mut()?
-                                                    .missile_load
-                                                    .as_mut()?
-                                                    .mag_save_data
-                                                    .as_mut()?
+                                                let Some(missile_load) = &mut component_data.missile_load else {
+                                                    continue;
+                                                };
+                                                let Some(mag_save_data) = &mut missile_load.mag_save_data else {
+                                                    continue;
+                                                };
+
+                                                mag_save_data
                                                     .iter_mut()
                                                     .filter(|mag_save_data| {
                                                         mag_save_data.munition_key
@@ -147,18 +152,16 @@ pub fn on_update_fleets_with_missile_handler(
                                                                 old_missile.designation, old_missile.nickname
                                                             )
                                                     })
-                                                {
-                                                    mag_save_data.munition_key = format!(
-                                                        "$MODMIS$/{} {}",
-                                                        new_missile.designation, new_missile.nickname
-                                                    );
-                                                }
+                                                    .for_each(|mag_save_data| {
+                                                        mag_save_data.munition_key = format!(
+                                                            "$MODMIS$/{} {}",
+                                                            new_missile.designation, new_missile.nickname
+                                                        );
+                                                    });
                                             }
                                         }
                                     }
-                                    Some(())
-                                };
-                                update_missile_names();
+                                }
                             }
 
                             write_fleet(fleet_path, &fleet)?;

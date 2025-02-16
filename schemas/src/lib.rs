@@ -110,7 +110,7 @@ pub struct Loadouts {
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "CraftLoadout")]
-    pub craft_loadout: Vec<CraftLoadout>,
+    pub craft_loadout: Option<Vec<CraftLoadout>>,
 }
 
 #[skip_serializing_none]
@@ -139,7 +139,7 @@ pub struct Elements {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct GeneralLoadoutElement {
-    #[serde(rename = "@type")]
+    #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -151,13 +151,15 @@ pub struct GeneralLoadoutElement {
     pub loadout: Option<Loadout>,
     #[serde(rename = "ComponentKey")]
     pub component_key: Option<String>,
+    #[serde(rename = "MissileKeys")]
+    pub missile_keys: Option<MissileKeys>,
 }
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct Loadout {
-    #[serde(rename = "@type")]
+    #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
     #[serde(rename = "$text")]
     pub text: Option<String>,
@@ -638,6 +640,12 @@ pub struct InstalledComponent {
     pub target_type: Option<String>,
     #[serde(rename = "TargetSizeMask")]
     pub target_size_mask: Option<u8>,
+    #[serde(rename = "SpreadOption")]
+    pub spread_option: Option<u8>,
+    #[serde(rename = "Range")]
+    pub range: Option<f64>,
+    #[serde(rename = "Interval")]
+    pub interval: Option<u8>,
 }
 
 #[skip_serializing_none]

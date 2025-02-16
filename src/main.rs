@@ -26,6 +26,7 @@ mod fleet_editor;
 mod fleet_io;
 mod load_fleets;
 mod missile_templates;
+mod scramble;
 mod tags;
 mod win_predictor;
 
@@ -338,6 +339,11 @@ fn main() -> color_eyre::Result<()> {
         fleets_model.clone(),
         app_config.saves_dir.join("Fleets"),
         excluded_patterns.clone(),
+    ));
+
+    main_window.on_scramble_fleet(scramble::on_scramble_fleet_handler(
+        main_window.as_weak(),
+        fleets_model.clone(),
     ));
 
     {
