@@ -478,8 +478,8 @@ export component MainWindow inherits Window {
 
     // Main window
     main-window := HorizontalLayout {
+        spacing: 10px;
         fleets-list := VerticalLayout {
-            width: 25%;
             alignment: start;
             fleets-header := HorizontalLayout {
                 Text {
@@ -528,6 +528,349 @@ export component MainWindow inherits Window {
                 }
             }
         }
+        fleet-editor := VerticalLayout {
+            min-width: 550px;
+            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit"): marauder_editing := VerticalLayout {
+                alignment: start;
+
+                function update_current_hull_config() {
+                    current_hull_config.segment-bow = combo-box-bow.current-index;
+                    current_hull_config.segment-core = combo-box-core.current-index;
+                    current_hull_config.segment-stern = combo-box-stern.current-index;
+                    current_hull_config.bridge-model = combo-box-bridge-model.current-index;
+                    current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
+                    current_hull_config.bridge-snappoint = 0;
+                }
+
+                function update-current-dressing-selections() {
+                    current_hull_config.dressings.bow[0] = dressing-selection-bow-0.current-index;
+                    current_hull_config.dressings.core[0] = dressing-selection-core-0.current-index;
+                    current_hull_config.dressings.bow[1] = dressing-selection-bow-1.current-index;
+                    current_hull_config.dressings.core[1] = dressing-selection-core-1.current-index;
+                    current_hull_config.dressings.bow[2] = dressing-selection-bow-2.current-index;
+                    current_hull_config.dressings.core[2] = dressing-selection-core-2.current-index;
+                    current_hull_config.dressings.bow[3] = dressing-selection-bow-3.current-index;
+                    current_hull_config.dressings.core[3] = dressing-selection-core-3.current-index;
+                    current_hull_config.dressings.bow[4] = dressing-selection-bow-4.current-index;
+                    current_hull_config.dressings.core[4] = dressing-selection-core-4.current-index;
+                }
+
+                HorizontalLayout {
+                    Text {
+                        text: "Liner Editing";
+                        font-size: 24px;
+                        horizontal-stretch: 1.0;
+                    }
+                    Button {
+                        horizontal-stretch: 0.0;
+                        text: "Save";
+                        clicked => {
+                            current_hull_config.segment-bow = combo-box-bow.current-index;
+                            current_hull_config.segment-core = combo-box-core.current-index;
+                            current_hull_config.segment-stern = combo-box-stern.current-index;
+                            current_hull_config.bridge-model = combo-box-bridge-model.current-index;
+                            current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
+                            current_hull_config.bridge-snappoint = 0;
+
+                            root.save-liner-config(current_hull_config);
+                        }
+                    }
+                }
+
+                GridLayout {
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Bow";
+                            }
+                        }
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Core";
+                            }
+                        }
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Stern";
+                            }
+                            width: 50px;
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                            Text {
+                                font-size: 18px;
+                                text: "Hull Segments";
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            combo-box-bow := ComboBox {
+                                width: parent.width;
+                                current-index: root.current_hull_config.segment-bow;
+                                model: ["A", "B", "C"];
+                                selected(current-value) => {
+                                    update_current_hull_config();
+                                    root.load-dressings(current_hull_config);
+                                }
+                            }
+                        }
+                        TableItem {
+                            combo-box-core := ComboBox {
+                                width: parent.width;
+                                current-index: root.current_hull_config.segment-core;
+                                model: ["A", "B", "C"];
+                                selected(current-value) => {
+                                    update_current_hull_config();
+                                    root.load-dressings(current_hull_config);
+                                }
+                            }
+                        }
+                        TableItem {
+                            width: 50px;
+                            combo-box-stern := ComboBox {
+                                width: parent.width;
+                                current-index: root.current_hull_config.segment-stern;
+                                model: ["A", "B", "C"];
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                            Text {
+                                font-size: 18px;
+                                text: "Superstructure";
+                            }
+                        }
+                        TableItem {
+                            width: 50px;
+                            combo-box-bridge-model := ComboBox {
+                                width: 50px;
+                                current-index: root.current_hull_config.bridge-model;
+                                model: ["A", "B", "C", "D"];
+                            }
+                        }
+                        TableItem {
+                            bridge-location-bow := CheckBox {
+                                toggled => {
+                                    // bridge-location-bow.checked = false;
+                                    bridge-location-core.checked = false;
+                                    bridge-location-stern.checked = false;
+
+                                    root.current_hull_config.bridge-segment = 0;
+                                }
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 0 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                            }
+                        }
+                        TableItem {
+                            bridge-location-core := CheckBox {
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 1 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                                toggled => {
+                                    bridge-location-bow.checked = false;
+                                    // bridge-location-core.checked = false;
+                                    bridge-location-stern.checked = false;
+
+                                    root.current_hull_config.bridge-segment = 1;
+                                }
+                            }
+                        }
+                        TableItem {
+                            width: 50px;
+                            bridge-location-stern := CheckBox {
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 2 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                                toggled => {
+                                    bridge-location-bow.checked = false;
+                                    bridge-location-core.checked = false;
+                                    // bridge-location-stern.checked = false;
+                                    
+                                    root.current_hull_config.bridge-segment = 2;
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                            Text {
+                                text: "Dressing slot 1";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-0 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[0].dressings;
+                                current-index: current_hull_config.dressings.bow[0];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-0 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[0].dressings;
+                                current-index: current_hull_config.dressings.core[0];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                            Text {
+                                text: "Dressing slot 2";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-1 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[1].dressings;
+                                current-index: current_hull_config.dressings.bow[1];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-1 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[1].dressings;
+                                current-index: current_hull_config.dressings.core[1];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                            Text {
+                                text: "Dressing slot 3";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-2 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[2].dressings;
+                                current-index: current_hull_config.dressings.bow[2];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-2 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[2].dressings;
+                                current-index: current_hull_config.dressings.core[2];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                            Text {
+                                text: "Dressing slot 4";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-3 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[3].dressings;
+                                current-index: current_hull_config.dressings.bow[3];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-3 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[3].dressings;
+                                current-index: current_hull_config.dressings.core[3];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            width: 150px;
+                            Text {
+                                text: "Dressing slot 5";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-4 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[4].dressings;
+                                current-index: current_hull_config.dressings.bow[4];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-4 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[4].dressings;
+                                current-index: current_hull_config.dressings.core[4];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         VerticalLayout {
             width: 240px;
             actions-pane := VerticalLayout {
@@ -544,19 +887,19 @@ export component MainWindow inherits Window {
                     b.text = color.blue;
                 }
 
-                Button {
-                    text: "Open Fleet Editor";
-                    clicked => {
-                        root.open-fleet-editor();
-                    }
-                }
+                // Button {
+                //     text: "Open Fleet Editor";
+                //     clicked => {
+                //         root.open-fleet-editor();
+                //     }
+                // }
                 
-                Button {
-                    text: "Scramble Fleet";
-                    clicked => {
-                        root.scramble-fleet();
-                    }
-                }
+                // Button {
+                //     text: "Scramble Fleet";
+                //     clicked => {
+                //         root.scramble-fleet();
+                //     }
+                // }
 
                 HorizontalLayout {
                     merge-output-name-input := LineEdit {
@@ -786,339 +1129,6 @@ export component MainWindow inherits Window {
                     }
                 }
                 
-            }
-        }
-        fleet-editor := VerticalLayout {
-            width: 45%;
-            min-width: 700px;
-            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit"): marauder_editing := VerticalLayout {
-                alignment: start;
-
-                function update_current_hull_config() {
-                    current_hull_config.segment-bow = combo-box-bow.current-index;
-                    current_hull_config.segment-core = combo-box-core.current-index;
-                    current_hull_config.segment-stern = combo-box-stern.current-index;
-                    current_hull_config.bridge-model = combo-box-bridge-model.current-index;
-                    current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
-                    current_hull_config.bridge-snappoint = 0;
-                }
-
-                function update-current-dressing-selections() {
-                    current_hull_config.dressings.bow[0] = dressing-selection-bow-0.current-index;
-                    current_hull_config.dressings.core[0] = dressing-selection-core-0.current-index;
-                    current_hull_config.dressings.bow[1] = dressing-selection-bow-1.current-index;
-                    current_hull_config.dressings.core[1] = dressing-selection-core-1.current-index;
-                    current_hull_config.dressings.bow[2] = dressing-selection-bow-2.current-index;
-                    current_hull_config.dressings.core[2] = dressing-selection-core-2.current-index;
-                    current_hull_config.dressings.bow[3] = dressing-selection-bow-3.current-index;
-                    current_hull_config.dressings.core[3] = dressing-selection-core-3.current-index;
-                    current_hull_config.dressings.bow[4] = dressing-selection-bow-4.current-index;
-                    current_hull_config.dressings.core[4] = dressing-selection-core-4.current-index;
-                }
-
-                HorizontalLayout {
-                    Text {
-                        text: "Liner Editing";
-                        font-size: 24px;
-                        horizontal-stretch: 1.0;
-                    }
-                    Button {
-                        horizontal-stretch: 0.0;
-                        text: "Save";
-                        clicked => {
-                            current_hull_config.segment-bow = combo-box-bow.current-index;
-                            current_hull_config.segment-core = combo-box-core.current-index;
-                            current_hull_config.segment-stern = combo-box-stern.current-index;
-                            current_hull_config.bridge-model = combo-box-bridge-model.current-index;
-                            current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
-                            current_hull_config.bridge-snappoint = 0;
-
-                            root.save-liner-config(current_hull_config);
-                        }
-                    }
-                }
-
-                GridLayout {
-                    Row {
-                        TableHeader {}
-                        TableItem {width: 50px;}
-                        TableItem {
-                            Text {
-                                font-size: 18px;
-                                text: "Bow";
-                            }
-                        }
-                        TableItem {
-                            Text {
-                                font-size: 18px;
-                                text: "Core";
-                            }
-                        }
-                        TableItem {
-                            Text {
-                                font-size: 18px;
-                                text: "Stern";
-                            }
-                            width: 50px;
-                        }
-                    }
-                    Row {
-                        TableHeader {
-                            Text {
-                                font-size: 18px;
-                                text: "Hull Segments";
-                            }
-                        }
-                        TableItem {width: 50px;}
-                        TableItem {
-                            combo-box-bow := ComboBox {
-                                current-index: root.current_hull_config.segment-bow;
-                                model: ["A", "B", "C"];
-                                selected(current-value) => {
-                                    update_current_hull_config();
-                                    root.load-dressings(current_hull_config);
-                                }
-                            }
-                        }
-                        TableItem {
-                            combo-box-core := ComboBox {
-                                current-index: root.current_hull_config.segment-core;
-                                model: ["A", "B", "C"];
-                                selected(current-value) => {
-                                    update_current_hull_config();
-                                    root.load-dressings(current_hull_config);
-                                }
-                            }
-                        }
-                        TableItem {
-                            width: 50px;
-                            combo-box-stern := ComboBox {
-                                width: 50px;
-                                current-index: root.current_hull_config.segment-stern;
-                                model: ["A", "B", "C"];
-                            }
-                        }
-                    }
-                    Row {
-                        TableHeader {
-                            Text {
-                                font-size: 18px;
-                                text: "Superstructure";
-                            }
-                        }
-                        TableItem {
-                            width: 50px;
-                            combo-box-bridge-model := ComboBox {
-                                width: 50px;
-                                current-index: root.current_hull_config.bridge-model;
-                                model: ["A", "B", "C", "D"];
-                            }
-                        }
-                        TableItem {
-                            bridge-location-bow := CheckBox {
-                                toggled => {
-                                    // bridge-location-bow.checked = false;
-                                    bridge-location-core.checked = false;
-                                    bridge-location-stern.checked = false;
-
-                                    root.current_hull_config.bridge-segment = 0;
-                                }
-                                states [
-                                    toggled_on when checkbox_toggle: {
-                                        checked: current_hull_config.bridge-segment == 0 ? true : false;
-                                    }
-                                    toggled_off when checkbox_toggle: {
-                                        checked: false;
-                                    }
-                                ]
-                            }
-                        }
-                        TableItem {
-                            bridge-location-core := CheckBox {
-                                states [
-                                    toggled_on when checkbox_toggle: {
-                                        checked: current_hull_config.bridge-segment == 1 ? true : false;
-                                    }
-                                    toggled_off when checkbox_toggle: {
-                                        checked: false;
-                                    }
-                                ]
-                                toggled => {
-                                    bridge-location-bow.checked = false;
-                                    // bridge-location-core.checked = false;
-                                    bridge-location-stern.checked = false;
-
-                                    root.current_hull_config.bridge-segment = 1;
-                                }
-                            }
-                        }
-                        TableItem {
-                            width: 50px;
-                            bridge-location-stern := CheckBox {
-                                states [
-                                    toggled_on when checkbox_toggle: {
-                                        checked: current_hull_config.bridge-segment == 2 ? true : false;
-                                    }
-                                    toggled_off when checkbox_toggle: {
-                                        checked: false;
-                                    }
-                                ]
-                                toggled => {
-                                    bridge-location-bow.checked = false;
-                                    bridge-location-core.checked = false;
-                                    // bridge-location-stern.checked = false;
-                                    
-                                    root.current_hull_config.bridge-segment = 2;
-                                }
-                            }
-                        }
-                    }
-                    Row {
-                        TableHeader {
-                            Text {
-                                text: "Dressing slot 1";
-                                font-size: 18px;
-                            }
-                        }
-                        TableItem {width: 50px;}
-                        TableItem {
-                            dressing-selection-bow-0 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.bow[0].dressings;
-                                current-index: current_hull_config.dressings.bow[0];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                        TableItem {
-                            dressing-selection-core-0 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.core[0].dressings;
-                                current-index: current_hull_config.dressings.core[0];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                    }
-                    Row {
-                        TableHeader {
-                            Text {
-                                text: "Dressing slot 2";
-                                font-size: 18px;
-                            }
-                        }
-                        TableItem {width: 50px;}
-                        TableItem {
-                            dressing-selection-bow-1 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.bow[1].dressings;
-                                current-index: current_hull_config.dressings.bow[1];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                        TableItem {
-                            dressing-selection-core-1 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.core[1].dressings;
-                                current-index: current_hull_config.dressings.core[1];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                    }
-                    Row {
-                        TableHeader {
-                            Text {
-                                text: "Dressing slot 3";
-                                font-size: 18px;
-                            }
-                        }
-                        TableItem {width: 50px;}
-                        TableItem {
-                            dressing-selection-bow-2 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.bow[2].dressings;
-                                current-index: current_hull_config.dressings.bow[2];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                        TableItem {
-                            dressing-selection-core-2 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.core[2].dressings;
-                                current-index: current_hull_config.dressings.core[2];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                    }
-                    Row {
-                        TableHeader {
-                            Text {
-                                text: "Dressing slot 4";
-                                font-size: 18px;
-                            }
-                        }
-                        TableItem {width: 50px;}
-                        TableItem {
-                            dressing-selection-bow-3 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.bow[3].dressings;
-                                current-index: current_hull_config.dressings.bow[3];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                        TableItem {
-                            dressing-selection-core-3 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.core[3].dressings;
-                                current-index: current_hull_config.dressings.core[3];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                    }
-                    Row {
-                        TableHeader {
-                            Text {
-                                text: "Dressing slot 5";
-                                font-size: 18px;
-                            }
-                        }
-                        TableItem {width: 50px;}
-                        TableItem {
-                            dressing-selection-bow-4 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.bow[4].dressings;
-                                current-index: current_hull_config.dressings.bow[4];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                        TableItem {
-                            dressing-selection-core-4 := ComboBox {
-                                width: parent.width;
-                                model: dressing-slots.core[4].dressings;
-                                current-index: current_hull_config.dressings.core[4];
-                                selected(current-value) => {
-                                    update-current-dressing-selections();
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }
