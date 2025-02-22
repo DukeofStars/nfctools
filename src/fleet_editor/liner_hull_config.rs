@@ -5,22 +5,16 @@ use tracing::{debug, trace};
 
 use super::{BULKER_SEGMENTS, CONTAINER_BOWS, CONTAINER_CORES, CONTAINER_STERNS};
 use crate::{
-    error::{wrap_errorable_function, wrap_errorable_function_fe},
+    error::wrap_errorable_function,
     fleet_editor::{BRIDGE_MODELS, BULK_BOWS, BULK_CORES, BULK_STERNS},
     fleet_io::{read_fleet, write_fleet},
-    my_error, DressingSelections, DressingSlot, DressingSlots, FleetData, FleetEditorWindow, LinerHullConfig,
-    MainWindow,
+    my_error, DressingSelections, DressingSlot, DressingSlots, FleetData, LinerHullConfig, MainWindow,
 };
 
-pub fn on_load_dressings_handler(
-    main_window_weak: Weak<MainWindow>,
-    window_weak: Weak<FleetEditorWindow>,
-) -> impl Fn(LinerHullConfig) {
+pub fn on_load_dressings_handler(main_window_weak: Weak<MainWindow>) -> impl Fn(LinerHullConfig) {
     move |hull_config| {
         let main_window = main_window_weak.unwrap();
         let _ = wrap_errorable_function(&main_window, || {
-            let window = window_weak.unwrap();
-
             let mut dressing_slots = DressingSlots::default();
 
             debug!(?hull_config, "Determining dressing slots for");
@@ -29,22 +23,13 @@ pub fn on_load_dressings_handler(
             dressing_slots.bow = match hull_config.segment_bow {
                 0 => ModelRc::from([
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Top crates".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Top crates".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Bottom crates".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Bottom crates".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Flat arm bottom".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Flat arm bottom".to_shared_string()]),
                     },
                 ]),
                 1 => ModelRc::from([
@@ -52,24 +37,15 @@ pub fn on_load_dressings_handler(
                         dressings: ModelRc::from(["None".to_shared_string(), "Tanks".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Top crates".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Top crates".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Flat arm top".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Flat arm top".to_shared_string()]),
                     },
                 ]),
                 2 => ModelRc::from([
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Flat arm top".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Flat arm top".to_shared_string()]),
                     },
                     DressingSlot {
                         dressings: ModelRc::from([
@@ -85,28 +61,16 @@ pub fn on_load_dressings_handler(
             dressing_slots.core = match hull_config.segment_core {
                 0 => ModelRc::from([
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Top crates".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Top crates".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Bottom crates".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Bottom crates".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Vertical arm top".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Vertical arm top".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Flat arm bottom".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Flat arm bottom".to_shared_string()]),
                     },
                 ]),
                 1 => ModelRc::from([
@@ -114,10 +78,7 @@ pub fn on_load_dressings_handler(
                         dressings: ModelRc::from(["None".to_shared_string(), "Tanks".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Top crates".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Top crates".to_shared_string()]),
                     },
                     DressingSlot {
                         dressings: ModelRc::from([
@@ -127,16 +88,10 @@ pub fn on_load_dressings_handler(
                         ]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Flat arm top".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Flat arm top".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Vertical arm top".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Vertical arm top".to_shared_string()]),
                     },
                 ]),
                 2 => ModelRc::from([
@@ -149,23 +104,17 @@ pub fn on_load_dressings_handler(
                         ]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Crates above wings".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Crates above wings".to_shared_string()]),
                     },
                     DressingSlot {
-                        dressings: ModelRc::from([
-                            "None".to_shared_string(),
-                            "Vertical arm top".to_shared_string(),
-                        ]),
+                        dressings: ModelRc::from(["None".to_shared_string(), "Vertical arm top".to_shared_string()]),
                     },
                 ]),
                 _ => panic!(),
             };
 
             trace!("Passing dressing slots to UI");
-            window.set_dressing_slots(dressing_slots);
+            main_window.set_dressing_slots(dressing_slots);
 
             debug!("Dressing slots loaded");
 
@@ -176,13 +125,11 @@ pub fn on_load_dressings_handler(
 
 pub fn on_get_liner_config_handler(
     main_window_weak: Weak<MainWindow>,
-    window_weak: Weak<FleetEditorWindow>,
     fleets_model: Rc<VecModel<FleetData>>,
 ) -> impl Fn() -> LinerHullConfig {
     move || -> LinerHullConfig {
         let main_window = main_window_weak.unwrap();
         wrap_errorable_function(&main_window, || {
-            let window = window_weak.unwrap();
             let cur_idx = main_window.get_cur_fleet_idx();
             let fleet_data = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
                 "Selected fleet doesn't exist",
@@ -190,7 +137,7 @@ pub fn on_get_liner_config_handler(
             ))?;
 
             let mut fleet = read_fleet(&fleet_data.path)?;
-            let ship_idx = window.get_selected_ship_idx();
+            let ship_idx = main_window.get_selected_ship_idx();
             let ship = fleet
                 .ships
                 .as_mut()
@@ -217,10 +164,7 @@ pub fn on_get_liner_config_handler(
                 stern_key_list = CONTAINER_STERNS.iter();
             }
 
-            let hull_config = ship
-                .hull_config
-                .as_mut()
-                .expect("expected liner to have a HullConfig");
+            let hull_config = ship.hull_config.as_mut().expect("expected liner to have a HullConfig");
             debug!("Reading segment configurations");
             let mut segment_configurations = hull_config.primary_structure.segment_configuration.iter();
 
@@ -296,12 +240,10 @@ pub fn on_get_liner_config_handler(
 
 pub fn on_save_liner_config_handler(
     main_window_weak: Weak<MainWindow>,
-    window_weak: Weak<FleetEditorWindow>,
     fleets_model: Rc<VecModel<FleetData>>,
 ) -> impl Fn(LinerHullConfig) {
     move |hull_config| {
         let main_window = main_window_weak.unwrap();
-        let window = window_weak.unwrap();
         let LinerHullConfig {
             segment_bow,
             segment_core,
@@ -311,14 +253,14 @@ pub fn on_save_liner_config_handler(
             bridge_snappoint,
             dressings,
         } = &hull_config;
-        let _ = wrap_errorable_function_fe(&window, || {
+        let _ = wrap_errorable_function(&main_window, || {
             let cur_idx = main_window.get_cur_fleet_idx();
             let fleet_data = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
                 "Selected fleet doesn't exist",
                 "cur_fleet_idx points to a nonexistant fleet"
             ))?;
             let mut fleet = read_fleet(&fleet_data.path)?;
-            let ship_idx = window.get_selected_ship_idx();
+            let ship_idx = main_window.get_selected_ship_idx();
             let ship = fleet
                 .ships
                 .as_mut()
@@ -327,10 +269,7 @@ pub fn on_save_liner_config_handler(
                 .flatten()
                 .ok_or(my_error!("The selected ship idx doesn't exist", "This is a bug"))?;
 
-            debug!(
-                "Saving liner config for '{}' in '{}'",
-                ship.name, &fleet_data.name
-            );
+            debug!("Saving liner config for '{}' in '{}'", ship.name, &fleet_data.name);
 
             let liner_type = match ship.hull_type.as_str() {
                 "Stock/Bulk Hauler" => "Bulk",
@@ -355,12 +294,9 @@ pub fn on_save_liner_config_handler(
 
             trace!("HullType is '{}'", &liner_type);
 
-            let dressing_slots = window.get_dressing_slots();
+            let dressing_slots = main_window.get_dressing_slots();
 
-            let hull_config = ship
-                .hull_config
-                .as_mut()
-                .expect("expected liner to have a HullConfig");
+            let hull_config = ship.hull_config.as_mut().expect("expected liner to have a HullConfig");
             let primary_structure = &mut hull_config.primary_structure;
 
             debug!("Editing segment configurations");

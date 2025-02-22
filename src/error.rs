@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use tracing::error;
 
-use crate::{FleetEditorWindow, MainWindow, MissileWindow};
+use crate::MainWindow;
 
 pub struct Error {
     pub title: String,
@@ -52,29 +52,29 @@ pub fn wrap_errorable_function<T>(
         }
     }
 }
-pub fn wrap_errorable_function_fe<T>(
-    window: &FleetEditorWindow,
-    mut f: impl FnMut() -> Result<T, Error>,
-) -> Result<T, Error> {
-    match f() {
-        Ok(t) => Ok(t),
-        Err(err) => {
-            error!(%err.error, "{}", err.title);
-            window.invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
-            return Err(err);
-        }
-    }
-}
-pub fn wrap_errorable_function_m<T>(
-    window: &MissileWindow,
-    mut f: impl FnMut() -> Result<T, Error>,
-) -> Result<T, Error> {
-    match f() {
-        Ok(t) => Ok(t),
-        Err(err) => {
-            error!("{}: {}", err.title, err.error);
-            window.invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
-            return Err(err);
-        }
-    }
-}
+// pub fn wrap_errorable_function_fe<T>(
+//     window: &FleetEditorWindow,
+//     mut f: impl FnMut() -> Result<T, Error>,
+// ) -> Result<T, Error> {
+//     match f() {
+//         Ok(t) => Ok(t),
+//         Err(err) => {
+//             error!(%err.error, "{}", err.title);
+//             window.invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
+//             return Err(err);
+//         }
+//     }
+// }
+// pub fn wrap_errorable_function_m<T>(
+//     window: &MissileWindow,
+//     mut f: impl FnMut() -> Result<T, Error>,
+// ) -> Result<T, Error> {
+//     match f() {
+//         Ok(t) => Ok(t),
+//         Err(err) => {
+//             error!("{}: {}", err.title, err.error);
+//             window.invoke_show_error_popup((&err.title).into(), (&err.error).to_string().into());
+//             return Err(err);
+//         }
+//     }
+// }

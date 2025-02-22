@@ -1,14 +1,6 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use lazy_static::lazy_static;
-use slint::{ComponentHandle, Model, VecModel, Weak};
-use tracing::{debug, info, instrument, trace};
-
-use crate::{
-    error::{wrap_errorable_function, Error},
-    fleet_io::read_fleet,
-    my_error, FleetData, FleetEditorWindow, MainWindow, ShipData,
-};
 
 pub mod liner_hull_config;
 
@@ -75,95 +67,95 @@ lazy_static! {
     ]);
 }
 
-pub fn on_open_fleet_editor_handler(
-    main_window_weak: Weak<MainWindow>,
-    fleets_model: Rc<VecModel<FleetData>>,
-) -> impl Fn() {
-    move || {
-        let main_window = main_window_weak.unwrap();
-        let _ = wrap_errorable_function(&main_window, || {
-            open_fleet_editor(&main_window, fleets_model.clone())
-        });
-    }
-}
+// pub fn on_open_fleet_editor_handler(
+//     main_window_weak: Weak<MainWindow>,
+//     fleets_model: Rc<VecModel<FleetData>>,
+// ) -> impl Fn() {
+//     move || {
+//         let main_window = main_window_weak.unwrap();
+//         let _ = wrap_errorable_function(&main_window, || {
+//             open_fleet_editor(&main_window, fleets_model.clone())
+//         });
+//     }
+// }
 
-#[instrument(skip(main_window, fleets_model))]
-fn open_fleet_editor(main_window: &MainWindow, fleets_model: Rc<VecModel<FleetData>>) -> Result<(), Error> {
-    info!("Initialising fleet editor");
-    trace!("Creating window");
-    let window = FleetEditorWindow::new()
-        .map_err(|err| my_error!("Failed to create fleet editor window", err))
-        .unwrap();
+// #[instrument(skip(main_window, fleets_model))]
+// fn open_fleet_editor(main_window: &MainWindow, fleets_model: Rc<VecModel<FleetData>>) -> Result<(), Error> {
+//     info!("Initialising fleet editor");
+//     trace!("Creating window");
+//     let window = FleetEditorWindow::new()
+//         .map_err(|err| my_error!("Failed to create fleet editor window", err))
+//         .unwrap();
 
-    let cur_idx = main_window.get_cur_fleet_idx();
-    debug!("Loading fleet '{}'", cur_idx);
-    if cur_idx == -1 {
-        return Err(my_error!("No fleet selected", ""));
-    }
-    let fleet_data = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
-        "Selected fleet doesn't exist",
-        "cur_fleet_idx points to a nonexistant fleet"
-    ))?;
+//     let cur_idx = main_window.get_cur_fleet_idx();
+//     debug!("Loading fleet '{}'", cur_idx);
+//     if cur_idx == -1 {
+//         return Err(my_error!("No fleet selected", ""));
+//     }
+//     let fleet_data = fleets_model.iter().nth(cur_idx as usize).ok_or(my_error!(
+//         "Selected fleet doesn't exist",
+//         "cur_fleet_idx points to a nonexistant fleet"
+//     ))?;
 
-    trace!(name = %fleet_data.name, "Setting window name");
-    window.set_fleet_name(fleet_data.name.into());
+//     trace!(name = %fleet_data.name, "Setting window name");
+//     window.set_fleet_name(fleet_data.name.into());
 
-    debug!("Getting ships list");
-    let fleet = read_fleet(&fleet_data.path)?;
-    let ships = &fleet.ships;
+//     debug!("Getting ships list");
+//     let fleet = read_fleet(&fleet_data.path)?;
+//     let ships = &fleet.ships;
 
-    debug!("Parsing ship data");
-    let ships = match ships
-        .as_ref()
-        .map(|ships| {
-            ships.ship.as_ref().map(|ships| {
-                ships
-                    .iter()
-                    .map(|ship| {
-                        let ship_data = ShipData {
-                            class: (&ship.hull_type).into(),
-                            name: (&ship.name).into(),
-                            cost: ship.cost.parse().map_err(|err| {
-                                my_error!("Invalid fleet file", format!("Failed to parse cost: {}", err))
-                            })?,
-                        };
-                        Ok(ship_data)
-                    })
-                    .collect::<Result<Vec<ShipData>, Error>>()
-            })
-        })
-        .flatten()
-    {
-        Some(t) => t?,
-        None => Vec::new(),
-    };
+//     debug!("Parsing ship data");
+//     let ships = match ships
+//         .as_ref()
+//         .map(|ships| {
+//             ships.ship.as_ref().map(|ships| {
+//                 ships
+//                     .iter()
+//                     .map(|ship| {
+//                         let ship_data = ShipData {
+//                             class: (&ship.hull_type).into(),
+//                             name: (&ship.name).into(),
+//                             cost: ship.cost.parse().map_err(|err| {
+//                                 my_error!("Invalid fleet file", format!("Failed to parse cost: {}", err))
+//                             })?,
+//                         };
+//                         Ok(ship_data)
+//                     })
+//                     .collect::<Result<Vec<ShipData>, Error>>()
+//             })
+//         })
+//         .flatten()
+//     {
+//         Some(t) => t?,
+//         None => Vec::new(),
+//     };
 
-    info!("Found {} ships", ships.len());
+//     info!("Found {} ships", ships.len());
 
-    trace!("Passing ships to ui");
-    let ships_model = std::rc::Rc::new(slint::VecModel::from(ships));
-    window.set_ships(ships_model.clone().into());
+//     trace!("Passing ships to ui");
+//     let ships_model = std::rc::Rc::new(slint::VecModel::from(ships));
+//     window.set_ships(ships_model.clone().into());
 
-    debug!("Setting up callbacks");
-    window.on_save_liner_config(liner_hull_config::on_save_liner_config_handler(
-        main_window.as_weak(),
-        window.as_weak(),
-        fleets_model.clone(),
-    ));
-    window.on_get_liner_config(liner_hull_config::on_get_liner_config_handler(
-        main_window.as_weak(),
-        window.as_weak(),
-        fleets_model.clone(),
-    ));
-    window.on_load_dressings(liner_hull_config::on_load_dressings_handler(
-        main_window.as_weak(),
-        window.as_weak(),
-    ));
+//     debug!("Setting up callbacks");
+//     window.on_save_liner_config(liner_hull_config::on_save_liner_config_handler(
+//         main_window.as_weak(),
+//         window.as_weak(),
+//         fleets_model.clone(),
+//     ));
+//     window.on_get_liner_config(liner_hull_config::on_get_liner_config_handler(
+//         main_window.as_weak(),
+//         window.as_weak(),
+//         fleets_model.clone(),
+//     ));
+//     window.on_load_dressings(liner_hull_config::on_load_dressings_handler(
+//         main_window.as_weak(),
+//         window.as_weak(),
+//     ));
 
-    info!("Opening fleet editor");
-    window
-        .show()
-        .map_err(|err| my_error!("Could not show fleet editor window.", err))
-        .unwrap();
-    Ok(())
-}
+//     info!("Opening fleet editor");
+//     window
+//         .show()
+//         .map_err(|err| my_error!("Could not show fleet editor window.", err))
+//         .unwrap();
+//     Ok(())
+// }

@@ -1,0 +1,1127 @@
+import { Button, GridBox, VerticalBox, HorizontalBox, LineEdit, ScrollView, StandardButton, SpinBox, ComboBox, TextEdit, CheckBox, GroupBox } from "std-widgets.slint";
+
+export struct FleetData {
+    path: string,
+    short-path: string,
+    name: string,
+    selected: bool,
+}
+
+export struct Tag {
+    name: string,
+    color: color,
+}
+
+component FleetListItem inherits TouchArea {
+    in-out property <string> name;
+    in property <string> short-path;
+    in property <color> background-colour;
+
+    callback viewing();
+
+    clicked => {
+        root.viewing();
+    }
+
+    Rectangle {
+        height: 18px;
+        background: background-colour;
+    
+        HorizontalLayout {
+            Text {
+                overflow: elide;
+                wrap: no-wrap;
+                text: name;
+                horizontal-stretch: 1.0;
+                font-size: 16px;
+            }
+            HorizontalLayout {
+                alignment: end;
+                Text {
+                    overflow: elide;
+                    wrap: no-wrap;
+                    color: rgba(255, 255, 255, 0.5);
+                    text: short-path;
+                    horizontal-alignment: right;
+                    // font-size: 16px;
+                }
+            }
+        }
+
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+}
+
+// component ActionsPane inherits VerticalLayout {
+//     in-out property <[Tag]> tags;
+
+//     callback merge(string);
+//     callback open-fleet-editor();
+//     callback add-tag(Tag);
+//     callback remove-tag(int);
+//     callback lookup-tag(string);
+//     callback scramble-fleet();
+
+//     public function get-description() -> string {
+//         desc-input.text
+//     }
+//     public function set-description(desc: string) {
+//         desc-input.text = desc;
+//     }
+//     public function set-tag-color(color: color) {
+//         r.text = color.red;
+//         g.text = color.green;
+//         b.text = color.blue;
+//     }
+
+//     spacing: 5px;
+//     max-width: 240px;
+
+//     Button {
+//         text: "Open Fleet Editor";
+//         clicked => {
+//             root.open-fleet-editor();
+//         }
+//     }
+    
+//     Button {
+//         text: "Scramble Fleet";
+//         clicked => {
+//             root.scramble-fleet();
+//         }
+//     }
+
+//     HorizontalLayout {
+//         merge-output-name-input := LineEdit {
+//             text: "";
+//         }
+
+//         Button {
+//             text: "Merge";
+//             clicked => {
+//                 root.merge(merge-output-name-input.text);
+//             }
+//         }
+//     }
+
+//     Text {
+//         text: "Tags";
+//         font-size: 16px;
+//     }
+    
+//     HorizontalLayout {
+//         tag-name := LineEdit {
+//             placeholder-text: "Tag Name";
+
+//             edited(text) => {
+//                 root.lookup-tag(text);
+//             }
+//         }
+//         Button {
+//             text: "Add";
+//             clicked => {
+//                 root.add-tag({
+//                     name: tag-name.text,
+//                     color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float())
+//                 });
+//             }
+//         }
+//     }
+//     t := HorizontalLayout{
+//         r := LineEdit {
+//             width: t.width/4;
+//             horizontal-stretch: 0.0;
+//             placeholder-text: "R";
+//         }
+//         g := LineEdit {
+//             width: t.width/4;
+//             horizontal-stretch: 0.0;
+//             placeholder-text: "G";
+//         }
+//         b := LineEdit {
+//             width: t.width/4;
+//             horizontal-stretch: 0.0;
+//             placeholder-text: "B";
+//         }
+//         Rectangle {
+//             Text {
+//                 color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float());
+//                 text: "PREVIEW";
+//             }
+//         }
+//     }
+     
+//     a := GridLayout {
+//         Row {
+//             HorizontalLayout {
+//                 spacing: 2px;
+//                 padding-bottom: 2px;
+//                 for i in 4: ta1 := TouchArea {
+//                     width: 60px;
+//                     clicked => {
+//                         root.remove-tag(i);
+//                     }
+
+//                     Rectangle {
+//                         width: 60px;
+//                         property <Tag> tag: tags[i];
+//                         border-radius: 2px;
+//                         Text {
+//                             horizontal-alignment: center;
+//                             width: 60px;
+//                             overflow: clip;
+//                             text: tag.name;
+//                             color: tag.color;
+//                         }
+
+//                         states [
+//                             selected when ta1.has-hover: {
+//                                 background: Colors.lightgrey;
+//                             }
+//                             unselected when !ta1.has-hover: {
+//                                 background: transparent;
+//                             }
+//                         ]
+//                     }
+//                 }
+//             }
+//         }
+//         Row {
+//             HorizontalLayout {
+//                 spacing: 2px;
+//                 padding-bottom: 2px;
+//                 for i in 4: ta2 := TouchArea {
+//                     width: 60px;
+//                     clicked => {
+//                         root.remove-tag(i+4);
+//                     }
+
+//                     Rectangle {
+//                         width: 60px;
+//                         property <Tag> tag: tags[i+4];
+//                         border-radius: 2px;
+//                         Text {
+//                             horizontal-alignment: center;
+//                             width: 60px;
+//                             overflow: clip;
+//                             text: tag.name;
+//                             color: tag.color;
+//                         }
+
+//                         states [
+//                             selected when ta2.has-hover: {
+//                                 background: Colors.lightgrey;
+//                             }
+//                             unselected when !ta2.has-hover: {
+//                                 background: transparent;
+//                             }
+//                         ]
+//                     }
+//                 }
+//             }
+//         }
+//         Row {
+//             HorizontalLayout {
+//                 spacing: 2px;
+//                 padding-bottom: 2px;
+//                 for i in 4: ta3 := TouchArea {
+//                     width: 60px;
+//                     clicked => {
+//                         root.remove-tag(i+8);
+//                     }
+
+//                     Rectangle {
+//                         width: 60px;
+//                         property <Tag> tag: tags[i+8];
+//                         border-radius: 2px;
+//                         Text {
+//                             horizontal-alignment: center;
+//                             width: 60px;
+//                             overflow: clip;
+//                             text: tag.name;
+//                             color: tag.color;
+//                         }
+
+//                         states [
+//                             selected when ta3.has-hover: {
+//                                 background: Colors.lightgrey;
+//                             }
+//                             unselected when !ta3.has-hover: {
+//                                 background: transparent;
+//                             }
+//                         ]
+//                     }
+//                 }
+//             }
+//         }
+//     }
+
+//     HorizontalLayout {
+//         Text {
+//             vertical-alignment: center;
+//             text: "Edit Description";
+//             font-size: 16px;
+//         }
+
+//         // Button {
+//         //     width: 40%;
+//         //     text: "Save";
+//         //     clicked => {
+//         //         desc-input.text;
+//         //         root.save-description(desc-input.text);
+//         //     }
+//         // }
+//     }
+
+//     desc-input := TextEdit {
+//         font-size: 12px;
+//         wrap: word-wrap;
+//         text: "";
+//     }
+// }
+
+export struct ShipData {
+    name: string,
+    class: string,
+    cost: int,
+}
+
+export struct DressingSlot {
+    dressings: [string],
+}
+export struct DressingSlots {
+    bow: [DressingSlot],
+    core: [DressingSlot],
+}
+
+export struct DressingSelections {
+    bow: [int],
+    core: [int]
+}
+
+export struct LinerHullConfig {
+    segment-bow: int,
+    segment-core: int,
+    segment-stern: int,
+    bridge-model: int,
+    bridge-segment: int,
+    bridge-snappoint: int,
+    dressings: DressingSelections,
+}
+
+component ShipListItem inherits TouchArea {
+    in property <ShipData> ship;
+    in property <color> background-colour;
+
+    Rectangle {
+        height: 36px;
+        background: background-colour;
+        border-width: 1px;
+        border-color: rgba(255, 255, 255, 0.1);
+
+        VerticalLayout {
+            Text {
+                font-size: 18px;
+                text: ship.name;
+                wrap: no-wrap;
+                overflow: elide;
+            }
+            HorizontalLayout {
+                Text {
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 14px;
+                    text: ship.class;
+                }
+                Rectangle {}
+                Text {
+                    horizontal-alignment: right;
+                    color: rgba(255, 255, 255, 0.5);
+                    font-size: 14px;
+                    text: ship.cost;
+                }
+            }
+        }
+    }
+}
+
+component TableHeader inherits Rectangle {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+}
+component TableItem inherits Rectangle {
+    width: 150px;
+    border-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+}
+
+export component MainWindow inherits Window {
+    title: "NebTools";
+
+    preferred-width: 1100px;
+    preferred-height: 800px;
+    
+    in-out property <[FleetData]> fleets;
+    in-out property <bool> multi-selecting: false;
+    in property <bool> shutdown-state: false; 
+    in-out property <[Tag]> tags;
+    out property <int> cur-fleet-idx;
+
+    in property <FleetData> fleet;
+    in property <[ShipData]> ships;
+    in property <DressingSlots> dressing-slots;
+    in-out property <string> fleet-name;
+    out property <int> selected_ship_idx: -1;
+    property <LinerHullConfig> current_hull_config;
+    callback save-liner-config(LinerHullConfig);
+    callback get-liner-config() -> LinerHullConfig;
+
+    callback load-dressings(LinerHullConfig);
+
+    property <bool> checkbox_toggle: true;
+    
+    callback merge(string);
+    callback viewing(int);
+    callback save-description();
+    callback reload-fleets();
+    callback open-fleet-editor();
+    callback add-tag(Tag);
+    callback remove-tag(int);
+    callback lookup-tag(string);
+    callback close-without-saving();
+    callback scramble-fleet();
+
+    callback open-missiles-view();
+    callback open-win-predictor();
+
+    public function get-description() -> string {
+        actions-pane.get-description()
+    }
+    public function set-description(desc: string) {
+        actions-pane.set-description(desc);
+    }
+    public function set-tag-color(color: color) {
+        actions-pane.set-tag-color(color);
+    }
+
+    forward-focus: key-handler;
+    key-handler := FocusScope {
+        key-pressed(event) => {
+            if (event.text == Key.Control) {
+                root.multi-selecting = true;
+                accept
+            }
+            reject
+        }
+        key-released(event) => {
+            if (event.text == Key.Control) {
+                root.multi-selecting = false;
+                accept
+            }
+            reject
+        }
+    }
+
+    // Error popup
+    property <string> error-popup-title;
+    property <string> error-popup-message;
+    public function show-error-popup(title: string, message: string) {
+        error-popup-title = title;
+        error-popup-message = message;
+        error-popup.show();
+    }
+    error-popup := PopupWindow {
+        height: main-window.height;
+        width: main-window.width;
+        x: 0;
+        y: 0;
+        close-policy: no-auto-close;
+
+        VerticalLayout {
+            Rectangle {}
+            HorizontalLayout {
+                Rectangle {}
+                Rectangle {
+                    max-width: 600px;
+                    height: 25%;
+                    border-radius: 4px;
+                    background: rgba(0, 0, 0, 0.8);
+                    VerticalLayout {
+                        Text {
+                            wrap: char-wrap;
+                            text: error-popup-title;
+                            font-size: 24px;
+                        }
+
+                        Text {
+                            wrap: word-wrap;
+                            text: error-popup-message;
+                            font-size: 12px;
+                        }
+
+                        StandardButton {
+                            kind: ok;
+                            clicked => {
+                                if root.shutdown-state {
+                                    root.close-without-saving();
+                                }
+                                error-popup.close();
+                            }
+                        }
+                    }
+                }
+                Rectangle {}
+            }
+            Rectangle {}
+        }
+    }
+
+    // Main window
+    main-window := HorizontalLayout {
+        fleets-list := VerticalLayout {
+            width: 25%;
+            alignment: start;
+            fleets-header := HorizontalLayout {
+                Text {
+                    text: "Fleets";
+                    font-size: 24px;
+                }
+                HorizontalLayout {
+                    alignment: end;
+                    Button {
+                        text: "Refresh";
+                        clicked => {
+                            root.reload-fleets();
+                        }
+                    }
+                }
+            }
+
+            ScrollView {
+                height: min(main-window.height - fleets-header.preferred-height, h.preferred-height);
+                h := VerticalLayout {
+                    for fleet[idx] in fleets: FleetListItem {
+                        name: fleet.name;
+                        short-path: fleet.short-path;
+
+                        viewing => {
+                            fleet.selected = !fleet.selected;
+                            if fleet.selected {
+                                root.viewing(idx);
+                                cur-fleet-idx = idx;
+                            }
+                            else {
+                                root.viewing(-1);
+                                cur-fleet-idx = -1;
+                                // root.set-description("");
+                            }
+                        }
+                        states [
+                            selected when fleet.selected: {
+                                background-colour: rgba(204, 134, 092, 1);
+                            }
+                            unselected when !fleet.selected: {
+                                background-colour: rgba(0, 0, 0, 0);
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+        VerticalLayout {
+            width: 240px;
+            actions-pane := VerticalLayout {
+                height: 50%;
+                public function get-description() -> string {
+                    desc-input.text
+                }
+                public function set-description(desc: string) {
+                    desc-input.text = desc;
+                }
+                public function set-tag-color(color: color) {
+                    r.text = color.red;
+                    g.text = color.green;
+                    b.text = color.blue;
+                }
+
+                Button {
+                    text: "Open Fleet Editor";
+                    clicked => {
+                        root.open-fleet-editor();
+                    }
+                }
+                
+                Button {
+                    text: "Scramble Fleet";
+                    clicked => {
+                        root.scramble-fleet();
+                    }
+                }
+
+                HorizontalLayout {
+                    merge-output-name-input := LineEdit {
+                        text: "";
+                    }
+
+                    Button {
+                        text: "Merge";
+                        clicked => {
+                            root.merge(merge-output-name-input.text);
+                        }
+                    }
+                }
+
+                Text {
+                    text: "Tags";
+                    font-size: 16px;
+                }
+                
+                HorizontalLayout {
+                    tag-name := LineEdit {
+                        placeholder-text: "Tag Name";
+
+                        edited(text) => {
+                            root.lookup-tag(text);
+                        }
+                    }
+                    Button {
+                        text: "Add";
+                        clicked => {
+                            root.add-tag({
+                                name: tag-name.text,
+                                color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float())
+                            });
+                        }
+                    }
+                }
+                t := HorizontalLayout {
+                    r := LineEdit {
+                        width: t.width/4;
+                        horizontal-stretch: 0.0;
+                        placeholder-text: "R";
+                    }
+                    g := LineEdit {
+                        width: t.width/4;
+                        horizontal-stretch: 0.0;
+                        placeholder-text: "G";
+                    }
+                    b := LineEdit {
+                        width: t.width/4;
+                        horizontal-stretch: 0.0;
+                        placeholder-text: "B";
+                    }
+                    Rectangle {
+                        width: t.width/4;
+                        Text {
+                            color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float());
+                            text: "PREVIEW";
+                        }
+                    }
+                }
+                
+                a := GridLayout {
+                    Row {
+                        HorizontalLayout {
+                            for i in 4: ta1 := TouchArea {
+                                width: 60px;
+                                clicked => {
+                                    root.remove-tag(i);
+                                }
+
+                                Rectangle {
+                                    width: 60px;
+                                    property <Tag> tag: tags[i];
+                                    border-radius: 2px;
+                                    Text {
+                                        horizontal-alignment: center;
+                                        width: 60px;
+                                        overflow: clip;
+                                        text: tag.name;
+                                        color: tag.color;
+                                    }
+
+                                    states [
+                                        selected when ta1.has-hover: {
+                                            background: Colors.lightgrey;
+                                        }
+                                        unselected when !ta1.has-hover: {
+                                            background: transparent;
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        HorizontalLayout {
+                            for i in 4: ta2 := TouchArea {
+                                width: 60px;
+                                clicked => {
+                                    root.remove-tag(i+4);
+                                }
+
+                                Rectangle {
+                                    width: 60px;
+                                    property <Tag> tag: tags[i+4];
+                                    border-radius: 2px;
+                                    Text {
+                                        horizontal-alignment: center;
+                                        width: 60px;
+                                        overflow: clip;
+                                        text: tag.name;
+                                        color: tag.color;
+                                    }
+
+                                    states [
+                                        selected when ta2.has-hover: {
+                                            background: Colors.lightgrey;
+                                        }
+                                        unselected when !ta2.has-hover: {
+                                            background: transparent;
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        HorizontalLayout {
+                            for i in 4: ta3 := TouchArea {
+                                width: 60px;
+                                clicked => {
+                                    root.remove-tag(i+8);
+                                }
+
+                                Rectangle {
+                                    width: 60px;
+                                    property <Tag> tag: tags[i+8];
+                                    border-radius: 2px;
+                                    Text {
+                                        horizontal-alignment: center;
+                                        width: 60px;
+                                        overflow: clip;
+                                        text: tag.name;
+                                        color: tag.color;
+                                    }
+
+                                    states [
+                                        selected when ta3.has-hover: {
+                                            background: Colors.lightgrey;
+                                        }
+                                        unselected when !ta3.has-hover: {
+                                            background: transparent;
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    Text {
+                        vertical-alignment: center;
+                        text: "Edit Description";
+                        font-size: 16px;
+                    }
+
+                    // Button {
+                    //     width: 40%;
+                    //     text: "Save";
+                    //     clicked => {
+                    //         desc-input.text;
+                    //         root.save-description(desc-input.text);
+                    //     }
+                    // }
+                }
+
+                desc-input := TextEdit {
+                    font-size: 12px;
+                    wrap: word-wrap;
+                    text: "";
+                }
+            }
+            ships-list := HorizontalLayout {
+                VerticalLayout {
+                    alignment: start;
+                    ships-header := Text {
+                        text: "Ships";
+                        font-size: 24px;
+                    }
+                    ScrollView {
+                        height: main-window.height / 2;
+                        viewport-width: ships-list.width;
+                        viewport-height: ships.length * 36px + 36px;
+                        list := VerticalLayout {
+                            spacing: 0px;
+                            preferred-height: 0px;
+                            for ship[idx] in ships: ShipListItem {
+                                ship: ship;
+
+                                clicked => {
+                                    selected_ship_idx = idx;
+
+                                    if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit") {
+                                        current_hull_config = root.get-liner-config();
+                                        root.load-dressings(current_hull_config);
+                                        checkbox_toggle = true;
+                                    }
+                                    else {
+                                        checkbox_toggle = false;
+                                    }
+                                }
+                                states [
+                                    selected when selected_ship_idx == idx: {
+                                        background-colour: rgba(204, 134, 092, 1);
+                                    }
+                                    unselected when selected_ship_idx != idx: {
+                                        background-colour: rgba(0, 0, 0, 0);
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                    Rectangle {
+                        vertical-stretch: 1.0;
+                    }
+                }
+                
+            }
+        }
+        fleet-editor := VerticalLayout {
+            width: 45%;
+            min-width: 700px;
+            if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit"): marauder_editing := VerticalLayout {
+                alignment: start;
+
+                function update_current_hull_config() {
+                    current_hull_config.segment-bow = combo-box-bow.current-index;
+                    current_hull_config.segment-core = combo-box-core.current-index;
+                    current_hull_config.segment-stern = combo-box-stern.current-index;
+                    current_hull_config.bridge-model = combo-box-bridge-model.current-index;
+                    current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
+                    current_hull_config.bridge-snappoint = 0;
+                }
+
+                function update-current-dressing-selections() {
+                    current_hull_config.dressings.bow[0] = dressing-selection-bow-0.current-index;
+                    current_hull_config.dressings.core[0] = dressing-selection-core-0.current-index;
+                    current_hull_config.dressings.bow[1] = dressing-selection-bow-1.current-index;
+                    current_hull_config.dressings.core[1] = dressing-selection-core-1.current-index;
+                    current_hull_config.dressings.bow[2] = dressing-selection-bow-2.current-index;
+                    current_hull_config.dressings.core[2] = dressing-selection-core-2.current-index;
+                    current_hull_config.dressings.bow[3] = dressing-selection-bow-3.current-index;
+                    current_hull_config.dressings.core[3] = dressing-selection-core-3.current-index;
+                    current_hull_config.dressings.bow[4] = dressing-selection-bow-4.current-index;
+                    current_hull_config.dressings.core[4] = dressing-selection-core-4.current-index;
+                }
+
+                HorizontalLayout {
+                    Text {
+                        text: "Liner Editing";
+                        font-size: 24px;
+                        horizontal-stretch: 1.0;
+                    }
+                    Button {
+                        horizontal-stretch: 0.0;
+                        text: "Save";
+                        clicked => {
+                            current_hull_config.segment-bow = combo-box-bow.current-index;
+                            current_hull_config.segment-core = combo-box-core.current-index;
+                            current_hull_config.segment-stern = combo-box-stern.current-index;
+                            current_hull_config.bridge-model = combo-box-bridge-model.current-index;
+                            current_hull_config.bridge-segment = bridge-location-bow.checked ? 0 : bridge-location-core.checked ? 1 : bridge-location-stern.checked ? 2 : 1;
+                            current_hull_config.bridge-snappoint = 0;
+
+                            root.save-liner-config(current_hull_config);
+                        }
+                    }
+                }
+
+                GridLayout {
+                    Row {
+                        TableHeader {}
+                        TableItem {width: 50px;}
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Bow";
+                            }
+                        }
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Core";
+                            }
+                        }
+                        TableItem {
+                            Text {
+                                font-size: 18px;
+                                text: "Stern";
+                            }
+                            width: 50px;
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                font-size: 18px;
+                                text: "Hull Segments";
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            combo-box-bow := ComboBox {
+                                current-index: root.current_hull_config.segment-bow;
+                                model: ["A", "B", "C"];
+                                selected(current-value) => {
+                                    update_current_hull_config();
+                                    root.load-dressings(current_hull_config);
+                                }
+                            }
+                        }
+                        TableItem {
+                            combo-box-core := ComboBox {
+                                current-index: root.current_hull_config.segment-core;
+                                model: ["A", "B", "C"];
+                                selected(current-value) => {
+                                    update_current_hull_config();
+                                    root.load-dressings(current_hull_config);
+                                }
+                            }
+                        }
+                        TableItem {
+                            width: 50px;
+                            combo-box-stern := ComboBox {
+                                width: 50px;
+                                current-index: root.current_hull_config.segment-stern;
+                                model: ["A", "B", "C"];
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                font-size: 18px;
+                                text: "Superstructure";
+                            }
+                        }
+                        TableItem {
+                            width: 50px;
+                            combo-box-bridge-model := ComboBox {
+                                width: 50px;
+                                current-index: root.current_hull_config.bridge-model;
+                                model: ["A", "B", "C", "D"];
+                            }
+                        }
+                        TableItem {
+                            bridge-location-bow := CheckBox {
+                                toggled => {
+                                    // bridge-location-bow.checked = false;
+                                    bridge-location-core.checked = false;
+                                    bridge-location-stern.checked = false;
+
+                                    root.current_hull_config.bridge-segment = 0;
+                                }
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 0 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                            }
+                        }
+                        TableItem {
+                            bridge-location-core := CheckBox {
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 1 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                                toggled => {
+                                    bridge-location-bow.checked = false;
+                                    // bridge-location-core.checked = false;
+                                    bridge-location-stern.checked = false;
+
+                                    root.current_hull_config.bridge-segment = 1;
+                                }
+                            }
+                        }
+                        TableItem {
+                            width: 50px;
+                            bridge-location-stern := CheckBox {
+                                states [
+                                    toggled_on when checkbox_toggle: {
+                                        checked: current_hull_config.bridge-segment == 2 ? true : false;
+                                    }
+                                    toggled_off when checkbox_toggle: {
+                                        checked: false;
+                                    }
+                                ]
+                                toggled => {
+                                    bridge-location-bow.checked = false;
+                                    bridge-location-core.checked = false;
+                                    // bridge-location-stern.checked = false;
+                                    
+                                    root.current_hull_config.bridge-segment = 2;
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                text: "Dressing slot 1";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-0 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[0].dressings;
+                                current-index: current_hull_config.dressings.bow[0];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-0 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[0].dressings;
+                                current-index: current_hull_config.dressings.core[0];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                text: "Dressing slot 2";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-1 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[1].dressings;
+                                current-index: current_hull_config.dressings.bow[1];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-1 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[1].dressings;
+                                current-index: current_hull_config.dressings.core[1];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                text: "Dressing slot 3";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-2 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[2].dressings;
+                                current-index: current_hull_config.dressings.bow[2];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-2 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[2].dressings;
+                                current-index: current_hull_config.dressings.core[2];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                text: "Dressing slot 4";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-3 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[3].dressings;
+                                current-index: current_hull_config.dressings.bow[3];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-3 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[3].dressings;
+                                current-index: current_hull_config.dressings.core[3];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                    Row {
+                        TableHeader {
+                            Text {
+                                text: "Dressing slot 5";
+                                font-size: 18px;
+                            }
+                        }
+                        TableItem {width: 50px;}
+                        TableItem {
+                            dressing-selection-bow-4 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.bow[4].dressings;
+                                current-index: current_hull_config.dressings.bow[4];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                        TableItem {
+                            dressing-selection-core-4 := ComboBox {
+                                width: parent.width;
+                                model: dressing-slots.core[4].dressings;
+                                current-index: current_hull_config.dressings.core[4];
+                                selected(current-value) => {
+                                    update-current-dressing-selections();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
