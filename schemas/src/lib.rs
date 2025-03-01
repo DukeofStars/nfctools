@@ -529,6 +529,10 @@ pub struct MissileTypes {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct MissileTemplate {
+    #[serde(rename = "@xmlns:xsd")]
+    pub xmlns_xsd: Option<String>,
+    #[serde(rename = "@xmlns:xsi")]
+    pub xmlns_xsi: Option<String>,
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "AssociatedTemplateName")]
