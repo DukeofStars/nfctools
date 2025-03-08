@@ -11,8 +11,8 @@ use tracing::{debug, info, instrument, trace, warn};
 
 use crate::{error::Error, fleet_io::read_fleet, my_error, MissileData};
 
-mod load_missiles;
 pub mod missiles_window;
+mod load_missiles;
 mod update_fleets;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
