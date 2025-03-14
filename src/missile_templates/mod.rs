@@ -7,12 +7,12 @@ use std::{
 
 use glob::Pattern;
 use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
-use tracing::{debug, info, trace, warn};
+use tracing::{debug, info, instrument, trace, warn};
 
 use crate::{error::Error, fleet_io::read_fleet, my_error, MissileData};
 
-mod load_missiles;
 pub mod missiles_window;
+mod load_missiles;
 mod update_fleets;
 
 #[derive(Deserialize, Serialize, Debug, Default)]
@@ -35,6 +35,7 @@ impl UsedMissilesCache {
         Ok(())
     }
 
+    #[instrument(skip(excluded_patterns))]
     pub fn generate_from_fleets(
         missiles_dir: &PathBuf,
         excluded_patterns: &Vec<Pattern>,
@@ -82,7 +83,7 @@ impl UsedMissilesCache {
                         hasher.finish()
                     };
                     if hash == old_fleet_data.hash {
-                        trace!("Skipping '{}'", child.path().display());
+                        trace!("Reusing cached missile data for '{}'", child.path().display());
                         continue;
                     }
                 }
@@ -134,10 +135,7 @@ impl<'de> Visitor<'de> for HexToU64Visitor {
         E: serde::de::Error,
     {
         u64::from_str_radix(s, 16).map_err(|_| {
-            serde::de::Error::invalid_value(
-                serde::de::Unexpected::Other("invalid hex"),
-                &"a valid hex string",
-            )
+            serde::de::Error::invalid_value(serde::de::Unexpected::Other("invalid hex"), &"a valid hex string")
         })
     }
 }
@@ -170,9 +168,8 @@ impl FleetsUsedMissiles {
 
         let mut used_missiles = Vec::new();
         missile_types_elem.missile_template.map(|x| {
-            x.iter().for_each(|missile_template| {
-                used_missiles.push(MissileTemplateId::from_missile(&missile_template))
-            })
+            x.iter()
+                .for_each(|missile_template| used_missiles.push(MissileTemplateId::from_missile(&missile_template)))
         });
 
         Ok(FleetsUsedMissiles {
