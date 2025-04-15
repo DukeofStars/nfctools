@@ -166,14 +166,13 @@ export component MainWindow inherits Window {
     callback open-win-predictor();
 
     public function get-description() -> string {
-        // actions-pane.get-description()
-        ""
+        actions-pane.get-description()
     }
     public function set-description(desc: string) {
-        // actions-pane.set-description(desc);
+        actions-pane.set-description(desc);
     }
     public function set-tag-color(color: color) {
-        // actions-pane.set-tag-color(color);
+        actions-pane.set-tag-color(color);
     }
 
     forward-focus: key-handler;
