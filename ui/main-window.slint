@@ -286,7 +286,6 @@ export component MainWindow inherits Window {
                             else {
                                 root.viewing(-1);
                                 cur-fleet-idx = -1;
-                                // root.set-description("");
                             }
                         }
                         states [
@@ -302,12 +301,9 @@ export component MainWindow inherits Window {
             }
         }
         fleet-editor := VerticalLayout {
-            min-width: 550px;
+            width: 550px;
             alignment: start;
-            Text {
-                text: "Fleet Editor";
-                font-size: 24px;
-            }
+            
             if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit"): marauder_editing := VerticalLayout {
                 alignment: start;
 
@@ -645,6 +641,10 @@ export component MainWindow inherits Window {
                         }
                     }
                 }
+            } 
+            if !(ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit"): Text {
+                text: "Fleet Editor";
+                font-size: 24px;
             }
         }
         VerticalLayout {
