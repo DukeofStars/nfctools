@@ -53,234 +53,6 @@ component FleetListItem inherits TouchArea {
     }
 }
 
-// component ActionsPane inherits VerticalLayout {
-//     in-out property <[Tag]> tags;
-
-//     callback merge(string);
-//     callback open-fleet-editor();
-//     callback add-tag(Tag);
-//     callback remove-tag(int);
-//     callback lookup-tag(string);
-//     callback scramble-fleet();
-
-//     public function get-description() -> string {
-//         desc-input.text
-//     }
-//     public function set-description(desc: string) {
-//         desc-input.text = desc;
-//     }
-//     public function set-tag-color(color: color) {
-//         r.text = color.red;
-//         g.text = color.green;
-//         b.text = color.blue;
-//     }
-
-//     spacing: 5px;
-//     max-width: 240px;
-
-//     Button {
-//         text: "Open Fleet Editor";
-//         clicked => {
-//             root.open-fleet-editor();
-//         }
-//     }
-    
-//     Button {
-//         text: "Scramble Fleet";
-//         clicked => {
-//             root.scramble-fleet();
-//         }
-//     }
-
-//     HorizontalLayout {
-//         merge-output-name-input := LineEdit {
-//             text: "";
-//         }
-
-//         Button {
-//             text: "Merge";
-//             clicked => {
-//                 root.merge(merge-output-name-input.text);
-//             }
-//         }
-//     }
-
-//     Text {
-//         text: "Tags";
-//         font-size: 16px;
-//     }
-    
-//     HorizontalLayout {
-//         tag-name := LineEdit {
-//             placeholder-text: "Tag Name";
-
-//             edited(text) => {
-//                 root.lookup-tag(text);
-//             }
-//         }
-//         Button {
-//             text: "Add";
-//             clicked => {
-//                 root.add-tag({
-//                     name: tag-name.text,
-//                     color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float())
-//                 });
-//             }
-//         }
-//     }
-//     t := HorizontalLayout{
-//         r := LineEdit {
-//             width: t.width/4;
-//             horizontal-stretch: 0.0;
-//             placeholder-text: "R";
-//         }
-//         g := LineEdit {
-//             width: t.width/4;
-//             horizontal-stretch: 0.0;
-//             placeholder-text: "G";
-//         }
-//         b := LineEdit {
-//             width: t.width/4;
-//             horizontal-stretch: 0.0;
-//             placeholder-text: "B";
-//         }
-//         Rectangle {
-//             Text {
-//                 color: rgb(r.text.to-float(), g.text.to-float(), b.text.to-float());
-//                 text: "PREVIEW";
-//             }
-//         }
-//     }
-     
-//     a := GridLayout {
-//         Row {
-//             HorizontalLayout {
-//                 spacing: 2px;
-//                 padding-bottom: 2px;
-//                 for i in 4: ta1 := TouchArea {
-//                     width: 60px;
-//                     clicked => {
-//                         root.remove-tag(i);
-//                     }
-
-//                     Rectangle {
-//                         width: 60px;
-//                         property <Tag> tag: tags[i];
-//                         border-radius: 2px;
-//                         Text {
-//                             horizontal-alignment: center;
-//                             width: 60px;
-//                             overflow: clip;
-//                             text: tag.name;
-//                             color: tag.color;
-//                         }
-
-//                         states [
-//                             selected when ta1.has-hover: {
-//                                 background: Colors.lightgrey;
-//                             }
-//                             unselected when !ta1.has-hover: {
-//                                 background: transparent;
-//                             }
-//                         ]
-//                     }
-//                 }
-//             }
-//         }
-//         Row {
-//             HorizontalLayout {
-//                 spacing: 2px;
-//                 padding-bottom: 2px;
-//                 for i in 4: ta2 := TouchArea {
-//                     width: 60px;
-//                     clicked => {
-//                         root.remove-tag(i+4);
-//                     }
-
-//                     Rectangle {
-//                         width: 60px;
-//                         property <Tag> tag: tags[i+4];
-//                         border-radius: 2px;
-//                         Text {
-//                             horizontal-alignment: center;
-//                             width: 60px;
-//                             overflow: clip;
-//                             text: tag.name;
-//                             color: tag.color;
-//                         }
-
-//                         states [
-//                             selected when ta2.has-hover: {
-//                                 background: Colors.lightgrey;
-//                             }
-//                             unselected when !ta2.has-hover: {
-//                                 background: transparent;
-//                             }
-//                         ]
-//                     }
-//                 }
-//             }
-//         }
-//         Row {
-//             HorizontalLayout {
-//                 spacing: 2px;
-//                 padding-bottom: 2px;
-//                 for i in 4: ta3 := TouchArea {
-//                     width: 60px;
-//                     clicked => {
-//                         root.remove-tag(i+8);
-//                     }
-
-//                     Rectangle {
-//                         width: 60px;
-//                         property <Tag> tag: tags[i+8];
-//                         border-radius: 2px;
-//                         Text {
-//                             horizontal-alignment: center;
-//                             width: 60px;
-//                             overflow: clip;
-//                             text: tag.name;
-//                             color: tag.color;
-//                         }
-
-//                         states [
-//                             selected when ta3.has-hover: {
-//                                 background: Colors.lightgrey;
-//                             }
-//                             unselected when !ta3.has-hover: {
-//                                 background: transparent;
-//                             }
-//                         ]
-//                     }
-//                 }
-//             }
-//         }
-//     }
-
-//     HorizontalLayout {
-//         Text {
-//             vertical-alignment: center;
-//             text: "Edit Description";
-//             font-size: 16px;
-//         }
-
-//         // Button {
-//         //     width: 40%;
-//         //     text: "Save";
-//         //     clicked => {
-//         //         desc-input.text;
-//         //         root.save-description(desc-input.text);
-//         //     }
-//         // }
-//     }
-
-//     desc-input := TextEdit {
-//         font-size: 12px;
-//         wrap: word-wrap;
-//         text: "";
-//     }
-// }
-
 export struct ShipData {
     name: string,
     class: string,
@@ -359,7 +131,6 @@ export component MainWindow inherits Window {
     title: "NebTools";
 
     preferred-width: 1100px;
-    preferred-height: 800px;
     
     in-out property <[FleetData]> fleets;
     in-out property <bool> multi-selecting: false;
@@ -395,13 +166,14 @@ export component MainWindow inherits Window {
     callback open-win-predictor();
 
     public function get-description() -> string {
-        actions-pane.get-description()
+        // actions-pane.get-description()
+        ""
     }
     public function set-description(desc: string) {
-        actions-pane.set-description(desc);
+        // actions-pane.set-description(desc);
     }
     public function set-tag-color(color: color) {
-        actions-pane.set-tag-color(color);
+        // actions-pane.set-tag-color(color);
     }
 
     forward-focus: key-handler;
@@ -498,7 +270,8 @@ export component MainWindow inherits Window {
             }
 
             ScrollView {
-                height: min(main-window.height - fleets-header.preferred-height, h.preferred-height);
+                preferred-height: main-window.height - fleets-header.preferred-height;
+                viewport-height: h.preferred-height;
                 h := VerticalLayout {
                     for fleet[idx] in fleets: FleetListItem {
                         name: fleet.name;
@@ -530,6 +303,10 @@ export component MainWindow inherits Window {
         }
         fleet-editor := VerticalLayout {
             min-width: 550px;
+            Text {
+                text: "Fleet Editor";
+                font-size: 24px;
+            }
             if (ships[selected_ship_idx].class == "Stock/Bulk Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler" || ships[selected_ship_idx].class == "Stock/Container Hauler Refit"): marauder_editing := VerticalLayout {
                 alignment: start;
 
@@ -559,10 +336,8 @@ export component MainWindow inherits Window {
                     Text {
                         text: "Liner Editing";
                         font-size: 24px;
-                        horizontal-stretch: 1.0;
                     }
                     Button {
-                        horizontal-stretch: 0.0;
                         text: "Save";
                         clicked => {
                             current_hull_config.segment-bow = combo-box-bow.current-index;
@@ -874,7 +649,6 @@ export component MainWindow inherits Window {
         VerticalLayout {
             width: 240px;
             actions-pane := VerticalLayout {
-                height: 50%;
                 public function get-description() -> string {
                     desc-input.text
                 }
