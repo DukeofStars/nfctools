@@ -842,21 +842,13 @@ export component MainWindow inherits Window {
                         text: "Edit Description";
                         font-size: 16px;
                     }
-
-                    // Button {
-                    //     width: 40%;
-                    //     text: "Save";
-                    //     clicked => {
-                    //         desc-input.text;
-                    //         root.save-description(desc-input.text);
-                    //     }
-                    // }
                 }
 
                 desc-input := TextEdit {
                     font-size: 12px;
                     wrap: word-wrap;
                     text: "";
+                    min-height: 100px;
                 }
             }
             ships-list := HorizontalLayout {
