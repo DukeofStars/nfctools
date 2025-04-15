@@ -303,6 +303,7 @@ export component MainWindow inherits Window {
         }
         fleet-editor := VerticalLayout {
             min-width: 550px;
+            alignment: start;
             Text {
                 text: "Fleet Editor";
                 font-size: 24px;
@@ -866,12 +867,9 @@ export component MainWindow inherits Window {
                         font-size: 24px;
                     }
                     ScrollView {
-                        height: main-window.height / 2;
-                        viewport-width: ships-list.width;
-                        viewport-height: ships.length * 36px + 36px;
+                        preferred-height: main-window.height - actions-pane.preferred-height;
+                        viewport-height: list.preferred-height;
                         list := VerticalLayout {
-                            spacing: 0px;
-                            preferred-height: 0px;
                             for ship[idx] in ships: ShipListItem {
                                 ship: ship;
 
