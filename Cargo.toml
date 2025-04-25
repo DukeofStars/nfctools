@@ -1,6 +1,6 @@
 [package]
 name = "nfctools"
-version = "0.3.0-alpha.2"
+version = "0.3.0-alpha.3"
 edition = "2021"
 
 [workspace]
@@ -15,7 +15,6 @@ glob = "0.3"
 lazy_static = "1.5"
 metrohash = "1.0"
 quick-xml = { version = "0.37", features = ["serialize"] }
-slint = { version = "1.10", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 steamlocate = "2.0"
 toml = "0.8"
@@ -23,6 +22,5 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 schemas = { path = "./schemas" }
 rand = "0.9"
-
-[build-dependencies]
-slint-build = { version = "1.10" }
+floem = "0.2.0"
+im = "15.1.0"

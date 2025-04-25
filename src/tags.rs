@@ -1,17 +1,73 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{collections::HashMap, fs::OpenOptions, io::Write};
 
 use chumsky::prelude::*;
+use color_eyre::{
+    eyre::{eyre, Context},
+    Result,
+};
+use floem::peniko::Color;
 use serde::{Deserialize, Serialize};
-use slint::{Color, SharedString, VecModel, Weak};
 use text::whitespace;
-use tracing::{debug, trace};
+use tracing::{debug, error, trace};
 
-use crate::{error::Error, my_error, MainWindow, Tag};
+pub fn load_tags() -> Result<TagsRepository> {
+    let tags_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or(eyre!("OS not recognised?"))
+        .wrap_err("Failed to retrieve config dir")?
+        .preference_dir()
+        .join("tags.toml");
+    trace!("Loading tags from '{}'", tags_path.display());
+    let tags_file = std::fs::read_to_string(&tags_path)
+        .inspect_err(|_| {
+            trace!("No tags file found, using default config values")
+        })
+        .unwrap_or_default();
+    let tags_repo: TagsRepository =
+        toml::from_str(&tags_file).wrap_err("Failed to parse tags file")?;
+
+    Ok(tags_repo)
+}
+pub fn save_tags(tags_repo: &TagsRepository) -> Result<()> {
+    debug!("Saving tags");
+    let tags_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or(eyre!("OS not recognised?"))
+        .wrap_err("Failed to retrieve config dir")?
+        .preference_dir()
+        .join("tags.toml");
+    trace!("Writing tags to '{}'", tags_path.display());
+    let mut tags_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .open(&tags_path)
+        .wrap_err("Failed to open tags file")?;
+    let toml =
+        toml::to_string(tags_repo).wrap_err("Failed to serialize tags")?;
+    tags_file
+        .write_all(toml.as_bytes())
+        .wrap_err("Failed to write tags file")?;
+
+    Ok(())
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Tag {
+    pub name: String,
+    pub color: Color,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TagsRepository {
     tags: HashMap<String, Color>,
 }
+
+impl Drop for TagsRepository {
+    fn drop(&mut self) {
+        if let Err(err) = save_tags(&self) {
+            error!("{}", err.wrap_err("Failed to save tags"));
+        }
+    }
+}
+
 impl TagsRepository {
     pub fn add_tag(&mut self, name: String, color: Color) {
         self.tags.insert(name, color);
@@ -28,45 +84,48 @@ impl Default for TagsRepository {
     }
 }
 
-pub fn on_add_tag_handler(tags: Rc<VecModel<Tag>>, tags_repo: Rc<RefCell<TagsRepository>>) -> impl Fn(Tag) {
-    move |tag| {
-        debug!("Adding tag {:?}", tag);
-        tags_repo
-            .borrow_mut()
-            .add_tag(tag.name.to_string(), tag.color.clone());
-        tags.push(tag);
-    }
-}
+// pub fn on_add_tag_handler(
+//     tags: Rc<VecModel<Tag>>,
+//     tags_repo: Rc<RefCell<TagsRepository>>,
+// ) -> impl Fn(Tag) {
+//     move |tag| {
+//         debug!("Adding tag {:?}", tag);
+//         tags_repo
+//             .borrow_mut()
+//             .add_tag(tag.name.to_string(), tag.color.clone());
+//         tags.push(tag);
+//     }
+// }
 
-pub fn on_remove_tag_handler(tags: Rc<VecModel<Tag>>) -> impl Fn(i32) {
-    move |idx| {
-        debug!("Removing tag {}", idx);
-        tags.remove(idx as usize);
-    }
-}
+// pub fn on_remove_tag_handler(tags: Rc<VecModel<Tag>>) -> impl Fn(i32) {
+//     move |idx| {
+//         debug!("Removing tag {}", idx);
+//         tags.remove(idx as usize);
+//     }
+// }
 
-pub fn on_lookup_tag_handler(
-    main_window_weak: Weak<MainWindow>,
-    tags_repo: Rc<RefCell<TagsRepository>>,
-) -> impl Fn(SharedString) {
-    move |name| {
-        trace!("Looking up tag '{}'", &name);
-        if let Some(color) = tags_repo.borrow().get_tag(&name.to_string()) {
-            trace!("Tag '{}' found: {:?}", &name, color);
-            let main_window = main_window_weak.unwrap();
-            main_window.invoke_set_tag_color(color.clone());
-        }
-    }
-}
+// pub fn on_lookup_tag_handler(
+//     main_window_weak: Weak<MainWindow>,
+//     tags_repo: Rc<RefCell<TagsRepository>>,
+// ) -> impl Fn(SharedString) {
+//     move |name| {
+//         trace!("Looking up tag '{}'", &name);
+//         if let Some(color) = tags_repo.borrow().get_tag(&name.to_string()) {
+//             trace!("Tag '{}' found: {:?}", &name, color);
+//             let main_window = main_window_weak.unwrap();
+//             main_window.invoke_set_tag_color(color.clone());
+//         }
+//     }
+// }
 
-pub fn get_tags_from_description(desc: &str) -> Result<(Vec<Tag>, String), Error> {
+pub fn get_tags_from_description(desc: &str) -> Result<(Vec<Tag>, String)> {
     if desc.starts_with("Tags:") {
         debug!("Parsing tags");
         let parser = tags_parser();
-        let res = parser.parse(desc).map_err(|errs| {
-            let err = errs.first().unwrap();
-            my_error!("Failed to parse tags", err.clone().map(|e| e.to_string()))
-        })?;
+        let res = parser
+            .parse(desc)
+            .map_err(|mut errs| eyre!(errs.remove(0)))
+            .wrap_err("Failed to parse tags")?;
 
         debug!("Found {} tags: {:?}", res.0.len(), res.0);
 
@@ -76,15 +135,18 @@ pub fn get_tags_from_description(desc: &str) -> Result<(Vec<Tag>, String), Error
     }
 }
 
-fn tags_parser() -> impl Parser<char, (Vec<Tag>, String), Error = Simple<char>> {
+fn tags_parser() -> impl Parser<char, (Vec<Tag>, String), Error = Simple<char>>
+{
     just("Tags:")
         .ignore_then(whitespace())
         .ignore_then(
             just('<')
-                .ignore_then(just("color=#"))
+                .ignore_then(just("color="))
                 .ignore_then(take_until(just('>')).map(|(hex, _)| {
-                    let full = u32::from_str_radix(&String::from_iter(hex), 16).unwrap();
-                    Color::from_argb_encoded(full).with_alpha(1.0)
+                    // let full = u32::from_str_radix(&String::from_iter(hex), 16)
+                    //     .unwrap();
+                    Color::parse(&String::from_iter(hex))
+                        .expect("Hex should already be guaranteed")
                 }))
                 .then(take_until(just("</color>")))
                 .map(|(col, (text, _))| Tag {
