@@ -614,12 +614,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "convert_string"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9b537177af81d27b407c2f8d679181f51ce2fe2bf33d38b64efed1d9c6f9749"
-
-[[package]]
 name = "copypasta"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2899,10 +2893,8 @@ dependencies = [
 name = "schemas"
 version = "1.0.0"
 dependencies = [
- "quick-xml",
  "serde",
  "serde_with",
- "xml_schema_generator",
 ]
 
 [[package]]
@@ -4483,18 +4475,6 @@ name = "xml-rs"
 version = "0.8.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a62ce76d9b56901b19a74f19431b0d8b3bc7ca4ad685a746dfd78ca8f4fc6bda"
-
-[[package]]
-name = "xml_schema_generator"
-version = "0.6.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54fd78b62ba42a5304f8a151b528b2725af9ac84462795dea704712b1f22f492"
-dependencies = [
- "clap",
- "convert_string",
- "log",
- "quick-xml",
-]
 
 [[package]]
 name = "xmlwriter"

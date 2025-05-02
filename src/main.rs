@@ -17,6 +17,7 @@ mod fleet_data;
 mod fleet_io;
 mod load_fleets;
 mod tags;
+mod themes;
 mod ui;
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
