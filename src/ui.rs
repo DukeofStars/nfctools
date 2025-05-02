@@ -75,10 +75,10 @@ fn main_window(
             selected_fleet_data,
             selected_fleet_idx,
         )?
-        .style(|s| s.width_pct(40.0)),
-        text("Fleet Editor").style(|s| s.width_pct(30.0)).style(h1),
+        .style(|s| s.width_pct(40.0).max_width_pct(40.0)),
+        text("Fleet Editor").style(|s| s.flex_grow(1.0)).style(h1),
         actions_pane(cfg, selected_fleet, selected_fleet_idx)?
-            .style(|s| s.width_pct(30.0)),
+            .style(|s| s.width_pct(30.0).max_width(240)),
     ))
     .style(body)
     .style(|s| s.width_full().height_full().margin(2).padding(2)))
@@ -233,7 +233,6 @@ fn actions_pane(
         } else {
             String::new()
         };
-        dbg!(&new_desc);
         description.set(new_desc);
     });
     create_effect(move |_| {
