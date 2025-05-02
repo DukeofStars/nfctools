@@ -11,7 +11,7 @@ use floem::{
 use glob::Pattern;
 use schemas::{Fleet, Ship};
 use styles::*;
-use tracing::{debug, error, warn};
+use tracing::{debug, error, trace, warn};
 
 use crate::{
     fleet_data::FleetData,
@@ -33,6 +33,8 @@ pub fn launch(cfg: &AppConfig) -> Result<()> {
         // Save current fleet on exit
         .on_event(move |event| match event {
             AppEvent::WillTerminate => {
+                debug!("Saving current fleet");
+
                 let binding = selected_fleet_data.read();
                 let binding = binding.borrow();
                 let Some(fleet_data) = binding.as_ref() else {
@@ -64,11 +66,19 @@ fn main_window(
     selected_fleet: RwSignal<Option<Fleet>>,
     selected_fleet_data: RwSignal<Option<FleetData>>,
 ) -> Result<impl IntoView> {
+    let selected_fleet_idx = create_rw_signal(0_usize);
+
     Ok(h_stack((
-        fleets_list(cfg, selected_fleet, selected_fleet_data)?
-            .style(|s| s.width_pct(40.0)),
+        fleets_list(
+            cfg,
+            selected_fleet,
+            selected_fleet_data,
+            selected_fleet_idx,
+        )?
+        .style(|s| s.width_pct(40.0)),
         text("Fleet Editor").style(|s| s.width_pct(30.0)).style(h1),
-        actions_pane(cfg, selected_fleet)?.style(|s| s.width_pct(30.0)),
+        actions_pane(cfg, selected_fleet, selected_fleet_idx)?
+            .style(|s| s.width_pct(30.0)),
     ))
     .style(body)
     .style(|s| s.width_full().height_full().margin(2).padding(2)))
@@ -78,6 +88,7 @@ fn fleets_list(
     cfg: &AppConfig,
     selected_fleet: RwSignal<Option<Fleet>>,
     selected_fleet_data: RwSignal<Option<FleetData>>,
+    selected_fleet_idx: RwSignal<usize>,
 ) -> Result<impl IntoView> {
     let excluded_patterns = cfg
         .excluded_dirs
@@ -99,18 +110,19 @@ fn fleets_list(
 
                     // Save current fleet
                     'save: {
-                        debug!("Saving current fleet");
-                        let binding = selected_fleet_data.read();
+                        let binding = selected_fleet_data.read_untracked();
                         let binding = binding.borrow();
                         let Some(fleet_data) = binding.as_ref() else {
                             break 'save;
                         };
 
-                        let binding = selected_fleet.read();
+                        let binding = selected_fleet.read_untracked();
                         let binding = binding.borrow();
                         let Some(fleet) = binding.as_ref() else {
                             break 'save;
                         };
+
+                        debug!("Saving current fleet");
 
                         let res = fleet_io::save_fleet_data(fleet_data, fleet);
                         if let Err(err) = res {
@@ -119,7 +131,9 @@ fn fleets_list(
                     }
 
                     // Should never fail, but no harm in not panicking.
-                    if let Some(fleet_data) = fleets_list.get().get(idx) {
+                    if let Some(fleet_data) =
+                        fleets_list.get_untracked().get(idx)
+                    {
                         selected_fleet_data.set(Some(fleet_data.clone()));
                         let fleet = match read_fleet(&fleet_data.path) {
                             Ok(fleet) => fleet,
@@ -136,8 +150,8 @@ fn fleets_list(
                         };
                         selected_fleet.set(Some(fleet));
                     }
-                    // Not sure if this is ever useful, but might as well.
-                    selected_fleet_data.set(None);
+
+                    selected_fleet_idx.set(idx);
                 }
             }),
     )
@@ -187,6 +201,7 @@ fn fleet_list_item(fleet_data: &FleetData) -> impl IntoView {
 fn actions_pane(
     _cfg: &AppConfig,
     selected_fleet: RwSignal<Option<Fleet>>,
+    selected_fleet_idx: RwSignal<usize>,
 ) -> Result<impl IntoView> {
     let tags_repo = create_rw_signal(tags::load_tags()?);
 
@@ -199,6 +214,56 @@ fn actions_pane(
     let color_b = create_rw_signal(String::new());
 
     let description = create_rw_signal(String::new());
+    create_effect(move |_| {
+        selected_fleet_idx.track();
+
+        trace!("Updating description box");
+        let new_desc = if let Some(selected_fleet) =
+            selected_fleet.read_untracked().borrow().as_ref()
+        {
+            if let Some(Ok((_, desc))) = &selected_fleet
+                .description
+                .as_ref()
+                .map(|d| get_tags_from_description(&d))
+            {
+                desc.clone()
+            } else {
+                String::new()
+            }
+        } else {
+            String::new()
+        };
+        dbg!(&new_desc);
+        description.set(new_desc);
+    });
+    create_effect(move |_| {
+        let description = description.get();
+        selected_fleet.update(|fleet| {
+            let Some(fleet) = fleet else { return };
+            if let Some(desc_raw) = &mut fleet.description {
+                trace!("Updating description");
+                let Ok((tags, _desc_old)) =
+                    get_tags_from_description(&desc_raw)
+                else {
+                    warn!("Failed to parse fleet description");
+                    return;
+                };
+                *desc_raw = format!(
+                    "Tags: {}\n{}",
+                    tags.iter()
+                        .map(|tag| format!(
+                            "<color=#{:02x}{:02x}{:02x}>{}</color>",
+                            tag.color.r, tag.color.g, tag.color.b, tag.name
+                        ))
+                        .collect::<Vec<_>>()
+                        .join(" "),
+                    description,
+                );
+            } else {
+                fleet.description = Some(description);
+            };
+        });
+    });
 
     // ===========================
 

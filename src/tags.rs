@@ -84,50 +84,16 @@ impl Default for TagsRepository {
     }
 }
 
-// pub fn on_add_tag_handler(
-//     tags: Rc<VecModel<Tag>>,
-//     tags_repo: Rc<RefCell<TagsRepository>>,
-// ) -> impl Fn(Tag) {
-//     move |tag| {
-//         debug!("Adding tag {:?}", tag);
-//         tags_repo
-//             .borrow_mut()
-//             .add_tag(tag.name.to_string(), tag.color.clone());
-//         tags.push(tag);
-//     }
-// }
-
-// pub fn on_remove_tag_handler(tags: Rc<VecModel<Tag>>) -> impl Fn(i32) {
-//     move |idx| {
-//         debug!("Removing tag {}", idx);
-//         tags.remove(idx as usize);
-//     }
-// }
-
-// pub fn on_lookup_tag_handler(
-//     main_window_weak: Weak<MainWindow>,
-//     tags_repo: Rc<RefCell<TagsRepository>>,
-// ) -> impl Fn(SharedString) {
-//     move |name| {
-//         trace!("Looking up tag '{}'", &name);
-//         if let Some(color) = tags_repo.borrow().get_tag(&name.to_string()) {
-//             trace!("Tag '{}' found: {:?}", &name, color);
-//             let main_window = main_window_weak.unwrap();
-//             main_window.invoke_set_tag_color(color.clone());
-//         }
-//     }
-// }
-
 pub fn get_tags_from_description(desc: &str) -> Result<(Vec<Tag>, String)> {
     if desc.starts_with("Tags:") {
-        debug!("Parsing tags");
+        trace!("Parsing tags");
         let parser = tags_parser();
         let res = parser
             .parse(desc)
             .map_err(|mut errs| eyre!(errs.remove(0)))
             .wrap_err("Failed to parse tags")?;
 
-        debug!("Found {} tags: {:?}", res.0.len(), res.0);
+        trace!("Found {} tags: {:?}", res.0.len(), res.0);
 
         Ok(res)
     } else {
