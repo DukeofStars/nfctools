@@ -72,7 +72,7 @@ pub fn write_missile(
 
 #[instrument(skip(fleet_data, fleet))]
 pub fn save_fleet_data(fleet_data: &FleetData, fleet: &Fleet) -> Result<()> {
-    info!("Saving description for fleet {}", &fleet_data.name);
+    info!("Saving description for fleet '{}'", &fleet_data.name);
 
     write_fleet(&fleet_data.path, &fleet)?;
 

@@ -11,7 +11,7 @@ use floem::{
 use glob::Pattern;
 use schemas::{Fleet, Ship};
 use styles::*;
-use tracing::{debug, error, trace, warn};
+use tracing::{error, info, trace, warn};
 
 use crate::{
     fleet_data::FleetData,
@@ -33,7 +33,7 @@ pub fn launch(cfg: &AppConfig) -> Result<()> {
         // Save current fleet on exit
         .on_event(move |event| match event {
             AppEvent::WillTerminate => {
-                debug!("Saving current fleet");
+                info!("Saving current fleet");
 
                 let binding = selected_fleet_data.read();
                 let binding = binding.borrow();
@@ -106,7 +106,7 @@ fn fleets_list(
             .style(width_full)
             .on_select(move |idx| {
                 if let Some(idx) = idx {
-                    debug!("Selecting fleet {idx}");
+                    trace!("Selecting fleet {idx}");
 
                     // Save current fleet
                     'save: {
@@ -122,7 +122,7 @@ fn fleets_list(
                             break 'save;
                         };
 
-                        debug!("Saving current fleet");
+                        info!("Saving current fleet");
 
                         let res = fleet_io::save_fleet_data(fleet_data, fleet);
                         if let Err(err) = res {
@@ -341,7 +341,7 @@ fn actions_pane(
                             };
                             tags.push(tag);
 
-                            debug!("Inserting tags into description");
+                            trace!("Inserting tags into description");
                             fleet.description = Some(format!(
                                 "Tags: {}\n{}",
                                 tags.iter()
