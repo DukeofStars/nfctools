@@ -19,6 +19,7 @@ pub fn actions_pane(
     _cfg: &AppConfig,
     selected_fleet: RwSignal<Option<Fleet>>,
     selected_fleet_idx: RwSignal<usize>,
+    selected_ship: RwSignal<Option<Ship>>,
 ) -> Result<impl IntoView> {
     let tags_repo = create_rw_signal(tags::load_tags()?);
 
@@ -205,6 +206,25 @@ pub fn actions_pane(
                     .unwrap_or(vec![].iter().map(ship_list_item)),
             )
             .style(|s| s.width_full().border_bottom(1.0))
+            .on_select(move |idx| {
+                if let Some(idx) = idx {
+                    if let Some(fleet) =
+                        selected_fleet.read_untracked().borrow().as_ref()
+                    {
+                        trace!("Selecting ship {idx}");
+                        selected_ship.set(
+                            fleet
+                                .ships
+                                .as_ref()
+                                .map(|s| s.ship.as_ref())
+                                .flatten()
+                                .map(|ships| ships.get(idx))
+                                .flatten()
+                                .cloned(),
+                        )
+                    }
+                }
+            })
         })
         .style(|s| s.width_full()),
     )

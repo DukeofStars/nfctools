@@ -16,7 +16,7 @@ pub fn load_tags() -> Result<TagsRepository> {
         .wrap_err("Failed to retrieve config dir")?
         .preference_dir()
         .join("tags.toml");
-    trace!("Loading tags from '{}'", tags_path.display());
+    debug!("Loading tags from '{}'", tags_path.display());
     let tags_file = std::fs::read_to_string(&tags_path)
         .inspect_err(|_| {
             trace!("No tags file found, using default config values")
@@ -28,13 +28,12 @@ pub fn load_tags() -> Result<TagsRepository> {
     Ok(tags_repo)
 }
 pub fn save_tags(tags_repo: &TagsRepository) -> Result<()> {
-    debug!("Saving tags");
     let tags_path = directories::ProjectDirs::from("", "", "NebTools")
         .ok_or(eyre!("OS not recognised?"))
         .wrap_err("Failed to retrieve config dir")?
         .preference_dir()
         .join("tags.toml");
-    trace!("Writing tags to '{}'", tags_path.display());
+    debug!("Writing tags to '{}'", tags_path.display());
     let mut tags_file = OpenOptions::new()
         .write(true)
         .create(true)
