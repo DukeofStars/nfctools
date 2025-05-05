@@ -7,17 +7,20 @@ use floem::{
 pub const TEXT: Color = Color::BLACK;
 
 pub fn body(style: Style) -> Style {
-    style.font_size(14).color(TEXT)
+    style
+        .font_size(16)
+        .color(TEXT)
+        .font_family("Bombardier".to_string())
 }
 
 pub fn h1(style: Style) -> Style {
-    body(style).font_size(24)
+    body(style).font_size(28)
 }
 pub fn h2(style: Style) -> Style {
-    body(style).font_size(18)
+    body(style).font_size(22)
 }
 pub fn h3(style: Style) -> Style {
-    body(style).font_size(16)
+    body(style).font_size(18)
 }
 
 pub fn grid_item(style: Style) -> Style {
