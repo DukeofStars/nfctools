@@ -14,6 +14,7 @@ use tracing_subscriber::{
 };
 
 mod fleet_data;
+mod fleet_edit;
 mod fleet_io;
 mod load_fleets;
 mod tags;

@@ -13,6 +13,10 @@ pub fn body(style: Style) -> Style {
         .font_family("Bombardier".to_string())
 }
 
+pub fn secondary_button(style: Style) -> Style {
+    body(style)
+}
+
 pub fn h1(style: Style) -> Style {
     body(style).font_size(28)
 }

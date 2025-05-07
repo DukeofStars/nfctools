@@ -76,8 +76,7 @@ fn main_window(
     selected_fleet_data: RwSignal<Option<FleetData>>,
 ) -> Result<impl IntoView> {
     let selected_fleet_idx = create_rw_signal(0_usize);
-
-    let selected_ship = create_rw_signal(None);
+    let selected_ship_idx = create_rw_signal(0_usize);
 
     Ok(h_stack((
         fleet_list::fleets_list(
@@ -87,12 +86,13 @@ fn main_window(
             selected_fleet_idx,
         )?
         .style(|s| s.width_pct(FLEET_LIST_PCT).max_width_pct(FLEET_LIST_PCT)),
-        fleet_editor::fleet_editor(selected_ship).style(|s| s.flex_grow(1.0)),
+        fleet_editor::fleet_editor(selected_ship_idx, selected_fleet)
+            .style(|s| s.flex_grow(1.0)),
         actions::actions_pane(
             cfg,
             selected_fleet,
             selected_fleet_idx,
-            selected_ship,
+            selected_ship_idx,
         )?
         .style(|s| {
             s.width_pct(30.0)
