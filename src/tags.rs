@@ -48,7 +48,7 @@ pub fn save_tags(tags_repo: &TagsRepository) -> Result<()> {
     Ok(())
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Tag {
     pub name: String,
     pub color: Color,

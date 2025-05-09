@@ -112,7 +112,7 @@ pub fn fleet_editor(
             macro_rules! superstructure_selection_checkbox {
                 ($segment:tt) => {{
                     radio_button($segment, move || superstructure_segment.get())
-                        .style(grid_item)
+                        .style(table_item)
                         .on_update(move |t| superstructure_segment.set(t))
                         .into_any()
                 }};
@@ -136,7 +136,7 @@ pub fn fleet_editor(
                         $type_signal.set(idx);
                     })
                     .style(dropdown)
-                    .style(grid_item)
+                    .style(table_item)
                     .into_any()
                 };
             }
@@ -145,9 +145,9 @@ pub fn fleet_editor(
                 ($slot_idx:expr) => {
                     vec![
                         text(format!("Dressing Slot {}", 0 + 1))
-                            .style(grid_header)
+                            .style(table_header)
                             .into_any(),
-                        text("").style(grid_item).into_any(),
+                        text("").style(table_item).into_any(),
                         dyn_view(move || {
                             dropdown::Dropdown::custom(
                                 move || dressing_bow.get()[$slot_idx] as usize,
@@ -181,7 +181,7 @@ pub fn fleet_editor(
                             .style(|s| s.width_full())
                             .style(dropdown)
                         })
-                        .style(grid_item)
+                        .style(table_item)
                         .into_any(),
                         dyn_view(move || {
                             dropdown::Dropdown::custom(
@@ -216,9 +216,9 @@ pub fn fleet_editor(
                             .style(|s| s.width_full())
                             .style(dropdown)
                         })
-                        .style(grid_item)
+                        .style(table_item)
                         .into_any(),
-                        text("").style(grid_item).into_any(),
+                        text("").style(table_item).into_any(),
                     ]
                 };
             }
@@ -227,19 +227,19 @@ pub fn fleet_editor(
                 debug!("Loading liner editor panel");
                 let mut views_list = vec![
                     // Header Row
-                    text("").style(grid_item).into_any(),
-                    text("").style(grid_item).into_any(),
-                    text("Bow").style(grid_header).into_any(),
-                    text("Core").style(grid_header).into_any(),
-                    text("Stern").style(grid_header).into_any(),
+                    text("").style(table_item).into_any(),
+                    text("").style(table_item).into_any(),
+                    text("Bow").style(table_header).into_any(),
+                    text("Core").style(table_header).into_any(),
+                    text("Stern").style(table_header).into_any(),
                     // Segment Types
-                    text("Segment Types").style(grid_header).into_any(),
-                    text("").style(grid_item).into_any(),
+                    text("Segment Types").style(table_header).into_any(),
+                    text("").style(table_item).into_any(),
                     segment_type_selection_dropbox!(bow_type),
                     segment_type_selection_dropbox!(core_type),
                     segment_type_selection_dropbox!(stern_type),
                     // Superstructure Selection
-                    text("Superstructure").style(grid_header).into_any(),
+                    text("Superstructure").style(table_header).into_any(),
                     dyn_view(move || {
                         dropdown::Dropdown::custom(
                             move || superstructure_type.get(),
@@ -261,7 +261,7 @@ pub fn fleet_editor(
                         .style(|s| s.width_full())
                         .style(dropdown)
                     })
-                    .style(grid_item)
+                    .style(table_item)
                     .into_any(),
                     superstructure_selection_checkbox!(0),
                     superstructure_selection_checkbox!(1),

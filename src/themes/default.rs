@@ -17,6 +17,15 @@ pub fn secondary_button(style: Style) -> Style {
     body(style)
 }
 
+pub fn tag_grid_item(style: Style) -> Style {
+    body(style)
+        .width(50)
+        .flex_grow(0.0)
+        .max_width(50)
+        .justify_center()
+        .hover(|s| s.background(TEXT.multiply_alpha(40.0 / 255.0)))
+}
+
 pub fn h1(style: Style) -> Style {
     body(style).font_size(28)
 }
@@ -27,7 +36,7 @@ pub fn h3(style: Style) -> Style {
     body(style).font_size(18)
 }
 
-pub fn grid_item(style: Style) -> Style {
+pub fn table_item(style: Style) -> Style {
     style
         .border_bottom(1.0)
         .border_right(1.0)
@@ -40,7 +49,7 @@ pub fn grid_item(style: Style) -> Style {
         .height_full()
         .min_height(22)
 }
-pub fn grid_header(style: Style) -> Style {
+pub fn table_header(style: Style) -> Style {
     h3(style)
         .min_height(22)
         .border_bottom(1.0)

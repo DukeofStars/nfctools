@@ -4,7 +4,10 @@ use floem::{
     prelude::*,
     reactive::{create_effect, SignalRead},
     style::TextOverflow,
-    taffy::{AlignContent, AlignItems},
+    taffy::{
+        prelude::FromFlex, AlignContent, AlignItems, Display,
+        TrackSizingFunction,
+    },
 };
 use schemas::{Fleet, Ship};
 use tracing::{error, trace, warn};
@@ -25,6 +28,7 @@ pub fn actions_pane(
 
     // === Editable parameters ===
 
+    let fleet_tags = create_rw_signal(Vec::new());
     let tag_name = create_rw_signal(String::new());
 
     let color_r = create_rw_signal(String::new());
@@ -35,15 +39,16 @@ pub fn actions_pane(
     create_effect(move |_| {
         selected_fleet_idx.track();
 
-        trace!("Updating description box");
         let new_desc = if let Some(selected_fleet) =
             selected_fleet.read_untracked().borrow().as_ref()
         {
-            if let Some(Ok((_, desc))) = &selected_fleet
+            if let Some(Ok((tags, desc))) = &selected_fleet
                 .description
                 .as_ref()
                 .map(|d| get_tags_from_description(&d))
             {
+                fleet_tags.set(tags.to_vec());
+
                 desc.clone()
             } else {
                 String::new()
@@ -114,6 +119,38 @@ pub fn actions_pane(
             .align_self(AlignItems::Center)
         }),
     ));
+
+    let tag_list_view = dyn_view(move || {
+        stack_from_iter(
+            fleet_tags
+                .get()
+                .into_iter()
+                .enumerate()
+                .map(|(idx, tag)| {
+                    text(tag.name)
+                        .style(tag_grid_item)
+                        .style(move |s| s.color(tag.color))
+                        .on_click(move |_event| {
+                            fleet_tags.update(|tags| {
+                                tags.remove(idx);
+                            });
+
+                            EventPropagation::Stop
+                        })
+                })
+                .collect::<Vec<_>>(),
+        )
+        .style(|s| {
+            s.display(Display::Grid).grid_template_columns(vec![
+                TrackSizingFunction::from_flex(1.0),
+                TrackSizingFunction::from_flex(1.0),
+                TrackSizingFunction::from_flex(1.0),
+                TrackSizingFunction::from_flex(1.0),
+            ])
+        })
+    })
+    .style(|s| s.width_full());
+
     let tag_section = v_stack((
         text("Tags").style(h2),
         h_stack((
@@ -177,10 +214,22 @@ pub fn actions_pane(
                         }
                     });
 
+                    fleet_tags.update(|tags| {
+                        tags.push(Tag {
+                            name: tag_name.get(),
+                            color: Color::rgb8(
+                                color_r.get().parse().unwrap_or_default(),
+                                color_g.get().parse().unwrap_or_default(),
+                                color_b.get().parse().unwrap_or_default(),
+                            ),
+                        });
+                    });
+
                     EventPropagation::Stop
                 }),
         )),
         tag_editor,
+        tag_list_view,
     ));
 
     // Holy god of rust please forgive me
