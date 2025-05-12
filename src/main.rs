@@ -156,7 +156,7 @@ fn main() -> Result<()> {
 
     let app_config = load_app_config()?;
 
-    ui::launch(&app_config)?;
+    ui::launch(app_config)?;
 
     Ok(())
 }

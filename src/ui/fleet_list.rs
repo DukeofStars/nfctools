@@ -7,6 +7,7 @@ use glob::Pattern;
 use schemas::Fleet;
 use tracing::{error, info, trace, warn};
 
+use super::WindowState;
 use crate::{
     fleet_data::FleetData,
     fleet_io::{self, read_fleet},
@@ -17,6 +18,7 @@ use crate::{
 
 pub fn fleets_list(
     cfg: &AppConfig,
+    window_state: RwSignal<WindowState>,
     selected_fleet: RwSignal<Option<Fleet>>,
     selected_fleet_data: RwSignal<Option<FleetData>>,
     selected_fleet_idx: RwSignal<usize>,
@@ -90,6 +92,10 @@ pub fn fleets_list(
 
     Ok(v_stack((
         h_stack((
+            button("<-").on_click(move |_event| {
+                window_state.set(WindowState::MainMenu);
+                EventPropagation::Stop
+            }),
             text("Fleets").style(h1),
             button("Refresh").on_click(move |_event| -> EventPropagation {
                 let fleets = match load_fleets::load_fleets(

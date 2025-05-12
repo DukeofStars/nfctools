@@ -9,20 +9,30 @@ use tracing::{error, info};
 use crate::{
     fleet_data::FleetData,
     fleet_io::{self},
-    themes::*,
+    themes::body,
     AppConfig,
 };
 
 mod actions;
 mod fleet_editor;
 mod fleet_list;
+mod fleets_tab;
+mod main_menu;
 
 const FLEET_LIST_PCT: f64 = 30.0;
 const ACTIONS_PANE_WIDTH: f64 = 240.0;
 // Manually calculated
 const FLEET_EDITOR_WIDTH: f64 = 550.0;
 
-pub fn launch(cfg: &AppConfig) -> Result<()> {
+enum WindowState {
+    FleetsList {
+        selected_fleet: RwSignal<Option<Fleet>>,
+        selected_fleet_data: RwSignal<Option<FleetData>>,
+    },
+    MainMenu,
+}
+
+pub fn launch(cfg: AppConfig) -> Result<()> {
     let window_config = WindowConfig::default().size(Size {
         // Minimum window width for proper layouting
         width: (FLEET_EDITOR_WIDTH + ACTIONS_PANE_WIDTH)
@@ -33,34 +43,42 @@ pub fn launch(cfg: &AppConfig) -> Result<()> {
         height: 600.0,
     });
 
-    let selected_fleet = create_rw_signal(None);
-    let selected_fleet_data = create_rw_signal(None);
+    let window_state = create_rw_signal(WindowState::FleetsList {
+        selected_fleet: create_rw_signal(None),
+        selected_fleet_data: create_rw_signal(None),
+    });
 
-    let root_view = main_window(&cfg, selected_fleet, selected_fleet_data)?;
+    let root_view = root_view(cfg, window_state);
 
     let app = Application::new()
         // Save current fleet on exit
         .on_event(move |event| match event {
-            AppEvent::WillTerminate => {
-                info!("Saving current fleet");
+            AppEvent::WillTerminate => match *window_state.read().borrow() {
+                WindowState::FleetsList {
+                    selected_fleet,
+                    selected_fleet_data,
+                } => {
+                    info!("Saving current fleet");
 
-                let binding = selected_fleet_data.read();
-                let binding = binding.borrow();
-                let Some(fleet_data) = binding.as_ref() else {
-                    return;
-                };
+                    let binding = selected_fleet_data.read();
+                    let binding = binding.borrow();
+                    let Some(fleet_data) = binding.as_ref() else {
+                        return;
+                    };
 
-                let binding = selected_fleet.read();
-                let binding = binding.borrow();
-                let Some(fleet) = binding.as_ref() else {
-                    return;
-                };
+                    let binding = selected_fleet.read();
+                    let binding = binding.borrow();
+                    let Some(fleet) = binding.as_ref() else {
+                        return;
+                    };
 
-                let res = fleet_io::save_fleet_data(fleet_data, fleet);
-                if let Err(err) = res {
-                    error!("Failed to save fleet data: {}", err);
+                    let res = fleet_io::save_fleet_data(fleet_data, fleet);
+                    if let Err(err) = res {
+                        error!("Failed to save fleet data: {}", err);
+                    }
                 }
-            }
+                WindowState::MainMenu => {}
+            },
             _ => {}
         })
         .window(move |_| root_view, Some(window_config));
@@ -70,36 +88,24 @@ pub fn launch(cfg: &AppConfig) -> Result<()> {
     Ok(())
 }
 
-fn main_window(
-    cfg: &AppConfig,
-    selected_fleet: RwSignal<Option<Fleet>>,
-    selected_fleet_data: RwSignal<Option<FleetData>>,
-) -> Result<impl IntoView> {
-    let selected_fleet_idx = create_rw_signal(0_usize);
-    let selected_ship_idx = create_rw_signal(0_usize);
-
-    Ok(h_stack((
-        fleet_list::fleets_list(
-            cfg,
+fn root_view(
+    cfg: AppConfig,
+    window_state: RwSignal<WindowState>,
+) -> impl IntoView {
+    dyn_view(move || match *window_state.read().borrow() {
+        WindowState::FleetsList {
             selected_fleet,
             selected_fleet_data,
-            selected_fleet_idx,
-        )?
-        .style(|s| s.width_pct(FLEET_LIST_PCT).max_width_pct(FLEET_LIST_PCT)),
-        fleet_editor::fleet_editor(selected_ship_idx, selected_fleet)
-            .style(|s| s.flex_grow(1.0)),
-        actions::actions_pane(
-            cfg,
+        } => fleets_tab::fleets_tab(
+            &cfg,
+            window_state,
             selected_fleet,
-            selected_fleet_idx,
-            selected_ship_idx,
-        )?
-        .style(|s| {
-            s.width_pct(30.0)
-                .max_width(ACTIONS_PANE_WIDTH)
-                .flex_grow(1.0)
-        }),
-    ))
+            selected_fleet_data,
+        )
+        .expect("Failed to setup window")
+        .into_any(),
+        WindowState::MainMenu => main_menu::main_menu(window_state).into_any(),
+    })
     .style(body)
-    .style(|s| s.width_full().height_full().margin(2).padding(2)))
+    .style(|s| s.width_full().height_full().padding(2))
 }

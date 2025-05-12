@@ -1,6 +1,6 @@
 use floem::{
     peniko::Color,
-    style::Style,
+    style::{Style, Width},
     taffy::{AlignContent, AlignItems},
 };
 
@@ -11,6 +11,16 @@ pub fn body(style: Style) -> Style {
         .font_size(16)
         .color(TEXT)
         .font_family("Bombardier".to_string())
+}
+
+pub fn main_menu_button(style: Style) -> Style {
+    h2(style)
+        .width(200)
+        .height(200)
+        .border(2)
+        .border_color(TEXT)
+        .border_radius(4)
+        .padding(10)
 }
 
 pub fn secondary_button(style: Style) -> Style {
