@@ -92,27 +92,31 @@ pub fn fleets_list(
 
     Ok(v_stack((
         h_stack((
-            button("<-").on_click(move |_event| {
-                window_state.set(WindowState::MainMenu);
-                EventPropagation::Stop
-            }),
+            button("<-")
+                .style(secondary_button)
+                .on_click(move |_event| {
+                    window_state.set(WindowState::MainMenu);
+                    EventPropagation::Stop
+                }),
             text("Fleets").style(h1),
-            button("Refresh").on_click(move |_event| -> EventPropagation {
-                let fleets = match load_fleets::load_fleets(
-                    &fleets_dir,
-                    &excluded_patterns,
-                ) {
-                    Ok(fleets) => fleets,
-                    Err(err) => {
-                        error!("Failed to load fleets: {}", err);
-                        return EventPropagation::Stop;
-                    }
-                };
+            button("Refresh").style(primary_button).on_click(
+                move |_event| -> EventPropagation {
+                    let fleets = match load_fleets::load_fleets(
+                        &fleets_dir,
+                        &excluded_patterns,
+                    ) {
+                        Ok(fleets) => fleets,
+                        Err(err) => {
+                            error!("Failed to load fleets: {}", err);
+                            return EventPropagation::Stop;
+                        }
+                    };
 
-                fleets_list.set(im::Vector::from_iter(fleets.into_iter()));
+                    fleets_list.set(im::Vector::from_iter(fleets.into_iter()));
 
-                EventPropagation::Stop
-            }),
+                    EventPropagation::Stop
+                },
+            ),
         ))
         .style(|s| s.justify_content(AlignContent::SpaceBetween)),
         fleets_list_view,
@@ -126,11 +130,6 @@ fn fleet_list_item(fleet_data: &FleetData) -> impl IntoView {
         }),
         text(fleet_data.short_path.display()),
     ))
-    .style(|s| {
-        s.justify_content(AlignContent::SpaceBetween)
-            .width_full()
-            .border_color(TEXT)
-            .border(1.0)
-            .border_bottom(0.0)
-    })
+    .style(|s| s.justify_content(AlignContent::SpaceBetween).width_full())
+    .style(list_item)
 }

@@ -2,7 +2,7 @@ use floem::{
     event::EventPropagation,
     prelude::*,
     taffy::{
-        prelude::FromLength, AlignContent, AlignItems, Display, FlexDirection,
+        prelude::FromLength, AlignContent, AlignItems, Display,
         TrackSizingFunction,
     },
 };

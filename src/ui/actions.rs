@@ -105,9 +105,15 @@ pub fn actions_pane(
     });
 
     let tag_editor = h_stack((
-        text_input(color_r).style(|s| s.width_pct(25.0)),
-        text_input(color_g).style(|s| s.width_pct(25.0)),
-        text_input(color_b).style(|s| s.width_pct(25.0)),
+        text_input(color_r)
+            .style(text_area)
+            .style(|s| s.width_pct(25.0)),
+        text_input(color_g)
+            .style(text_area)
+            .style(|s| s.width_pct(25.0)),
+        text_input(color_b)
+            .style(text_area)
+            .style(|s| s.width_pct(25.0)),
         text("PREVIEW").style(move |s| {
             s.color(Color::rgb8(
                 color_r.get().parse().unwrap_or_default(),
@@ -156,8 +162,10 @@ pub fn actions_pane(
         h_stack((
             text_input(tag_name)
                 .placeholder("Tag Name")
+                .style(text_area)
                 .style(|s| s.width_full()),
             button("Add")
+                .style(secondary_button)
                 .style(|s| s.flex_basis(0.0).flex_grow(0.0))
                 .on_click(move |_| {
                     tags_repo.update(|tags_repo| {
@@ -232,7 +240,6 @@ pub fn actions_pane(
         tag_list_view,
     ));
 
-    // Holy god of rust please forgive me
     let ship_list_view = scroll(
         dyn_view(move || {
             list(
@@ -276,7 +283,9 @@ pub fn actions_pane(
         tag_section,
         // Description
         text("Edit Description").style(h2),
-        text_input(description).style(|s| s.flex_grow(0.5)),
+        text_input(description)
+            .style(text_area)
+            .style(|s| s.flex_grow(0.5)),
         text("Ships").style(h1),
         ship_list_view.style(|s| s.flex_grow(1.0)),
     ))
@@ -292,10 +301,6 @@ fn ship_list_item(ship: &Ship) -> impl IntoView {
             s.width_full().justify_content(AlignContent::SpaceBetween)
         }),
     ))
-    .style(|s| {
-        s.width_full()
-            .border_color(TEXT)
-            .border(1.0)
-            .border_bottom(0.0)
-    })
+    .style(list_item)
+    .style(|s| s.width_full())
 }

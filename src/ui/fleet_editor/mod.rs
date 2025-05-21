@@ -117,14 +117,13 @@ pub fn fleet_editor(
                         .into_any()
                 }};
             }
-
             macro_rules! segment_type_selection_dropbox {
                 ($type_signal:expr) => {
                     dropdown::Dropdown::custom(
                         move || ["A", "B", "C"][$type_signal.get()],
                         |s| text(s).style(body).into_any(),
                         ["A", "B", "C"],
-                        |s| text(s).style(body).into_any(),
+                        |s| text(s).style(dropdown_item_view).into_any(),
                     )
                     .on_accept(move |t| {
                         let idx = match t {
@@ -140,7 +139,6 @@ pub fn fleet_editor(
                     .into_any()
                 };
             }
-
             macro_rules! dressing_selection_row {
                 ($slot_idx:expr) => {
                     vec![
@@ -169,7 +167,7 @@ pub fn fleet_editor(
                                             [bow_type.get()][$slot_idx]
                                             [dressing],
                                     )
-                                    .style(body)
+                                    .style(dropdown_item_view)
                                     .into_any()
                                 },
                             )
@@ -204,7 +202,7 @@ pub fn fleet_editor(
                                             [core_type.get()][$slot_idx]
                                             [dressing],
                                     )
-                                    .style(body)
+                                    .style(dropdown_item_view)
                                     .into_any()
                                 },
                             )
@@ -251,7 +249,7 @@ pub fn fleet_editor(
                             [0, 1, 2, 3],
                             |idx| {
                                 text(["A", "B", "C", "D"][idx])
-                                    .style(body)
+                                    .style(dropdown_item_view)
                                     .into_any()
                             },
                         )
@@ -260,6 +258,7 @@ pub fn fleet_editor(
                         })
                         .style(|s| s.width_full())
                         .style(dropdown)
+                        .dropdown_style(|dstyle| dstyle)
                     })
                     .style(table_item)
                     .into_any(),
