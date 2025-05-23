@@ -10,7 +10,7 @@ use floem::{
     },
 };
 use schemas::{Fleet, Ship};
-use tracing::{error, trace, warn};
+use tracing::{error, trace};
 
 use crate::{
     tags::{self, get_tags_from_description, Tag},
@@ -28,7 +28,7 @@ pub fn actions_pane(
 
     // === Editable parameters ===
 
-    let fleet_tags = create_rw_signal(Vec::new());
+    let fleet_tags = create_rw_signal(Vec::<Tag>::new());
     let tag_name = create_rw_signal(String::new());
 
     let color_r = create_rw_signal(String::new());
@@ -36,40 +36,14 @@ pub fn actions_pane(
     let color_b = create_rw_signal(String::new());
 
     let description = create_rw_signal(String::new());
-    create_effect(move |_| {
-        selected_fleet_idx.track();
 
-        let new_desc = if let Some(selected_fleet) =
-            selected_fleet.read_untracked().borrow().as_ref()
-        {
-            if let Some(Ok((tags, desc))) = &selected_fleet
-                .description
-                .as_ref()
-                .map(|d| get_tags_from_description(&d))
-            {
-                fleet_tags.set(tags.to_vec());
-
-                desc.clone()
-            } else {
-                String::new()
-            }
-        } else {
-            String::new()
-        };
-        description.set(new_desc);
-    });
     create_effect(move |_| {
+        let tags = fleet_tags.get();
         let description = description.get();
         selected_fleet.update(|fleet| {
+            trace!("Updating fleet description");
             let Some(fleet) = fleet else { return };
             if let Some(desc_raw) = &mut fleet.description {
-                trace!("Updating description");
-                let Ok((tags, _desc_old)) =
-                    get_tags_from_description(&desc_raw)
-                else {
-                    warn!("Failed to parse fleet description");
-                    return;
-                };
                 *desc_raw = format!(
                     "Tags: {}\n{}",
                     tags.iter()
@@ -85,6 +59,28 @@ pub fn actions_pane(
                 fleet.description = Some(description);
             };
         });
+    });
+
+    create_effect(move |_| {
+        selected_fleet_idx.track();
+
+        let mut new_desc = String::new();
+        let mut new_tags = vec![];
+        if let Some(selected_fleet) =
+            selected_fleet.read_untracked().borrow().as_ref()
+        {
+            if let Some(Ok((tags, desc))) = &selected_fleet
+                .description
+                .as_ref()
+                .map(|d| get_tags_from_description(&d))
+            {
+                new_tags = tags.to_vec();
+                new_desc = desc.clone();
+            }
+        };
+
+        fleet_tags.set(new_tags);
+        description.set(new_desc);
     });
 
     // ===========================
