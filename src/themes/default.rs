@@ -18,9 +18,13 @@ pub fn body(style: Style) -> Style {
         .background(BG)
         .font_family("Bombardier".to_string())
 }
+pub fn small(style: Style) -> Style {
+    style.font_size(14).color(TEXT)
+}
 
 pub fn list_item(style: Style) -> Style {
     style
+        .height_full()
         .background(BG2)
         .border_color(BORDER)
         .border(1.0)

@@ -3,7 +3,6 @@ use floem::{
     event::EventPropagation,
     prelude::*,
     reactive::{create_effect, SignalRead},
-    style::TextOverflow,
     taffy::{
         prelude::FromFlex, AlignContent, AlignItems, Display,
         TrackSizingFunction,
@@ -290,12 +289,12 @@ pub fn actions_pane(
 
 fn ship_list_item(ship: &Ship) -> impl IntoView {
     v_stack((
-        text(&ship.name)
-            .style(h3)
-            .style(|s| s.text_overflow(TextOverflow::Ellipsis).width_full()),
-        h_stack((text(&ship.hull_type), text(&ship.cost))).style(|s| {
-            s.width_full().justify_content(AlignContent::SpaceBetween)
-        }),
+        text(&ship.name),
+        h_stack((text(&ship.hull_type), text(&ship.cost)))
+            .style(|s| {
+                s.width_full().justify_content(AlignContent::SpaceBetween)
+            })
+            .style(small),
     ))
     .style(list_item)
     .style(|s| s.width_full())
