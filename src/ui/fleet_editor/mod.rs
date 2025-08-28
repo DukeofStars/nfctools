@@ -258,7 +258,6 @@ pub fn fleet_editor(
                         })
                         .style(|s| s.width_full())
                         .style(dropdown)
-                        .dropdown_style(|dstyle| dstyle)
                     })
                     .style(table_item)
                     .into_any(),

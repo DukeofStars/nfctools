@@ -24,16 +24,20 @@ pub fn main_menu(window_state: RwSignal<WindowState>) -> impl IntoView {
             ),
             button(text("Missiles")).style(main_menu_button),
             button(text("Win Predictor")).style(main_menu_button),
+            button(text("Install Manager")).style(main_menu_button),
         ))
         .style(|s| {
             s.display(Display::Grid)
                 .align_content(Some(AlignContent::SpaceBetween))
+                .justify_content(Some(AlignContent::SpaceBetween))
                 .grid_template_columns(vec![
                     TrackSizingFunction::from_length(210.0),
                     TrackSizingFunction::from_length(210.0),
                     TrackSizingFunction::from_length(210.0),
                 ])
                 .width_pct(50.0)
+                .height_pct(50.0)
+                .min_height(420.0)
         }),
     )
     .style(|s| {
