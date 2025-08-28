@@ -33,15 +33,20 @@ enum WindowState {
 }
 
 pub fn launch(cfg: AppConfig) -> Result<()> {
-    let window_config = WindowConfig::default().size(Size {
-        // Minimum window width for proper layouting
-        width: (FLEET_EDITOR_WIDTH + ACTIONS_PANE_WIDTH)
+    let window_config = WindowConfig::default()
+        .title(format!(
+            "NebTools v{} - By Duke of Stars (@dukeofstars)",
+            env!("CARGO_PKG_VERSION")
+        ))
+        .size(Size {
+            // Minimum window width for proper layouting
+            width: (FLEET_EDITOR_WIDTH + ACTIONS_PANE_WIDTH)
             / (100.0 - FLEET_LIST_PCT)
             * 100.0
             // Some buffer
             + 5.0,
-        height: 600.0,
-    });
+            height: 600.0,
+        });
 
     let window_state = create_rw_signal(WindowState::FleetsList {
         selected_fleet: create_rw_signal(None),
