@@ -90,7 +90,10 @@ fn scramble_fleet(fleet: &mut Fleet) -> Result<(), Error> {
                 continue;
             };
             for loadout in craft_loadouts {
-                for general_loadout in &mut loadout.elements.general_loadout_element {
+                let Some(general_loadout_element) = &mut loadout.elements.general_loadout_element else {
+                    continue;
+                };
+                for general_loadout in general_loadout_element {
                     let Some(missile_keys) = (if general_loadout.xsi_type == "MissileSelection" {
                         let Some(missile_keys) = &mut general_loadout.missile_keys else {
                             continue;

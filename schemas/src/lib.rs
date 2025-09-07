@@ -29,6 +29,16 @@ pub struct Fleet {
     pub missile_types: Option<MissileTypes>,
     #[serde(rename = "CraftTypes")]
     pub craft_types: Option<CraftTypes>,
+    #[serde(rename = "ModDependencies")]
+    pub mod_dependencies: Option<ModDependencies>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ModDependencies {
+    #[serde(rename = "unsignedLong")]
+    pub unsigned_long: Option<Vec<String>>,
 }
 
 #[skip_serializing_none]
@@ -70,11 +80,6 @@ pub struct CraftTemplate {
     #[serde(rename = "AssociatedTemplateName")]
     pub associated_template_name: Option<String>,
 }
-
-#[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(deny_unknown_fields)]
-pub struct ModDependencies {}
 
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -132,7 +137,7 @@ pub struct Elements {
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "GeneralLoadoutElement")]
-    pub general_loadout_element: Vec<GeneralLoadoutElement>,
+    pub general_loadout_element: Option<Vec<GeneralLoadoutElement>>,
 }
 
 #[skip_serializing_none]
@@ -645,6 +650,8 @@ pub struct InstalledComponent {
     pub range: Option<f64>,
     #[serde(rename = "Interval")]
     pub interval: Option<u8>,
+    #[serde(rename = "SubmunitionKey")]
+    pub submunition_key: Option<String>,
 }
 
 #[skip_serializing_none]
