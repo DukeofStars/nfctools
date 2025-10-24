@@ -76,10 +76,8 @@ pub fn get_ln_editable_hull_params(ship: &Ship) -> Option<EditableHullParams> {
             hull_config.primary_structure.segment_configuration.iter();
 
         let segment = segments.next()?;
-        out.bow_type = BULK_BOWS
-            .iter()
-            .position(|x| *x == segment.key.as_str())
-            .unwrap();
+        out.bow_type =
+            BULK_BOWS.iter().position(|x| *x == segment.key.as_str())?;
         out.bow_dressings = segment
             .dressing
             .int
@@ -101,13 +99,11 @@ pub fn get_ln_editable_hull_params(ship: &Ship) -> Option<EditableHullParams> {
             })
             .unwrap_or(vec![0, 0, 0, 0, 0, 0, 0, 0])
             .try_into()
-            .unwrap();
+            .ok()?;
 
         let segment = segments.next()?;
-        out.core_type = BULK_CORES
-            .iter()
-            .position(|x| *x == segment.key.as_str())
-            .unwrap();
+        out.core_type =
+            BULK_CORES.iter().position(|x| *x == segment.key.as_str())?;
         out.core_dressings = segment
             .dressing
             .int
@@ -129,24 +125,19 @@ pub fn get_ln_editable_hull_params(ship: &Ship) -> Option<EditableHullParams> {
             })
             .unwrap_or(vec![0, 0, 0, 0, 0, 0, 0, 0])
             .try_into()
-            .unwrap();
+            .ok()?;
 
         let segment = segments.next()?;
         out.stern_type = BULK_STERNS
             .iter()
-            .position(|x| *x == segment.key.as_str())
-            .unwrap();
+            .position(|x| *x == segment.key.as_str())?;
 
         let superstructure_config =
             &hull_config.secondary_structure.secondary_structure_config;
         out.superstructure_type = BRIDGE_MODELS
             .iter()
-            .position(|k| *k == superstructure_config.key.as_str())
-            .expect("Invalid superstructure key");
-        out.superstructure_loc = superstructure_config
-            .segment
-            .parse()
-            .expect("Invalid segment element");
+            .position(|k| *k == superstructure_config.key.as_str())?;
+        out.superstructure_loc = superstructure_config.segment.parse().ok()?;
     }
 
     debug!("Got liner config: {:?}", out);
