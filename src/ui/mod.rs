@@ -18,6 +18,7 @@ mod fleet_editor;
 mod fleet_list;
 mod fleets_tab;
 mod main_menu;
+mod win_predictor;
 
 const FLEET_LIST_PCT: f64 = 30.0;
 const ACTIONS_PANE_WIDTH: f64 = 240.0;
@@ -30,6 +31,7 @@ enum WindowState {
         selected_fleet_data: RwSignal<Option<FleetData>>,
     },
     MainMenu,
+    WinPredictor,
 }
 
 pub fn launch(cfg: AppConfig) -> Result<()> {
@@ -82,7 +84,7 @@ pub fn launch(cfg: AppConfig) -> Result<()> {
                         error!("Failed to save fleet data: {}", err);
                     }
                 }
-                WindowState::MainMenu => {}
+                _ => {}
             },
             _ => {}
         })
@@ -110,6 +112,9 @@ fn root_view(
         .expect("Failed to setup window")
         .into_any(),
         WindowState::MainMenu => main_menu::main_menu(window_state).into_any(),
+        WindowState::WinPredictor => {
+            win_predictor::win_predictor_page().into_any()
+        }
     })
     .style(body)
     .style(|s| s.width_full().height_full().padding(2))

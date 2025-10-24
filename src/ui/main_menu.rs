@@ -23,7 +23,12 @@ pub fn main_menu(window_state: RwSignal<WindowState>) -> impl IntoView {
                 },
             ),
             button(text("Missiles")).style(main_menu_button),
-            button(text("Win Predictor")).style(main_menu_button),
+            button(text("Win Predictor"))
+                .style(main_menu_button)
+                .on_click(move |_event| {
+                    window_state.set(WindowState::WinPredictor);
+                    EventPropagation::Stop
+                }),
             button(text("Install Manager")).style(main_menu_button),
         ))
         .style(|s| {
