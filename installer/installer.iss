@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "NebTools"
-#define MyAppVersion "0.1.4"
+#define MyAppVersion "0.2.5"
 #define MyAppExeName "nfctools.exe"
 
 [Setup]
