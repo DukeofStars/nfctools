@@ -9,10 +9,10 @@ use floem::{
     },
 };
 use schemas::{Fleet, Ship};
-use tracing::{error, trace};
+use tracing::{error, trace, warn};
 
 use crate::{
-    tags::{self, get_tags_from_description, Tag},
+    tags::{self, get_tags_from_description, Tag, TagsRepository},
     themes::*,
     AppConfig,
 };
@@ -23,7 +23,13 @@ pub fn actions_pane(
     selected_fleet_idx: RwSignal<usize>,
     selected_ship_idx: RwSignal<usize>,
 ) -> Result<impl IntoView> {
-    let tags_repo = create_rw_signal(tags::load_tags()?);
+    let tags_repo = create_rw_signal(match tags::load_tags() {
+        Ok(tags_repo) => tags_repo,
+        Err(err) => {
+            warn!("{err}");
+            TagsRepository::default()
+        }
+    });
 
     // === Editable parameters ===
 
