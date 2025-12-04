@@ -36,7 +36,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: nfctools-bin
-          path: target/release/
+          path: .
       - uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
         with:
           path: installer/installer.iss
@@ -47,7 +47,7 @@ jobs:
           path: installer/bin/nebtools-setup.exe
 
   upload-assets:
-    needs: 
+    needs:
       - create-release
       - build-installer
       - build
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: nfctools-bin
-          path: target/release/
+          path: .
       - uses: actions/download-artifact@v4
         with:
           name: nebtools-setup
@@ -66,10 +66,9 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/nfctools.exe
+          file: ./nfctools.exe
       - name: Upload installer to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: installer/bin/nebtools-setup.exe
-          
