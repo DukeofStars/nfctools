@@ -670,6 +670,14 @@ pub struct DefensiveDoctrine {
     pub salvo_size: String,
     #[serde(rename = "FarthestFirst")]
     pub farthest_first: String,
+    #[serde(rename = "Mode")]
+    pub mode: Option<String>,
+    #[serde(rename = "ConvSalvo")]
+    pub conv_salvo: Option<u32>,
+    #[serde(rename = "HybridSalvo")]
+    pub hybrid_salvo: Option<u32>,
+    #[serde(rename = "CraftSalvo")]
+    pub craft_salvo: Option<u32>,
 }
 
 #[skip_serializing_none]
