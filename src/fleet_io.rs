@@ -6,7 +6,7 @@ use std::{
 
 use color_eyre::{eyre::Context, Result};
 use schemas::{Fleet, MissileTemplate};
-use tracing::{info, instrument, trace};
+use tracing::{info, instrument, trace, warn};
 
 use crate::fleet_data::FleetData;
 
@@ -17,8 +17,13 @@ pub fn read_fleet(path: impl AsRef<Path>) -> Result<Fleet> {
     let file =
         BufReader::new(File::open(path).wrap_err("Failed to open fleet file")?);
     trace!("Parsing fleet '{}'", path.display());
-    let fleet = quick_xml::de::from_reader(file)
-        .wrap_err("Failed to parse fleet file")?;
+    let fleet = match quick_xml::de::from_reader(file) {
+        Ok(fleet) => fleet,
+        Err(err) => {
+            warn!("{}", err);
+            Err(err).wrap_err("Failed to parse fleet file")?
+        }
+    };
     Ok(fleet)
 }
 
@@ -47,8 +52,13 @@ pub fn read_missile(path: impl AsRef<Path>) -> Result<MissileTemplate> {
     );
 
     trace!("Parsing missile '{}'", path.display());
-    let missile = quick_xml::de::from_reader(file)
-        .wrap_err("Failed to parse missile file")?;
+    let missile = match quick_xml::de::from_reader(file) {
+        Ok(missile) => missile,
+        Err(err) => {
+            warn!("{}", err);
+            Err(err).wrap_err("Failed to parse missile file")?
+        }
+    };
     Ok(missile)
 }
 
