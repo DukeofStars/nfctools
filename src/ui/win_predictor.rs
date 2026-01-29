@@ -1,14 +1,13 @@
-use chumsky::primitive::Container;
 use floem::{
     peniko::Color,
     prelude::*,
-    reactive::SignalRead,
     views::{h_stack_from_iter, text, Decorators}, // View,
 };
 
 const ALPHABET: &'static str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 #[derive(Debug, Clone, Copy)]
+#[allow(unused)]
 enum CapturePointStatus {
     Neutral,
     Team1,
@@ -16,11 +15,11 @@ enum CapturePointStatus {
 }
 
 pub fn win_predictor_page() -> impl View {
-    let capture_points = vec![CapturePointStatus::Neutral; 5];
-    let capture_points = im::Vector::from_iter(capture_points);
-    let capture_points = create_rw_signal(capture_points);
-    h_stack_from_iter(capture_points.get().iter().enumerate().map(
-        |(i, status)| {
+    let capture_points = Box::new(vec![CapturePointStatus::Neutral; 5]);
+    // let fleets_list = im::Vector::from_iter(fleets.into_iter());
+    // let fleets_list = create_rw_signal(fleets_list);
+    h_stack_from_iter(capture_points.into_iter().enumerate().map(
+        move |(i, status)| {
             text(ALPHABET.chars().nth(i).unwrap_or('X')).style(move |s| {
                 s.border_radius(100).background(match status {
                     CapturePointStatus::Neutral => Color::LIGHT_GRAY,
