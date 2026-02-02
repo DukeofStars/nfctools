@@ -16,9 +16,9 @@ pub fn load_fleets(
     debug!("Loading fleets from {}", path.as_ref().display());
     let mut output = vec![];
     load_fleets_rec(
-        &path.as_ref().to_path_buf(),
+        path.as_ref(),
         excluded_patterns,
-        path,
+        path.as_ref(),
         &mut output,
     )?;
 
@@ -27,12 +27,11 @@ pub fn load_fleets(
     Ok(output)
 }
 fn load_fleets_rec(
-    root_path: &PathBuf,
+    root_path: &Path,
     excluded_patterns: &Vec<Pattern>,
-    path: impl AsRef<Path>,
+    path: &Path,
     output: &mut Vec<FleetData>,
 ) -> Result<()> {
-    let path = path.as_ref();
     let mut children = path
         .read_dir()
         .wrap_err(format!("Failed to read directory '{}'", path.display()))?
@@ -59,7 +58,7 @@ fn load_fleets_rec(
             load_fleets_rec(
                 root_path,
                 excluded_patterns,
-                child.path(),
+                &child.path(),
                 output,
             )?;
         }

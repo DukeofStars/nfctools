@@ -7,20 +7,22 @@ edition = "2021"
 members = ["schemas"]
 
 [dependencies]
-chumsky = "0.9"
+chumsky = "0.8"
 clap = { version = "4.5", features = ["derive"] }
 color-eyre = "0.6"
 directories = "6.0"
 glob = "0.3"
 lazy_static = "1.5"
 metrohash = "1.0"
-quick-xml = { version = "0.37", features = ["serialize"] }
+quick-xml = { version = "0.39", features = ["serialize"] }
 serde = { version = "1.0", features = ["derive"] }
 steamlocate = "2.0"
-toml = "0.8"
+toml = "0.9"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 schemas = { path = "./schemas" }
 rand = "0.9"
-floem = "0.2.0"
 im = "15.1.0"
+dioxus = { version = "0.7", features = ["desktop"] }
+color = { version = "0.3.2", features = ["serde"] }
+futures = "0.3.31"

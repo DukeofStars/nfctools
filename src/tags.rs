@@ -1,14 +1,16 @@
 use std::{collections::HashMap, fs::OpenOptions, io::Write};
 
 use chumsky::prelude::*;
+use color::{AlphaColor, Srgb};
 use color_eyre::{
     eyre::{eyre, Context},
     Result,
 };
-use floem::peniko::Color;
 use serde::{Deserialize, Serialize};
 use text::whitespace;
 use tracing::{debug, error, trace};
+
+pub type Color = AlphaColor<Srgb>;
 
 pub fn load_tags() -> Result<TagsRepository> {
     let tags_path = directories::ProjectDirs::from("", "", "NebTools")
@@ -27,6 +29,7 @@ pub fn load_tags() -> Result<TagsRepository> {
 
     Ok(tags_repo)
 }
+
 pub fn save_tags(tags_repo: &TagsRepository) -> Result<()> {
     let tags_path = directories::ProjectDirs::from("", "", "NebTools")
         .ok_or(eyre!("OS not recognised?"))
@@ -110,8 +113,11 @@ fn tags_parser() -> impl Parser<char, (Vec<Tag>, String), Error = Simple<char>>
                 .ignore_then(take_until(just('>')).map(|(hex, _)| {
                     // let full = u32::from_str_radix(&String::from_iter(hex), 16)
                     //     .unwrap();
-                    Color::parse(&String::from_iter(hex))
-                        .expect("Hex should already be guaranteed")
+
+                    <Color as std::str::FromStr>::from_str(&String::from_iter(
+                        hex,
+                    ))
+                    .expect("Hex should already be guaranteed")
                 }))
                 .then(take_until(just("</color>")))
                 .map(|(col, (text, _))| Tag {
