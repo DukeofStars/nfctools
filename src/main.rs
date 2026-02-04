@@ -15,7 +15,7 @@ use tracing_subscriber::{
     Registry,
 };
 
-use crate::fleet_data::FleetData;
+use crate::{fleet_data::FleetData, fleet_io::read_fleet};
 
 mod fleet_data;
 mod fleet_edit;
@@ -212,6 +212,17 @@ fn FleetList() -> Element {
 
     let mut selected_fleet_data = use_signal(|| None::<FleetData>);
 
+    let selected_fleet = use_resource(move || async move {
+        if let Some(fleet_data) = selected_fleet_data.as_ref() {
+            let fleet_path = fleet_data.path.clone();
+            let fleet = spawn_async(|| read_fleet(fleet_path));
+            println!("2");
+            fleet.await.ok()
+        } else {
+            None
+        }
+    });
+
     rsx! {
         div {
             display: "grid",
@@ -261,7 +272,34 @@ fn FleetList() -> Element {
                 justify_content: "space-between",
                 overflow: "hidden",
                 h3 { "Hello, World!" }
-                h1 { "Hello, World!" }
+                div {
+                    h3 { "Ships" }
+                    div { overflow_y: "scroll", display: "grid",
+                        match selected_fleet.read().as_ref() {
+                            Some(Some(fleet)) => rsx! {
+                                for ship in fleet
+                                    .ships
+                                    .iter()
+                                    .map(|ships| ships.ship.iter().map(|iter| iter.iter()))
+                                    .flatten()
+                                    .flatten()
+                                {
+                                    {
+                                        rsx! {
+                                            button { "{ship.name}" }
+                                        }
+                                    }
+                                }
+                            },
+                            Some(None) => rsx! {
+                                div { "Loading fleet..." }
+                            },
+                            None => rsx! {
+                                div { "Loading fleet..." }
+                            },
+                        }
+                    }
+                }
             }
         }
     }
