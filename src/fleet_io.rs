@@ -16,6 +16,7 @@ pub fn read_fleet(path: impl AsRef<Path>) -> Result<Fleet> {
     trace!("Opening fleet '{}'", path.display());
     let file =
         BufReader::new(File::open(path).wrap_err("Failed to open fleet file")?);
+
     trace!("Parsing fleet '{}'", path.display());
     let fleet = match quick_xml::de::from_reader(file) {
         Ok(fleet) => fleet,

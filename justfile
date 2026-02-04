@@ -2,6 +2,10 @@ build:
     #!nu
     dx build
 
+run logging_level="debug":
+    #!nu
+    cargo run -- --logging-level={{logging_level}}
+
 dev platform="desktop":
     #!nu
     dx serve --hot-patch --{{platform}}
@@ -9,3 +13,4 @@ dev platform="desktop":
 test-fleets:
     #!nu
     cargo run -q -- --test-fleets
+

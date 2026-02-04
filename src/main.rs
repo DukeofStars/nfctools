@@ -1,4 +1,4 @@
-use std::{fs::OpenOptions, future::Future, path::PathBuf, str::FromStr};
+use std::{fs::OpenOptions, future::Future, path::PathBuf, sync::OnceLock};
 
 use clap::{Parser, ValueEnum};
 use color_eyre::{
@@ -6,7 +6,6 @@ use color_eyre::{
     Result,
 };
 use dioxus::prelude::*;
-use glob::Pattern;
 use serde::Deserialize;
 use tracing::{info, trace, warn, Level};
 use tracing_subscriber::{
@@ -26,6 +25,8 @@ mod test;
 mod ui;
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
+
+static APP_CONFIG: OnceLock<AppConfig> = OnceLock::new();
 
 fn spawn_async<T: Send + 'static>(
     f: impl FnOnce() -> T + Send + 'static,
@@ -74,16 +75,24 @@ fn default_saves_dir() -> PathBuf {
     }
 }
 
-#[derive(Deserialize)]
+fn default_cache_dir() -> PathBuf {
+    let project_dirs = directories::ProjectDirs::from("", "", "NebTools")
+        .expect("Unknown operating system");
+    project_dirs.cache_dir().to_path_buf()
+}
+
+#[derive(Deserialize, Debug)]
 #[allow(unused)]
 struct AppConfig {
     #[serde(default = "default_saves_dir")]
     saves_dir: PathBuf,
     #[serde(default)]
     excluded_dirs: Vec<String>,
+    #[serde(default = "default_cache_dir")]
+    cache_dir: PathBuf,
 }
 
-fn load_app_config() -> Result<AppConfig> {
+fn load_app_config() -> Result<()> {
     let config_path = directories::ProjectDirs::from("", "", "NebTools")
         .ok_or(
             eyre!("Failed to retrieve config dir")
@@ -100,7 +109,11 @@ fn load_app_config() -> Result<AppConfig> {
     let app_config: AppConfig =
         toml::from_str(&config_file).wrap_err("Failed to parse config file")?;
 
-    Ok(app_config)
+    APP_CONFIG
+        .set(app_config)
+        .expect("load_app_config called twice");
+
+    Ok(())
 }
 
 #[derive(Parser)]
@@ -178,7 +191,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    info!("Starting NebTool");
+    info!("Starting NebTools");
 
     dioxus::launch(App);
 
@@ -195,19 +208,10 @@ fn App() -> Element {
 #[component]
 fn FleetList() -> Element {
     let fleets = use_resource(async move || {
-        let config = spawn_async(load_app_config).await.unwrap();
-
-        spawn_async(move || {
-            load_fleets::load_fleets(
-                config.saves_dir,
-                &config
-                    .excluded_dirs
-                    .iter()
-                    .map(|path| Pattern::from_str(&path).unwrap())
-                    .collect::<Vec<_>>(),
-            )
-        })
-        .await
+        // Load app configuration first
+        spawn_async(load_app_config).await.unwrap();
+        // Then load fleets (load_fleets requires APP_CONFIG to be set)
+        spawn_async(load_fleets::load_fleets).await
     });
 
     let mut selected_fleet_data = use_signal(|| None::<FleetData>);
@@ -216,7 +220,6 @@ fn FleetList() -> Element {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
             let fleet_path = fleet_data.path.clone();
             let fleet = spawn_async(|| read_fleet(fleet_path));
-            println!("2");
             fleet.await.ok()
         } else {
             None
@@ -255,9 +258,12 @@ fn FleetList() -> Element {
                                 }
                             }
                         },
-                        Some(Err(_)) => rsx! {
-                            div { "Failed to load fleets" }
-                        },
+                        Some(Err(err)) => {
+                            warn!("Failed to load fleets: {}", err);
+                            rsx! {
+                                div { "Failed to load fleets" }
+                            }
+                        }
                         None => rsx! {
                             div { "Loading fleets…" }
                         },
