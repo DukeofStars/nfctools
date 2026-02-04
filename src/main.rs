@@ -22,6 +22,7 @@ mod fleet_edit;
 mod fleet_io;
 mod load_fleets;
 // mod tags;
+mod test;
 mod ui;
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
@@ -108,6 +109,8 @@ struct Cli {
     #[clap(short, long)]
     #[clap(default_value = "debug")]
     logging_level: LoggingLevel,
+    #[clap(long)]
+    test_fleets: bool,
 }
 #[derive(Clone, ValueEnum)]
 enum LoggingLevel {
@@ -168,6 +171,11 @@ fn main() -> Result<()> {
                 })
             }));
         tracing::subscriber::set_global_default(subscriber).unwrap();
+    }
+
+    if cli.test_fleets {
+        test::test_load_fleets()?;
+        return Ok(());
     }
 
     info!("Starting NebTool");

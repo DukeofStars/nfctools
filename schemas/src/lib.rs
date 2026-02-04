@@ -413,6 +413,18 @@ pub struct ComponentData {
     pub stored_craft: Option<StoredCraft>,
     #[serde(rename = "FireOutsideLimits")]
     pub fire_outside_limits: Option<bool>,
+    #[serde(rename = "ConfiguredSize")]
+    pub configured_size: Option<ConfiguredSize>,
+    #[serde(rename = "IdentityOption")]
+    pub identity_option: Option<u8>,
+}
+
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ConfiguredSize {
+    pub x: u8,
+    pub y: u8,
 }
 
 #[skip_serializing_none]
@@ -652,6 +664,8 @@ pub struct InstalledComponent {
     pub interval: Option<u8>,
     #[serde(rename = "SubmunitionKey")]
     pub submunition_key: Option<String>,
+    #[serde(rename = "ValidatorMem")]
+    pub validator_mem: Option<String>,
 }
 
 #[skip_serializing_none]
