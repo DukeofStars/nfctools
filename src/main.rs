@@ -216,11 +216,16 @@ fn FleetList() -> Element {
 
     let mut selected_fleet_data = use_signal(|| None::<FleetData>);
 
+    let mut loading_fleet = use_signal(|| false);
+
     let selected_fleet = use_resource(move || async move {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
+            loading_fleet.set(true);
             let fleet_path = fleet_data.path.clone();
             let fleet = spawn_async(|| read_fleet(fleet_path));
-            fleet.await.ok()
+            let fleet = fleet.await;
+            loading_fleet.set(false);
+            fleet.ok()
         } else {
             None
         }
@@ -250,6 +255,7 @@ fn FleetList() -> Element {
                                         button {
                                             onclick: move |_| {
                                                 println!("Selected fleet {}", fleet.name);
+                                                loading_fleet.set(true);
                                                 selected_fleet_data.set(Some(fleet.clone()));
                                             },
                                             "{fleet.name}"
@@ -281,28 +287,32 @@ fn FleetList() -> Element {
                 div {
                     h3 { "Ships" }
                     div { overflow_y: "scroll", display: "grid",
-                        match selected_fleet.read().as_ref() {
-                            Some(Some(fleet)) => rsx! {
-                                for ship in fleet
-                                    .ships
-                                    .iter()
-                                    .map(|ships| ships.ship.iter().map(|iter| iter.iter()))
-                                    .flatten()
-                                    .flatten()
-                                {
+                        if loading_fleet() {
+                            "Loading fleet..."
+                        } else {
+                            match selected_fleet.read().as_ref() {
+                                Some(Some(fleet)) => rsx! {
+                                    for ship in fleet
+                                        .ships
+                                        .iter()
+                                        .map(|ships| ships.ship.iter().map(|iter| iter.iter()))
+                                        .flatten()
+                                        .flatten()
                                     {
-                                        rsx! {
-                                            button { "{ship.name}" }
+                                        {
+                                            rsx! {
+                                                button { "{ship.name}" }
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            Some(None) => rsx! {
-                                div { "Loading fleet..." }
-                            },
-                            None => rsx! {
-                                div { "Loading fleet..." }
-                            },
+                                },
+                                Some(None) => rsx! {
+                                    div { "Error (001)" }
+                                },
+                                None => rsx! {
+                                    div { "Error (002)" }
+                                },
+                            }
                         }
                     }
                 }

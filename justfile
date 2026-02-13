@@ -8,7 +8,7 @@ full-build: build
     dx build --release
 
 run logging_level="debug":
-    cargo run -- --logging-level={{logging_level}}
+    dx run --platform
 
 dev platform="desktop":
     dx serve --hot-patch --{{platform}}
