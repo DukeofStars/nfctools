@@ -9,14 +9,16 @@ def check [] {
     cargo check
 }
 
-def run [platform = "desktop"] {
-    sweep stamp
-    dx run --($platform)
+def run [] {
+    dx run
 }
 
-def dev [platform = "desktop"] {
-    sweep stamp
+def dev [] {
     cargo watch -c -x check -s "dx run"
+}
+
+def serve [] {
+    dx serve
 }
 
 def "test fleets" [] {
@@ -28,6 +30,10 @@ def "sweep stamp" [] {
     cargo sweep -s
 }
 
-def sweep [--dry-run] {
+def sweep [--no-build, --dry-run] {
+    if not $no_build {
+        # Build and generate a stamp first, then sweep
+        build
+    }
     cargo sweep --file ...(if $dry_run {[--dry-run]} else {[]})
 }
