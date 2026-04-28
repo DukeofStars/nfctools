@@ -1,10 +1,8 @@
 use dioxus::prelude::*;
-use dioxus_primitives::checkbox::CheckboxState;
 use schemas::Ship;
 
 use crate::{
     components::{
-        checkbox::Checkbox,
         dropdown_menu::{
             DropdownMenu, DropdownMenuContent, DropdownMenuItem,
             DropdownMenuTrigger,
@@ -225,28 +223,6 @@ fn ShipConfigTable(
     let mut selected_bridge_loc = use_signal(|| hull_params.superstructure_loc);
     let mut hull_params = use_signal(|| hull_params);
 
-    let superstructure_loc_1_checked = use_memo(move || {
-        if selected_bridge_loc() == 0 {
-            CheckboxState::Checked
-        } else {
-            CheckboxState::Unchecked
-        }
-    });
-    let superstructure_loc_2_checked = use_memo(move || {
-        if selected_bridge_loc() == 1 {
-            CheckboxState::Checked
-        } else {
-            CheckboxState::Unchecked
-        }
-    });
-    let superstructure_loc_3_checked = use_memo(move || {
-        if selected_bridge_loc() == 2 {
-            CheckboxState::Checked
-        } else {
-            CheckboxState::Unchecked
-        }
-    });
-
     use_effect(move || {
         hull_params.write().superstructure_loc = selected_bridge_loc.read().clone();
     });
@@ -297,32 +273,32 @@ fn ShipConfigTable(
                 tr {
                     td { "Superstructure" }
                     td {
-                        Checkbox {
-                            checked: superstructure_loc_1_checked(),
-                            on_checked_change: move |_| {
-                                if selected_bridge_loc() != 0 {
-                                    *selected_bridge_loc.write() = 0;
-                                }
+                        input {
+                            r#type: "radio",
+                            name: "superstructure_loc",
+                            checked: selected_bridge_loc() == 0,
+                            oninput: move |_| {
+                                *selected_bridge_loc.write() = 0;
                             },
                         }
                     }
                     td {
-                        Checkbox {
-                            checked: superstructure_loc_2_checked(),
-                            on_checked_change: move |_| {
-                                if selected_bridge_loc() != 1 {
-                                    *selected_bridge_loc.write() = 1;
-                                }
+                        input {
+                            r#type: "radio",
+                            name: "superstructure_loc",
+                            checked: selected_bridge_loc() == 1,
+                            oninput: move |_| {
+                                *selected_bridge_loc.write() = 1;
                             },
                         }
                     }
                     td {
-                        Checkbox {
-                            checked: superstructure_loc_3_checked(),
-                            on_checked_change: move |_| {
-                                if selected_bridge_loc() != 2 {
-                                    *selected_bridge_loc.write() = 2;
-                                }
+                        input {
+                            r#type: "radio",
+                            name: "superstructure_loc",
+                            checked: selected_bridge_loc() == 2,
+                            oninput: move |_| {
+                                *selected_bridge_loc.write() = 2;
                             },
                         }
                     }
