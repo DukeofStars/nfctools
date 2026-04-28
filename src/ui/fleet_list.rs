@@ -42,6 +42,8 @@ pub fn FleetList() -> Element {
         }
     });
 
+    let mut selected_fleet_idx = use_signal(|| None::<usize>);
+
     use_effect(move || {
         let ship = selected_ship.read();
         if let Some(ship) = ship.as_ref() {
@@ -72,29 +74,39 @@ pub fn FleetList() -> Element {
     rsx! {
         div {
             display: "grid",
-            grid_template_columns: "25% 50% 25%",
+            grid_template_columns: "24% 1% 50% 1% 24%",
             overflow: "hidden",
-            // height: "97vh",
+            height: "97vh",
             // Fleets List
             div {
                 display: "flex",
                 flex_direction: "column",
                 min_height: 0,
                 flex: 1,
-                h2 { margin: 0, padding: 0, "Fleets" }
-                div { overflow_y: "scroll", display: "grid",
-                    // grid_template_columns: "",
+                h2 { margin: 0, padding: 0, flex_shrink: 0, "Fleets" }
+                div {
+                    style: "
+                    overflow-y: auto;
+                    display: grid;
+                    flex: 1;
+                    min_height: 0;
+                    ",
+                    class: "hide-scroll",
                     match fleets.read().as_ref() {
                         Some(Ok(fleets)) => rsx! {
-                            for fleet in fleets {
+                            for (idx , fleet) in fleets.iter().enumerate() {
                                 {
                                     let fleet = fleet.clone();
+                                    let selected = use_memo(move || { selected_fleet_idx() == Some(idx) });
                                     rsx! {
                                         button {
+                                            key: "{fleet.path.display()}",
+                                            class: if selected() { "fleet-button fleet-button-selected" } else { "fleet-button" },
                                             onclick: move |_| {
-                                                println!("Selected fleet {}", fleet.name);
+                                                debug!("Selected fleet {}", fleet.name);
                                                 loading_fleet.set(true);
                                                 selected_fleet_data.set(Some(fleet.clone()));
+                                                selected_fleet_idx.set(Some(idx));
                                             },
                                             "{fleet.name}"
                                         }
@@ -114,8 +126,10 @@ pub fn FleetList() -> Element {
                     }
                 }
             }
+            div {}
             // Fleet editor (middle)
             ShipEditor { ship: selected_ship }
+            div {}
             div {
                 display: "flex",
                 flex_direction: "column",
@@ -136,7 +150,10 @@ pub fn FleetList() -> Element {
                 }
                 div {
                     h3 { "Ships" }
-                    div { overflow_y: "scroll", display: "grid",
+                    div {
+                        overflow_y: "scroll",
+                        display: "grid",
+                        class: "hide-scroll",
                         if loading_fleet() {
                             "Loading fleet..."
                         } else {

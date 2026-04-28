@@ -12,7 +12,7 @@ use color_eyre::{
 };
 use glob::Pattern;
 use metrohash::MetroHash;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, trace, warn};
 
 use crate::{config::APP_CONFIG, fleet_data::FleetData, fleet_io::read_fleet};
 
@@ -37,8 +37,6 @@ pub fn load_fleets() -> Result<Vec<FleetData>> {
         Some(fleet_cache)
     };
     let mut fleet_cache = get_fleet_cache().unwrap_or_default();
-    // warn!("Using fresh cache");
-    // let mut fleet_cache = HashMap::<u64, FleetData>::new();
 
     debug!("Loading fleets from {}", path.display());
     let mut output = vec![];
@@ -101,7 +99,7 @@ fn load_fleets_rec(
                 fleet_cache,
             )?;
         }
-        if file_type.is_file() {
+        else if file_type.is_file() {
             let path = child.path();
             for pattern in excluded_patterns {
                 if pattern.matches_path(path.as_path()) {
@@ -118,6 +116,7 @@ fn load_fleets_rec(
                 continue 'child_loop;
             };
             let fleet_data = if let Some(fleet_data) = fleet_cache.get(&hash) {
+                trace!(path = %path.display(), "Cache hit for fleet");
                 fleet_data.clone()
             } else {
                 let fleet = match read_fleet(&path) {
@@ -143,7 +142,6 @@ fn load_fleets_rec(
                 let fleet_data = FleetData {
                     path,
                     short_path: short_path.into(),
-                    selected: false,
                     name: fleet.name.into(),
                 };
 
@@ -160,7 +158,8 @@ fn load_fleets_rec(
 
 pub fn hash_file(path: impl AsRef<Path>) -> Result<u64> {
     let mut hasher = MetroHash::new();
-    let bytes = std::fs::read(path)?;
+    let bytes = std::fs::read(&path)?;
+    hasher.write(path.as_ref().as_os_str().as_encoded_bytes());
     hasher.write(&bytes);
     Ok(hasher.finish())
 }

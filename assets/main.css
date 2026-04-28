@@ -1,3 +1,40 @@
+:root {
+    --text: white;
+    --bg: rgb(8, 8, 8);
+    --bg2: rgb(16, 16, 16);
+    --bg3: rgb(22, 22, 22);
+    --border: rgb(99, 101, 99);
+    --highlight: rgb(148, 59, 15);
+}
+
 td, th {
-    border: 1px solid black;
+    border: 1px solid var(--border);
+}
+
+p, h1, h2, h3, h4, h5, h6, div, button {
+    background-color: var(--bg);
+    color: var(--text);
+}
+
+body {
+    background-color: var(--bg);
+}
+
+.hide-scroll {
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge legacy */
+}
+.hide-scroll::-webkit-scrollbar {
+    display: none;                /* Chrome, Safari */
+}
+
+.fleet-button {
+    height: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 1px solid var(--border);
+}
+.fleet-button-selected {
+    background-color: var(--highlight);
 }
