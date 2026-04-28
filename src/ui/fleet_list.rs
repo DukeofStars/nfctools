@@ -22,6 +22,8 @@ pub fn FleetList() -> Element {
     let mut selected_ship = use_signal(|| None::<Ship>);
     let mut selected_ship_idx = use_signal(|| None::<usize>);
 
+    let mut description = use_signal(|| String::new());
+
     let mut selected_fleet = use_resource(move || async move {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
             loading_fleet.set(true);
@@ -30,6 +32,9 @@ pub fn FleetList() -> Element {
             let fleet_path = fleet_data.path.clone();
             let fleet = spawn_async(|| read_fleet(fleet_path));
             let fleet = fleet.await;
+            if let Some(desc) = fleet.as_ref().ok().and_then(|f| f.description.as_ref()) {
+                *description.write() = desc.clone();
+            }
             loading_fleet.set(false);
             fleet.ok()
         } else {
@@ -50,12 +55,26 @@ pub fn FleetList() -> Element {
         }
     });
 
+    use_effect(move || {
+        let desc = description();
+        let fleet_data_r = selected_fleet_data.read();
+        let Some(fleet_data) = fleet_data_r.as_ref() else {
+            return;
+        };
+        let mut fleet_w = selected_fleet.write();
+        let Some(fleet) = fleet_w.as_mut().unwrap().as_mut() else {
+            return;
+        };
+        fleet.description = Some(desc);
+        crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet).expect("Failed to write fleet");
+    });
+
     rsx! {
         div {
             display: "grid",
             grid_template_columns: "25% 50% 25%",
             overflow: "hidden",
-            height: "97vh",
+            // height: "97vh",
             // Fleets List
             div {
                 display: "flex",
@@ -100,9 +119,21 @@ pub fn FleetList() -> Element {
             div {
                 display: "flex",
                 flex_direction: "column",
-                justify_content: "space-between",
+                justify_content: "start",
                 overflow: "hidden",
-                h3 { "Hello, World!" }
+                {
+                    match selected_fleet.read().as_ref() {
+                        Some(Some(fleet)) => rsx! {
+                            h3 { "{fleet.name}" }
+                            textarea {
+                                height: "200px",
+                                value: description(),
+                                oninput: move |evt| { description.set(evt.value()) },
+                            }
+                        },
+                        _ => rsx! { "no fleet selected" },
+                    }
+                }
                 div {
                     h3 { "Ships" }
                     div { overflow_y: "scroll", display: "grid",
