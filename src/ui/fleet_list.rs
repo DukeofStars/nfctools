@@ -101,7 +101,7 @@ pub fn FleetList() -> Element {
                                     rsx! {
                                         button {
                                             key: "{fleet.path.display()}",
-                                            class: if selected() { "fleet-button fleet-button-selected" } else { "fleet-button" },
+                                            class: if selected() { "list-button list-button-selected" } else { "list-button" },
                                             onclick: move |_| {
                                                 debug!("Selected fleet {}", fleet.name);
                                                 loading_fleet.set(true);
@@ -135,17 +135,22 @@ pub fn FleetList() -> Element {
                 flex_direction: "column",
                 justify_content: "start",
                 overflow: "hidden",
-                {
-                    match selected_fleet.read().as_ref() {
-                        Some(Some(fleet)) => rsx! {
-                            h3 { "{fleet.name}" }
-                            textarea {
-                                height: "200px",
-                                value: description(),
-                                oninput: move |evt| { description.set(evt.value()) },
-                            }
-                        },
-                        _ => rsx! { "no fleet selected" },
+                div {
+                    {
+                        match selected_fleet.read().as_ref() {
+                            Some(Some(fleet)) => rsx! {
+                                div {
+                                    h2 { "{fleet.name}" }
+                                    h4 { "Description" }
+                                    textarea {
+                                        height: "200px",
+                                        value: description(),
+                                        oninput: move |evt| { description.set(evt.value()) },
+                                    }
+                                }
+                            },
+                            _ => rsx! { "no fleet selected" },
+                        }
                     }
                 }
                 div {
@@ -170,8 +175,10 @@ pub fn FleetList() -> Element {
                                         {
 
                                             let ship = ship.clone();
+                                            let selected = use_memo(move || Some(idx) == selected_ship_idx());
                                             rsx! {
                                                 button {
+                                                    class: if selected() { "list-button list-button-selected" } else { "list-button" },
                                                     onclick: move |_| {
                                                         trace!("Selecting ship {}", ship.name);
                                                         selected_ship.set(Some(ship.clone()));

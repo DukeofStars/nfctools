@@ -7,13 +7,19 @@
     --highlight: rgb(148, 59, 15);
 }
 
-td, th {
+td,th {
     border: 1px solid var(--border);
+    text-align: center;
 }
 
 p, h1, h2, h3, h4, h5, h6, div, button {
     background-color: var(--bg);
     color: var(--text);
+    margin: 0;
+}
+
+* {
+    font-family: "Bombardier", serif;
 }
 
 body {
@@ -28,13 +34,23 @@ body {
     display: none;                /* Chrome, Safari */
 }
 
-.fleet-button {
+.list-button {
     height: 20px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     border: 1px solid var(--border);
 }
-.fleet-button-selected {
+.list-button-selected {
     background-color: var(--highlight);
+}
+
+textarea {
+    background-color: var(--bg2);
+    color: var(--text);
+    resize: none;
+    width: 97%;
+}
+textarea:focus {
+    outline: none;
 }

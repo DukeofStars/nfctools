@@ -37,7 +37,7 @@ pub fn ShipEditor(ship: Signal<Option<Ship>>) -> Element {
     rsx! {
         div { display: "flex", flex_direction: "column",
             if let Some(ship) = ship.read().as_ref() {
-                h1 { "Editing Ship '{ship.name}'" }
+                h3 { "Editing Ship '{ship.name}'" }
             }
             {ship_config_table}
         }
@@ -241,7 +241,7 @@ fn ShipConfigTable(
     rsx! {
         table { style: "table-layout: fixed;",
             colgroup {
-                col { style: "" } // row label
+                col { style: "width: 0px;" } // row label
                 col { style: "" } // Bow
                 col { style: "" } // Core
                 col { style: "" } // Stern
@@ -304,7 +304,7 @@ fn ShipConfigTable(
                     }
                 }
 
-                for slot in 0..4 {
+                for slot in 0..8 {
                     tr {
                         td { "Dressing Slot {slot+1}" }
                         td {
