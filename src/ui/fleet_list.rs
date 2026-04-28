@@ -1,8 +1,9 @@
 use dioxus::prelude::*;
+use schemas::Ship;
 
 use crate::{
     config::load_app_config, fleet_data::FleetData, fleet_io::read_fleet,
-    load_fleets, spawn_async::spawn_async,
+    load_fleets, spawn_async::spawn_async, ui::fleet_editor::ShipEditor,
 };
 
 #[component]
@@ -18,9 +19,14 @@ pub fn FleetList() -> Element {
 
     let mut loading_fleet = use_signal(|| false);
 
-    let selected_fleet = use_resource(move || async move {
+    let mut selected_ship = use_signal(|| None::<Ship>);
+    let mut selected_ship_idx = use_signal(|| None::<usize>);
+
+    let mut selected_fleet = use_resource(move || async move {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
             loading_fleet.set(true);
+            selected_ship.set(None);
+            selected_ship_idx.set(None);
             let fleet_path = fleet_data.path.clone();
             let fleet = spawn_async(|| read_fleet(fleet_path));
             let fleet = fleet.await;
@@ -31,10 +37,23 @@ pub fn FleetList() -> Element {
         }
     });
 
+    use_effect(move || {
+        let ship = selected_ship.read();
+        if let Some(ship) = ship.as_ref() {
+            let fleet_data_r = selected_fleet_data.read();
+            let fleet_data = fleet_data_r.as_ref().expect("Ship updated without any fleet being selected");
+            let mut fleet_w = selected_fleet.write();
+            let fleet = fleet_w.as_mut().unwrap().as_mut().expect("Ship updated without any fleet being selected");
+            let ship_idx = selected_ship_idx.read().expect("Ship updated without any ship idx being set");
+            fleet.ships.as_mut().unwrap().ship.as_mut().unwrap()[ship_idx] = ship.clone();
+            crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet).expect("Failed to write fleet");
+        }
+    });
+
     rsx! {
         div {
             display: "grid",
-            grid_template_columns: "33% 33% 33%",
+            grid_template_columns: "25% 50% 25%",
             overflow: "hidden",
             height: "97vh",
             // Fleets List
@@ -77,7 +96,7 @@ pub fn FleetList() -> Element {
                 }
             }
             // Fleet editor (middle)
-            div { "Hello!!!" }
+            ShipEditor { ship: selected_ship }
             div {
                 display: "flex",
                 flex_direction: "column",
@@ -92,22 +111,32 @@ pub fn FleetList() -> Element {
                         } else {
                             match selected_fleet.read().as_ref() {
                                 Some(Some(fleet)) => rsx! {
-                                    for ship in fleet
+                                    for (idx , ship) in fleet
                                         .ships
                                         .iter()
                                         .map(|ships| ships.ship.iter().map(|iter| iter.iter()))
                                         .flatten()
                                         .flatten()
+                                        .enumerate()
                                     {
                                         {
+
+                                            let ship = ship.clone();
                                             rsx! {
-                                                button { "{ship.name}" }
+                                                button {
+                                                    onclick: move |_| {
+                                                        trace!("Selecting ship {}", ship.name);
+                                                        selected_ship.set(Some(ship.clone()));
+                                                        selected_ship_idx.set(Some(idx.clone()));
+                                                    },
+                                                    "{ship.name}"
+                                                }
                                             }
                                         }
                                     }
                                 },
                                 Some(None) => rsx! {
-                                    div { "Error (001)" }
+                                    div {}
                                 },
                                 None => rsx! {
                                     div { "Error (002)" }

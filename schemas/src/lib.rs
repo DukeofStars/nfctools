@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Fleet {
     #[serde(rename = "@xmlns:xsd")]
@@ -34,7 +34,7 @@ pub struct Fleet {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ModDependencies {
     #[serde(rename = "unsignedLong")]
@@ -42,7 +42,7 @@ pub struct ModDependencies {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct CraftTypes {
     #[serde(rename = "$text")]
@@ -52,7 +52,7 @@ pub struct CraftTypes {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct CraftTemplate {
     #[serde(rename = "$text")]
@@ -82,12 +82,12 @@ pub struct CraftTemplate {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct CraftTemplateTemplateMissileTypes {}
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct InstalledComponents {
     #[serde(rename = "$text")]
@@ -97,7 +97,7 @@ pub struct InstalledComponents {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SerializedCraftSocket {
     #[serde(rename = "$text")]
@@ -109,7 +109,7 @@ pub struct SerializedCraftSocket {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Loadouts {
     #[serde(rename = "$text")]
@@ -119,7 +119,7 @@ pub struct Loadouts {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct CraftLoadout {
     #[serde(rename = "$text")]
@@ -131,7 +131,7 @@ pub struct CraftLoadout {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Elements {
     #[serde(rename = "$text")]
@@ -141,7 +141,7 @@ pub struct Elements {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct GeneralLoadoutElement {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
@@ -161,7 +161,7 @@ pub struct GeneralLoadoutElement {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Loadout {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
@@ -177,7 +177,7 @@ pub struct Loadout {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MissileKeys {
     #[serde(rename = "$text")]
@@ -186,7 +186,7 @@ pub struct MissileKeys {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 #[serde(rename = "string")]
 pub struct StringX {
@@ -197,7 +197,7 @@ pub struct StringX {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SortOverrideOrder {
     #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
@@ -205,7 +205,7 @@ pub struct SortOverrideOrder {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Ships {
     #[serde(rename = "$text")]
@@ -215,7 +215,7 @@ pub struct Ships {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Ship {
     #[serde(rename = "$text")]
@@ -251,7 +251,7 @@ pub struct Ship {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct InitialFormation {
     #[serde(rename = "GuideKey")]
@@ -261,7 +261,7 @@ pub struct InitialFormation {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct RelativePosition {
     x: f64,
@@ -270,7 +270,7 @@ pub struct RelativePosition {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SaveId {
     #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
@@ -278,7 +278,7 @@ pub struct SaveId {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct HullConfig {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
@@ -296,7 +296,7 @@ pub struct HullConfig {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PrimaryStructure {
     #[serde(rename = "$text")]
@@ -306,7 +306,7 @@ pub struct PrimaryStructure {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SegmentConfiguration {
     #[serde(rename = "$text")]
@@ -318,7 +318,7 @@ pub struct SegmentConfiguration {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Dressing {
     #[serde(rename = "$text")]
@@ -327,7 +327,7 @@ pub struct Dressing {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SecondaryStructure {
     #[serde(rename = "$text")]
@@ -337,7 +337,7 @@ pub struct SecondaryStructure {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SecondaryStructureConfig {
     #[serde(rename = "$text")]
@@ -351,7 +351,7 @@ pub struct SecondaryStructureConfig {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct HullTint {
     #[serde(rename = "$text")]
@@ -363,7 +363,7 @@ pub struct HullTint {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct TextureVariation {
     #[serde(rename = "$text")]
@@ -374,7 +374,7 @@ pub struct TextureVariation {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SocketMap {
     #[serde(rename = "$text")]
@@ -384,7 +384,7 @@ pub struct SocketMap {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct HullSocket {
     #[serde(rename = "$text")]
@@ -398,7 +398,7 @@ pub struct HullSocket {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ComponentData {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
@@ -420,7 +420,7 @@ pub struct ComponentData {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ConfiguredSize {
     pub x: u8,
@@ -428,7 +428,7 @@ pub struct ConfiguredSize {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct StoredCraft {
     #[serde(rename = "SavedStoredCraft")]
@@ -436,7 +436,7 @@ pub struct StoredCraft {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct SavedStoredCraft {
     #[serde(rename = "CraftTemplateKey")]
@@ -444,7 +444,7 @@ pub struct SavedStoredCraft {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MissileLoad {
     #[serde(rename = "$text")]
@@ -454,7 +454,7 @@ pub struct MissileLoad {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MissileLoadMagSaveData {
     #[serde(rename = "$text")]
@@ -468,7 +468,7 @@ pub struct MissileLoadMagSaveData {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Load {
     #[serde(rename = "$text")]
@@ -478,7 +478,7 @@ pub struct Load {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct LoadMagSaveData {
     #[serde(rename = "$text")]
@@ -492,7 +492,7 @@ pub struct LoadMagSaveData {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct WeaponGroups {
     #[serde(rename = "$text")]
@@ -502,7 +502,7 @@ pub struct WeaponGroups {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct WepGroup {
     #[serde(rename = "@Name")]
@@ -514,7 +514,7 @@ pub struct WepGroup {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MemberKeys {
     #[serde(rename = "$text")]
@@ -523,17 +523,17 @@ pub struct MemberKeys {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct TemplateMissileTypes {}
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct TemplateSpacecraftTypes {}
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MissileTypes {
     #[serde(rename = "$text")]
@@ -543,7 +543,7 @@ pub struct MissileTypes {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MissileTemplate {
     #[serde(rename = "@xmlns:xsd")]
@@ -577,7 +577,7 @@ pub struct MissileTemplate {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct BaseColor {
     #[serde(rename = "$text")]
@@ -589,7 +589,7 @@ pub struct BaseColor {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct StripeColor {
     #[serde(rename = "$text")]
@@ -601,7 +601,7 @@ pub struct StripeColor {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct Sockets {
     #[serde(rename = "$text")]
@@ -611,7 +611,7 @@ pub struct Sockets {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct MissileSocket {
     #[serde(rename = "$text")]
@@ -623,7 +623,7 @@ pub struct MissileSocket {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct InstalledComponent {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
@@ -669,7 +669,7 @@ pub struct InstalledComponent {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub enum SeekerMode {
     Targeting,
@@ -677,7 +677,7 @@ pub enum SeekerMode {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct DefensiveDoctrine {
     #[serde(rename = "$text")]
@@ -703,7 +703,7 @@ pub struct DefensiveDoctrine {
 }
 
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct BalanceValues {
     #[serde(rename = "$text")]

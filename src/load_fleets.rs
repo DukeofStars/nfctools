@@ -21,7 +21,7 @@ pub fn load_fleets() -> Result<Vec<FleetData>> {
         bail!("App configuration not yet loaded");
     };
 
-    let path = &app_config.saves_dir;
+    let path = &app_config.saves_dir.join("Fleets");
     let excluded_patterns = app_config
         .excluded_dirs
         .iter()
@@ -37,6 +37,8 @@ pub fn load_fleets() -> Result<Vec<FleetData>> {
         Some(fleet_cache)
     };
     let mut fleet_cache = get_fleet_cache().unwrap_or_default();
+    // warn!("Using fresh cache");
+    // let mut fleet_cache = HashMap::<u64, FleetData>::new();
 
     debug!("Loading fleets from {}", path.display());
     let mut output = vec![];

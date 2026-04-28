@@ -82,6 +82,7 @@ pub fn write_missile(
 }
 
 #[instrument(skip(fleet_data, fleet))]
+#[allow(unused)]
 pub fn save_fleet_data(fleet_data: &FleetData, fleet: &Fleet) -> Result<()> {
     info!("Saving description for fleet '{}'", &fleet_data.name);
 

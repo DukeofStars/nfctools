@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use schemas::Ship;
-use tracing::{debug, info};
+use tracing::debug;
 
 lazy_static! {
     pub static ref BRIDGE_MODELS: Vec<&'static str> = Vec::from_iter([
@@ -41,7 +41,7 @@ lazy_static! {
     ]);
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EditableHullParams {
     pub bow_type: usize,
     pub core_type: usize,
@@ -53,21 +53,9 @@ pub struct EditableHullParams {
     pub superstructure_loc: usize,
     pub superstructure_type: usize,
 }
-impl Default for EditableHullParams {
-    fn default() -> Self {
-        Self {
-            bow_type: Default::default(),
-            core_type: Default::default(),
-            stern_type: Default::default(),
-            bow_dressings: Default::default(),
-            core_dressings: Default::default(),
-            superstructure_loc: Default::default(),
-            superstructure_type: Default::default(),
-        }
-    }
-}
+
 pub fn get_ln_editable_hull_params(ship: &Ship) -> Option<EditableHullParams> {
-    info!(ship = %ship.name, "Loading liner hull configuration");
+    debug!(ship = %ship.name, "Loading liner hull configuration");
 
     let mut out = EditableHullParams::default();
 
@@ -149,7 +137,7 @@ pub fn set_ln_hull_config(
     ship: &mut Ship,
     hull_params: EditableHullParams,
 ) -> Option<()> {
-    info!(config = ?hull_params, "Saving ship hull configuration");
+    debug!(config = ?hull_params, "Saving ship hull configuration");
 
     let EditableHullParams {
         bow_type,
