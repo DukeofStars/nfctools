@@ -105,8 +105,9 @@ pub fn FleetList() -> Element {
                                             display: "flex",
                                             flex_direction: "row",
                                             justify_content: "space-between",
+                                            align_items: "center",
                                             key: "{fleet.path.display()}",
-                                            class: if selected() { "list-button list-button-selected" } else { "list-button" },
+                                            class: if selected() { "list-button selected" } else { "list-button" },
                                             onclick: move |_| {
                                                 debug!("Selected fleet {}", fleet.name);
                                                 loading_fleet.set(true);
@@ -114,9 +115,7 @@ pub fn FleetList() -> Element {
                                                 selected_fleet_idx.set(Some(idx));
                                             },
                                             "{fleet.name}"
-                                            p { class: if selected() { "fleet-short-path list-button-selected" } else { "fleet-short-path" },
-                                                "{fleet.short_path.display()}"
-                                            }
+                                            p { class: if selected() { "bg-text selected" } else { "bg-text" }, "{fleet.short_path.display()}" }
                                         }
                                     }
                                 }
@@ -186,13 +185,27 @@ pub fn FleetList() -> Element {
                                             let selected = use_memo(move || Some(idx) == selected_ship_idx());
                                             rsx! {
                                                 button {
-                                                    class: if selected() { "list-button list-button-selected" } else { "list-button" },
+                                                    display: "flex",
+                                                    flex_direction: "column",
+                                                    justify_content: "space-between",
+                                                    padding: 0,
+                                                    margin: 0,
+                                                    text_align: "left",
+                                                    height: "40px",
+                                                    class: format!("list-button ship-list-item {}", if selected() { "selected" } else { "" }),
                                                     onclick: move |_| {
                                                         trace!("Selecting ship {}", ship.name);
                                                         selected_ship.set(Some(ship.clone()));
                                                         selected_ship_idx.set(Some(idx.clone()));
                                                     },
                                                     "{ship.name}"
+                                                    div {
+                                                        display: "flex",
+                                                        justify_content: "space-between",
+                                                        background_color: "transparent",
+                                                        p { class: "bg-text", background_color: "transparent", "{ship.hull_type}" }
+                                                        p { class: "bg-text", background_color: "transparent", "{ship.cost}" }
+                                                    }
                                                 }
                                             }
                                         }
