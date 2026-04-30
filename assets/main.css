@@ -1,5 +1,6 @@
 :root {
     --text: white;
+    --secondary-text: rgba(255, 255, 255, 0.4);
     --bg: rgb(8, 8, 8);
     --bg2: rgb(16, 16, 16);
     --bg3: rgb(22, 22, 22);
@@ -53,4 +54,8 @@ textarea {
 }
 textarea:focus {
     outline: none;
+}
+
+.fleet-short-path {
+    color: var(--secondary-text);
 }

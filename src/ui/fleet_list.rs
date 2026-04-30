@@ -100,6 +100,11 @@ pub fn FleetList() -> Element {
                                     let selected = use_memo(move || { selected_fleet_idx() == Some(idx) });
                                     rsx! {
                                         button {
+                                            padding: 0,
+                                            margin: 0,
+                                            display: "flex",
+                                            flex_direction: "row",
+                                            justify_content: "space-between",
                                             key: "{fleet.path.display()}",
                                             class: if selected() { "list-button list-button-selected" } else { "list-button" },
                                             onclick: move |_| {
@@ -109,6 +114,9 @@ pub fn FleetList() -> Element {
                                                 selected_fleet_idx.set(Some(idx));
                                             },
                                             "{fleet.name}"
+                                            p { class: if selected() { "fleet-short-path list-button-selected" } else { "fleet-short-path" },
+                                                "{fleet.short_path.display()}"
+                                            }
                                         }
                                     }
                                 }
