@@ -22,11 +22,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cargo build --release
+      - run: cargo install dioxus-cli
+      - run: dx bundle --release
       - uses: actions/upload-artifact@v4
         with:
           name: nfctools-bin
-          path: target/release/nfctools.exe
+          path: target/dx/nfctools/bundle/nfctools.exe
 
   build-installer:
     runs-on: windows-latest

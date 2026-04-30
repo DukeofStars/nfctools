@@ -6,6 +6,9 @@ edition = "2021"
 [workspace]
 members = ["schemas"]
 
+[features]
+bundle = []
+
 [dependencies]
 chumsky = "0.8"
 clap = { version = "4.5.57", features = ["derive"] }
@@ -28,3 +31,4 @@ color = { version = "0.3.2", features = ["serde"] }
 futures = "0.3.31"
 postcard = { version = "1.1.3", default-features = false, features = ["default", "use-std"] }
 dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version = "0.0.1", default-features = false }
+

@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "bundle", windows_subsystem = "windows")]
+
 use std::fs::OpenOptions;
 
 use clap::{Parser, ValueEnum};

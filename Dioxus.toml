@@ -1,6 +1,9 @@
 [application]
 asset_dir = "assets/"
 
+[bundle]
+identifier = "com.dukeofstars"
+publisher = "DukeofStars"
 
 [web.app]
 [web.watcher]

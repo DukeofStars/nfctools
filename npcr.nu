@@ -1,8 +1,12 @@
 $env.RUSTC_WRAPPER = ""
 
-def build [--release] {
+def build [] {
     sweep stamp
-    dx build ...(if $release {[--release]} else {[]})
+    dx build
+}
+
+def bundle [] {
+    dx bundle --release
 }
 
 def check [] {
