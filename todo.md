@@ -1,3 +1,0 @@
- -[x] fix fleet list components
-    -[x] align left, add short path to right
- -[ ] expand ships list items, show ship type
