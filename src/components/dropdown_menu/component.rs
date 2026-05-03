@@ -6,6 +6,9 @@ use dioxus_primitives::dropdown_menu::{
 };
 use dioxus_primitives::merge_attributes;
 
+#[cfg(feature = "bundle")]
+pub static STYLE: &'static str = include_str!("./style.css");
+
 #[component]
 pub fn DropdownMenu(props: DropdownMenuProps) -> Element {
     let base = attributes!(div {
@@ -13,8 +16,14 @@ pub fn DropdownMenu(props: DropdownMenuProps) -> Element {
     });
     let merged = merge_attributes(vec![base, props.attributes.clone()]);
 
+    #[cfg(not(feature = "bundle"))]
+    let style = rsx! {
+        document::Stylesheet { href: asset!("./style.css") }
+    };
+    #[cfg(feature = "bundle")]
+    let style = rsx! {};
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
+        {style}
         dropdown_menu::DropdownMenu {
             open: props.open,
             default_open: props.default_open,
@@ -35,7 +44,7 @@ pub fn DropdownMenuTrigger(props: DropdownMenuTriggerProps) -> Element {
     let merged = merge_attributes(vec![base, props.attributes]);
 
     rsx! {
-        dropdown_menu::DropdownMenuTrigger { as: props.r#as, attributes: merged, {props.children} }
+        dropdown_menu::DropdownMenuTrigger { r#as: props.r#as, attributes: merged, {props.children} }
     }
 }
 

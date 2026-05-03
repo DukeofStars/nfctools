@@ -6,7 +6,7 @@ def build [] {
 }
 
 def bundle [] {
-    dx bundle --release
+    dx bundle --release --platform desktop --features bundle --bundle windows
 }
 
 def check [] {

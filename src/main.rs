@@ -26,8 +26,10 @@ mod ui;
 #[allow(unused)]
 mod components;
 
-const COMPONENT_CSS: Asset = asset!("assets/dx-components-theme.css");
-const MAIN_CSS: Asset = asset!("assets/main.css");
+#[cfg(not(feature = "bundle"))]
+static COMPONENT_CSS: Asset = asset!("../assets/dx-components-theme.css");
+#[cfg(not(feature = "bundle"))]
+static MAIN_CSS: Asset = asset!("../assets/main.css");
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
 
@@ -117,9 +119,19 @@ fn main() -> Result<()> {
 
 #[component]
 fn App() -> Element {
-    rsx! {
+    #[cfg(not(feature = "bundle"))]
+    return rsx! {
         document::Stylesheet { href: COMPONENT_CSS }
         document::Stylesheet { href: MAIN_CSS }
+
         FleetList {}
-    }
+    };
+    #[cfg(feature = "bundle")]
+    return rsx! {
+        document::Style { {include_str!("../assets/main.css")} }
+        document::Style { {include_str!("../assets/dx-components-theme.css")} }
+        document::Style { {crate::components::dropdown_menu::STYLE} }
+
+        FleetList {}
+    };
 }

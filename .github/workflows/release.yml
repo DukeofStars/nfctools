@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: cargo install dioxus-cli
-      - run: dx bundle --release
+      - run: dx bundle --release --platform desktop --features bundle --bundle windows
       - uses: actions/upload-artifact@v4
         with:
           name: nfctools-bin
