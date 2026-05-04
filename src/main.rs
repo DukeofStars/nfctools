@@ -16,7 +16,7 @@ mod fleet_data;
 mod fleet_edit;
 mod fleet_io;
 mod load_fleets;
-// mod tags;
+mod tags;
 mod config;
 mod dressings;
 mod spawn_async;
@@ -114,6 +114,10 @@ fn main() -> Result<()> {
 
     dioxus::launch(App);
 
+    if let Some(Ok(tags)) = crate::tags::TAGS_REPO.get().map(|tags| tags.lock()) {
+        tags.save();
+    }
+
     Ok(())
 }
 
@@ -131,6 +135,7 @@ fn App() -> Element {
         document::Style { {include_str!("../assets/main.css")} }
         document::Style { {include_str!("../assets/dx-components-theme.css")} }
         document::Style { {crate::components::dropdown_menu::STYLE} }
+        document::Style { {crate::components::color_picker::STYLE} }
 
         FleetList {}
     };

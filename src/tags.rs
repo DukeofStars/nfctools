@@ -1,16 +1,50 @@
-use std::{collections::HashMap, fs::OpenOptions, io::Write};
+use std::{collections::HashMap, fmt::Display, fs::OpenOptions, io::Write, ops::Deref, str::FromStr, sync::{Mutex, OnceLock}};
 
 use chumsky::prelude::*;
-use color::{AlphaColor, Srgb};
 use color_eyre::{
     eyre::{eyre, Context},
     Result,
 };
+use palette::{encoding::Srgb, rgb::Rgb};
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 use text::whitespace;
-use tracing::{debug, error, trace};
+use tracing::{debug, error, trace, warn};
 
-pub type Color = AlphaColor<Srgb>;
+pub static TAGS_REPO: OnceLock<Mutex<TagsRepository>> = OnceLock::new();
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Color(pub Rgb<Srgb, u8>);
+impl Deref for Color {
+    type Target = Rgb<Srgb, u8>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl Display for Color {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:x}", &self.0)
+    }
+}
+impl FromStr for Color {
+    type Err = palette::rgb::FromHexError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        Rgb::<Srgb, u8>::from_str(s).map(|c| Color(c))
+    }
+}
+
+pub fn init_tags() {
+    let tags_repo = load_tags();
+    match tags_repo {
+        Ok(tags_repo) => TAGS_REPO.set(Mutex::new(tags_repo)).expect("init_tags called more than once"),
+        Err(err) => {
+            warn!(?err, "Failed to load tag repository file");
+            TAGS_REPO.set(Mutex::new(TagsRepository::default())).expect("init_tags called more than once")
+        },
+    }
+}
 
 pub fn load_tags() -> Result<TagsRepository> {
     let tags_path = directories::ProjectDirs::from("", "", "NebTools")
@@ -51,23 +85,20 @@ pub fn save_tags(tags_repo: &TagsRepository) -> Result<()> {
     Ok(())
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde_as]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub struct Tag {
     pub name: String,
+    #[serde_as(as = "DisplayFromStr")]
     pub color: Color,
 }
 
+
+#[serde_as]
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TagsRepository {
-    tags: HashMap<String, Color>,
-}
-
-impl Drop for TagsRepository {
-    fn drop(&mut self) {
-        if let Err(err) = save_tags(&self) {
-            error!("{}", err.wrap_err("Failed to save tags"));
-        }
-    }
+    #[serde_as(as = "HashMap<_, DisplayFromStr>")]
+    pub tags: HashMap<String, Color>,
 }
 
 impl TagsRepository {
@@ -76,6 +107,12 @@ impl TagsRepository {
     }
     pub fn get_tag(&self, name: &String) -> Option<&Color> {
         self.tags.get(name)
+    }
+
+    pub fn save(&self) {
+        if let Err(err) = save_tags(&self) {
+            error!("{}", err.wrap_err("Failed to save tags"));
+        }
     }
 }
 impl Default for TagsRepository {

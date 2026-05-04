@@ -3,3 +3,4 @@ pub mod button;
 pub mod checkbox;
 pub mod dropdown_menu;
 pub mod radio_group;
+pub mod color_picker;

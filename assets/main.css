@@ -47,13 +47,14 @@ body {
     background-color: var(--highlight);
 }
 
-textarea {
+textarea,input {
     background-color: var(--bg2);
     color: var(--text);
     resize: none;
     width: 97%;
+    border: 1px solid var(--border);
 }
-textarea:focus {
+textarea:focus,input:focus {
     outline: none;
 }
 
