@@ -86,6 +86,7 @@
   padding: 8px 12px;
   border-radius: calc(0.5rem - 0.25rem);
   color: var(--secondary-color-4);
+  background-color: transparent;
   cursor: pointer;
   font-size: 14px;
   gap: 0.5rem;
