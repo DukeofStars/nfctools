@@ -104,6 +104,7 @@ pub struct TagsRepository {
 impl TagsRepository {
     pub fn add_tag(&mut self, name: String, color: Color) {
         self.tags.insert(name, color);
+        self.save();
     }
     pub fn get_tag(&self, name: &String) -> Option<&Color> {
         self.tags.get(name)

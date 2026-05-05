@@ -114,10 +114,6 @@ fn main() -> Result<()> {
 
     dioxus::launch(App);
 
-    if let Some(Ok(tags)) = crate::tags::TAGS_REPO.get().map(|tags| tags.lock()) {
-        tags.save();
-    }
-
     Ok(())
 }
 
