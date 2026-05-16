@@ -161,6 +161,12 @@ pub fn FleetList() -> Element {
         crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet).expect("Failed to write fleet");
     });
 
+    let mut search_text = use_signal(|| String::new());
+    let mut search_filters = use_memo(move || {
+        info!("Parsing search text");
+        crate::search::parse_search_text(search_text())
+    });
+
     rsx! {
         div {
             display: "grid",
@@ -168,18 +174,23 @@ pub fn FleetList() -> Element {
             overflow: "hidden",
             height: "97vh",
             // Fleets List
-            div {
-                display: "flex",
-                flex_direction: "column",
-                min_height: 0,
-                flex: 1,
+            div { display: "flex", flex_direction: "column", min_height: 0,
                 h2 { margin: 0, padding: 0, flex_shrink: 0, "Fleets" }
+                input {
+                    value: "{search_text}",
+                    style: "margin: 0px; margin-bottom: 2px;",
+                    id: "search-bar",
+                    placeholder: "Search fleets",
+                    oninput: move |evt| { search_text.set(evt.value()) },
+                }
                 div {
                     style: "
                     overflow-y: auto;
                     display: grid;
                     flex: 1;
-                    min_height: 0;
+                    min-height: 0;
+                    align-content: start;
+                    height: 100%;
                     ",
                     class: "hide-scroll",
                     match fleets.read().as_ref() {
@@ -187,6 +198,10 @@ pub fn FleetList() -> Element {
                             for (idx , fleet) in fleets.iter().enumerate() {
                                 {
                                     let fleet = fleet.clone();
+                                    if !search_filters.read().matches(&fleet) {
+                                        return rsx! {};
+                                    }
+
                                     let selected = use_memo(move || { selected_fleet_idx() == Some(idx) });
                                     rsx! {
                                         button {

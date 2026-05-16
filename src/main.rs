@@ -22,6 +22,7 @@ mod dressings;
 mod spawn_async;
 mod test;
 mod ui;
+mod search;
 
 #[allow(unused)]
 mod components;
