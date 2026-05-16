@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use dioxus::prelude::*;
 use palette::{Hsv, IntoColor, encoding::{self, Srgb}, rgb::Rgb};
 use schemas::Ship;
@@ -296,6 +298,8 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
 
     let mut color_picker_open = use_signal(|| false);
 
+    let mut focus_in = use_signal(|| false);
+
     rsx! {
         div { display: "flex", flex_direction: "column", width: "100%",
             form {
@@ -324,8 +328,18 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
                 },
                 div { display: "flex", flex_direction: "row", width: "100%",
                     div {
+                        onfocusin: move |_| {
+                            focus_in.set(true);
+                        },
                         onfocusout: move |_| {
-                            color_picker_open.set(false);
+                            focus_in.set(false);
+
+                            spawn(async move {
+                                tokio::time::sleep(Duration::from_millis(50)).await;
+                                if !focus_in() {
+                                    color_picker_open.set(false);
+                                }
+                            });
                         },
                         ColorPicker {
                             open: color_picker_open(),

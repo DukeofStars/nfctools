@@ -221,3 +221,19 @@
     cursor: not-allowed;
     opacity: 0.5;
 }
+
+.no-overflow-popover-trigger {
+    anchor-name: --my-popover-anchor;
+}
+
+/* On your popover */
+.no-overflow-popover-content {
+    position: absolute;
+    position-anchor: --my-popover-anchor;
+
+    /* Default: below the trigger */
+    position-area: block-end span-inline-start;
+
+    /* Flip to try all directions before giving up */
+    position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+}

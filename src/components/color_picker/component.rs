@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::color_picker::{
     self, Color, ColorAreaProps, ColorPickerContext,
 };
-use dioxus_primitives::popover;
+use dioxus_primitives::{ContentAlign, ContentSide, popover};
 use dioxus_primitives::use_controlled;
 use dioxus_primitives::label::Label;
 use dioxus_primitives::slider::*;
@@ -206,6 +206,8 @@ pub fn ColorPickerPopover(props: ColorPickerPopoverProps) -> Element {
         popover::PopoverContent {
             class: "dx-color-picker-popover".to_string(),
             attributes: props.attributes,
+            side: ContentSide::Left,
+            align: ContentAlign::Start,
             {props.children}
         }
     }
