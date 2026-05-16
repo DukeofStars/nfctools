@@ -347,6 +347,8 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
                         return;
                     }
 
+                    new_tag_name.set(String::new());
+
                     let color: Rgb<Srgb, f64> = new_tag_color().into_color();
                     let color: Rgb<Srgb, u8> = color.into_format();
                     tags_dirty.set(true);
@@ -392,6 +394,7 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
                     }
                     input {
                         r#type: "text",
+                        value: "{new_tag_name}",
                         oninput: move |evt| {
                             new_tag_name.set(evt.value());
                             match TAGS_REPO.get().unwrap().lock().unwrap().get_tag(&evt.value()) {
@@ -413,7 +416,7 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
                         let color = tag.color;
                         rsx! {
                             button {
-                                class: "list-button",
+                                class: "list-button tag-button",
                                 style: format!("color: rgb({}, {}, {})", &color.red, &color.green, &color.blue),
                                 onclick: move |_| {
                                     tags_dirty.set(true);

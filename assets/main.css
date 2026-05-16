@@ -84,3 +84,12 @@ input {
 .button:active {
     scale: 0.98;
 }
+
+.tag-button {
+    transition-duration: 100ms;
+}
+.tag-button:hover {
+    color: rgba(148, 59, 15, 0.9) !important;
+    scale: 1.02;
+    text-decoration: line-through;
+}
