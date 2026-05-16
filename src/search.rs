@@ -12,7 +12,7 @@ impl SearchFilters {
         }
         let (tags, desc) = crate::tags::get_tags_from_description(fleet_data.description.as_str()).unwrap();
 
-        (self.contains.is_empty() 
+        (self.contains.is_empty()
         || self.contains.iter().any(|c| 
             fleet_data.name.to_lowercase().contains(c)
             || fleet_data.short_path.display().to_string().to_lowercase().contains(c)

@@ -44,11 +44,12 @@ body {
     transition-duration: 100ms;
 }
 
-.list-button:hover:has(:not(.selected)) {
+.list-button:hover {
     color: rgba(148, 59, 15, 0.9);
 }
 
 .selected {
+    color: var(--text) !important;
     background-color: var(--highlight);
 }
 

@@ -1,13 +1,24 @@
 use std::time::Duration;
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 
 use dioxus::prelude::*;
 use lazy_static::lazy_static;
-use palette::{Hsv, IntoColor, encoding::{self, Srgb}, rgb::Rgb};
+use palette::{
+    encoding::{self, Srgb},
+    rgb::Rgb,
+    Hsv, IntoColor,
+};
 use schemas::Ship;
 
 use crate::{
-    components::color_picker::ColorPicker, config::load_app_config, fleet_data::FleetData, fleet_io::read_fleet, load_fleets, spawn_async::spawn_async, tags::{Color, TAGS_REPO, Tag}, ui::fleet_editor::ShipEditor
+    components::color_picker::ColorPicker,
+    config::load_app_config,
+    fleet_data::FleetData,
+    fleet_io::read_fleet,
+    load_fleets,
+    spawn_async::spawn_async,
+    tags::{Color, Tag, TAGS_REPO},
+    ui::fleet_editor::ShipEditor,
 };
 
 struct AudioHandler {
@@ -41,7 +52,7 @@ lazy_static! {
 
 #[component]
 pub fn FleetList() -> Element {
-    let fleets = use_resource(async move || {
+    let mut fleets = use_resource(async move || {
         // Load app configuration first
         spawn_async(load_app_config).await.unwrap();
         spawn_async(crate::tags::init_tags).await;
@@ -56,18 +67,24 @@ pub fn FleetList() -> Element {
     let mut selected_ship = use_signal(|| None::<Ship>);
     let mut selected_ship_idx = use_signal(|| None::<usize>);
 
-    let mut description = use_signal(|| String::new());
+    let mut description = use_signal(String::new);
     let mut tags = use_signal(|| {
         let binding = description.read();
         let desc = binding.as_str();
         let tags = crate::tags::get_tags_from_description(desc);
         match tags {
             Ok((tags, _)) => tags,
-            Err(err) => {warn!(?err, "Failed to retrieve tags from fleet description"); vec![]},
+            Err(err) => {
+                warn!(?err, "Failed to retrieve tags from fleet description");
+                vec![]
+            }
         }
     });
 
     let mut tags_dirty = use_signal(|| false);
+
+    // When description is updated, such as when selecting a fleet,
+    // read and update the tags.
     use_effect(move || {
         let binding = description.read();
         let desc = binding.as_str();
@@ -77,28 +94,32 @@ pub fn FleetList() -> Element {
                 if *tags.peek() != new_tags {
                     tags.set(new_tags);
                 }
-            },
-            Err(err) => { warn!(?err, "Failed to retrieve tags from fleet description"); }
+            }
+            Err(err) => {
+                warn!(?err, "Failed to retrieve tags from fleet description");
+            }
         }
     });
+    // When the tags are updated, insert them into the description.
     use_effect(move || {
         let tags = tags.read();
-        
+
         if !tags_dirty() {
             return;
         }
         tags_dirty.set(false);
 
-        
-        let desc = crate::tags::get_tags_from_description(description.peek().as_str()).map(|x| x.1).unwrap_or_default();
+        let desc =
+            crate::tags::get_tags_from_description(description.peek().as_str())
+                .map(|x| x.1)
+                .unwrap_or_default();
 
-        let new_desc = if tags.len() == 0 {
+        let new_desc = if tags.is_empty() {
             desc
         } else {
             format!(
                 "Tags: {}\n{}",
-                tags
-                    .iter()
+                tags.iter()
                     .map(|tag| format!(
                         "<color=#{:02x}{:02x}{:02x}>{}</color>",
                         tag.color.red,
@@ -115,6 +136,7 @@ pub fn FleetList() -> Element {
     });
 
     let mut prev_path = use_signal(|| None);
+    // When the selected_fleet_data is changed, asynchronously load the fleet.
     let mut selected_fleet = use_resource(move || async move {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
             loading_fleet.set(true);
@@ -127,7 +149,9 @@ pub fn FleetList() -> Element {
                 loading_fleet.set(false);
                 return fleet.ok();
             }
-            if let Some(desc) = fleet.as_ref().ok().and_then(|f| f.description.as_ref()) {
+            if let Some(desc) =
+                fleet.as_ref().ok().and_then(|f| f.description.as_ref())
+            {
                 *description.write() = desc.clone();
             }
             prev_path.set(Some(fleet_data.path.clone()));
@@ -140,23 +164,35 @@ pub fn FleetList() -> Element {
 
     let mut selected_fleet_idx = use_signal(|| None::<usize>);
 
+    // When the selected_ship is updated, save the fleet.
     use_effect(move || {
         let ship = selected_ship.read();
         if let Some(ship) = ship.as_ref() {
             let fleet_data_r = selected_fleet_data.read();
-            let fleet_data = fleet_data_r.as_ref().expect("Ship updated without any fleet being selected");
+            let fleet_data = fleet_data_r
+                .as_ref()
+                .expect("Ship updated without any fleet being selected");
             let mut fleet_w = selected_fleet.write();
-            let fleet = fleet_w.as_mut().unwrap().as_mut().expect("Ship updated without any fleet being selected");
-            let ship_idx = selected_ship_idx.read().expect("Ship updated without any ship idx being set");
-            fleet.ships.as_mut().unwrap().ship.as_mut().unwrap()[ship_idx] = ship.clone();
-            crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet).expect("Failed to write fleet");
+            let fleet = fleet_w
+                .as_mut()
+                .unwrap()
+                .as_mut()
+                .expect("Ship updated without any fleet being selected");
+            let ship_idx = selected_ship_idx
+                .read()
+                .expect("Ship updated without any ship idx being set");
+            fleet.ships.as_mut().unwrap().ship.as_mut().unwrap()[ship_idx] =
+                ship.clone();
+            crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet)
+                .expect("Failed to write fleet");
         }
     });
 
+    // When the description is updated, save it to the fleet.
     use_effect(move || {
         let desc = description();
-        let mut fleet_data_w = selected_fleet_data.write();
-        let Some(fleet_data) = fleet_data_w.as_mut() else {
+        let fleet_data_r = selected_fleet_data.read();
+        let Some(fleet_data) = fleet_data_r.as_ref() else {
             return;
         };
         let mut fleet_w = selected_fleet.write();
@@ -164,12 +200,34 @@ pub fn FleetList() -> Element {
             return;
         };
         fleet.description = Some(desc.clone());
-        fleet_data.description = desc;
-        crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet).expect("Failed to write fleet");
+
+        // Update fleet_data in fleets list (fleet_data_r is a clone).
+        let mut fleets = fleets.as_mut();
+        if let Some(fleets) = fleets.as_mut() {
+            if let Ok(fleets) = fleets.deref_mut() {
+                let fleet_data = fleets
+                    .get_mut(
+                        selected_fleet_idx()
+                            .expect("Fleet updated when no fleet selected"),
+                    )
+                    .expect("Invalid selected_fleet_idx");
+                fleet_data.description = desc;
+            }
+        }
+
+        crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet)
+            .expect("Failed to write fleet");
     });
 
-    let mut search_text = use_signal(|| String::new());
+    let mut search_text = use_signal(String::new);
     let search_filters = use_memo(move || {
+        // Reset all selections on search
+        selected_fleet.set(None);
+        selected_fleet_idx.set(None);
+        selected_ship.set(None);
+        selected_ship_idx.set(None);
+        selected_fleet_data.set(None);
+
         crate::search::parse_search_text(search_text())
     });
 
@@ -294,8 +352,7 @@ pub fn FleetList() -> Element {
                                     for (idx , ship) in fleet
                                         .ships
                                         .iter()
-                                        .map(|ships| ships.ship.iter().map(|iter| iter.iter()))
-                                        .flatten()
+                                        .flat_map(|ships| ships.ship.iter().map(|iter| iter.iter()))
                                         .flatten()
                                         .enumerate()
                                     {
@@ -315,11 +372,12 @@ pub fn FleetList() -> Element {
                                                     margin: 0,
                                                     text_align: "left",
                                                     height: "40px",
-                                                    class: format!("list-button ship-list-item {}", if selected() { "selected" } else { "" }),
+                                                    // class: format!("list-button ship-list-item {}", if selected() { "selected" } else { "" }),
+                                                    class: if selected() { "list-button selected" } else { "list-button" },
                                                     onclick: move |_| {
                                                         trace!("Selecting ship {}", ship.name);
                                                         selected_ship.set(Some(ship.clone()));
-                                                        selected_ship_idx.set(Some(idx.clone()));
+                                                        selected_ship_idx.set(Some(idx));
                                                     },
                                                     "{ship.name}"
                                                     div {
@@ -351,8 +409,9 @@ pub fn FleetList() -> Element {
 
 #[component]
 fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
-    let mut new_tag_name = use_signal(|| String::new());
-    let mut new_tag_color = use_signal(|| palette::Hsv::<Srgb, f64>::new(1.0, 1.0, 1.0));
+    let mut new_tag_name = use_signal(String::new);
+    let mut new_tag_color =
+        use_signal(|| palette::Hsv::<Srgb, f64>::new(1.0, 1.0, 1.0));
 
     let mut color_picker_open = use_signal(|| false);
 
@@ -377,7 +436,6 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
                         name: name.to_string(),
                         color: Color(color),
                     };
-                    info!(? tag, "Pushing tag");
                     tags.write()
                         .push(tag);
 
