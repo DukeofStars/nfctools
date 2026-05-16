@@ -2,7 +2,7 @@ use std::time::Duration;
 use std::sync::Arc;
 
 use dioxus::prelude::*;
-use lazy_static::{lazy_static};
+use lazy_static::lazy_static;
 use palette::{Hsv, IntoColor, encoding::{self, Srgb}, rgb::Rgb};
 use schemas::Ship;
 
