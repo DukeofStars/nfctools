@@ -7,4 +7,5 @@ pub struct FleetData {
     pub path: PathBuf,
     pub short_path: PathBuf,
     pub name: String,
+    pub description: String,
 }

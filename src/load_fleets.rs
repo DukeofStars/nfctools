@@ -143,6 +143,7 @@ fn load_fleets_rec(
                     path,
                     short_path: short_path.into(),
                     name: fleet.name.into(),
+                    description: fleet.description.unwrap_or_default(),
                 };
 
                 fleet_cache.insert(hash, fleet_data.clone());

@@ -69,14 +69,13 @@ pub fn FleetList() -> Element {
 
     let mut tags_dirty = use_signal(|| false);
     use_effect(move || {
-        let binding = description.read(); // subscribe to description
+        let binding = description.read();
         let desc = binding.as_str();
         match crate::tags::get_tags_from_description(desc) {
             Ok((new_tags, _)) => {
                 // Only update if tags actually differ, to avoid spurious writes
                 if *tags.peek() != new_tags {
                     tags.set(new_tags);
-                    // Don't set tags_dirty — this was an external change
                 }
             },
             Err(err) => { warn!(?err, "Failed to retrieve tags from fleet description"); }
@@ -84,11 +83,12 @@ pub fn FleetList() -> Element {
     });
     use_effect(move || {
         let tags = tags.read();
-
-        if !tags_dirty() { // only run if tags changed from UI, not from Effect 1
+        
+        if !tags_dirty() {
             return;
         }
         tags_dirty.set(false);
+
         
         let desc = crate::tags::get_tags_from_description(description.peek().as_str()).map(|x| x.1).unwrap_or_default();
 
@@ -114,6 +114,7 @@ pub fn FleetList() -> Element {
         description.set(new_desc);
     });
 
+    let mut prev_path = use_signal(|| None);
     let mut selected_fleet = use_resource(move || async move {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
             loading_fleet.set(true);
@@ -122,9 +123,14 @@ pub fn FleetList() -> Element {
             let fleet_path = fleet_data.path.clone();
             let fleet = spawn_async(|| read_fleet(fleet_path));
             let fleet = fleet.await;
+            if Some(fleet_data.path.clone()) == prev_path() {
+                loading_fleet.set(false);
+                return fleet.ok();
+            }
             if let Some(desc) = fleet.as_ref().ok().and_then(|f| f.description.as_ref()) {
                 *description.write() = desc.clone();
             }
+            prev_path.set(Some(fleet_data.path.clone()));
             loading_fleet.set(false);
             fleet.ok()
         } else {
@@ -149,21 +155,21 @@ pub fn FleetList() -> Element {
 
     use_effect(move || {
         let desc = description();
-        let fleet_data_r = selected_fleet_data.read();
-        let Some(fleet_data) = fleet_data_r.as_ref() else {
+        let mut fleet_data_w = selected_fleet_data.write();
+        let Some(fleet_data) = fleet_data_w.as_mut() else {
             return;
         };
         let mut fleet_w = selected_fleet.write();
         let Some(fleet) = fleet_w.as_mut().unwrap().as_mut() else {
             return;
         };
-        fleet.description = Some(desc);
+        fleet.description = Some(desc.clone());
+        fleet_data.description = desc;
         crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet).expect("Failed to write fleet");
     });
 
     let mut search_text = use_signal(|| String::new());
-    let mut search_filters = use_memo(move || {
-        info!("Parsing search text");
+    let search_filters = use_memo(move || {
         crate::search::parse_search_text(search_text())
     });
 
@@ -257,7 +263,7 @@ pub fn FleetList() -> Element {
                                 div {
                                     h2 { "{fleet.name}" }
                                     h4 { "Tags" }
-                                    Tags { key: fleet.name, tags, tags_dirty }
+                                    Tags { key: fleet.path, tags, tags_dirty }
                                     h4 { "Description" }
                                     textarea {
                                         height: "200px",
@@ -367,11 +373,13 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
                     let color: Rgb<Srgb, f64> = new_tag_color().into_color();
                     let color: Rgb<Srgb, u8> = color.into_format();
                     tags_dirty.set(true);
+                    let tag = Tag {
+                        name: name.to_string(),
+                        color: Color(color),
+                    };
+                    info!(? tag, "Pushing tag");
                     tags.write()
-                        .push(Tag {
-                            name: name.to_string(),
-                            color: Color(color),
-                        });
+                        .push(tag);
 
                     TAGS_REPO
                         .get()
