@@ -41,6 +41,11 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     border: 1px solid var(--border);
+    transition-duration: 100ms;
+}
+
+.list-button:hover {
+    color: rgba(148, 59, 15, 0.9);
 }
 
 .selected {
@@ -57,7 +62,25 @@ textarea,input {
 textarea:focus,input:focus {
     outline: none;
 }
+input {
+    margin-left: 5px;
+    margin-right: 5px;
+}
 
 .bg-text {
     color: var(--secondary-text);
+}
+
+.button {
+    border: 2px solid var(--border);
+    transition-duration: 100ms;
+}
+
+.button:hover {
+    color: rgba(148, 59, 15, 0.9);
+    scale: 1.02;
+}
+
+.button:active {
+    scale: 0.98;
 }

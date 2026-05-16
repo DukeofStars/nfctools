@@ -1,12 +1,43 @@
 use std::time::Duration;
+use std::sync::Arc;
 
 use dioxus::prelude::*;
+use lazy_static::{lazy_static};
 use palette::{Hsv, IntoColor, encoding::{self, Srgb}, rgb::Rgb};
 use schemas::Ship;
 
 use crate::{
     components::color_picker::ColorPicker, config::load_app_config, fleet_data::FleetData, fleet_io::read_fleet, load_fleets, spawn_async::spawn_async, tags::{Color, TAGS_REPO, Tag}, ui::fleet_editor::ShipEditor
 };
+
+struct AudioHandler {
+    _handle: rodio::MixerDeviceSink,
+    player: rodio::Player,
+}
+impl AudioHandler {
+    const HOVER_SOUND: &[u8] = include_bytes!("../../assets/hover-click.wav");
+
+    fn new() -> AudioHandler {
+        let handle = rodio::DeviceSinkBuilder::open_default_sink()
+            .expect("open default audio stream");
+        let player = rodio::Player::connect_new(&handle.mixer());
+        AudioHandler {
+            _handle: handle,
+            player,
+        }
+    }
+
+    fn play_hover_sound(&self) {
+        let cursor = std::io::Cursor::new(AudioHandler::HOVER_SOUND);
+        let source = rodio::Decoder::try_from(cursor).unwrap();
+        self.player.skip_one();
+        self.player.append(source);
+    }
+}
+
+lazy_static! {
+    static ref AUDIO_HANDLER: Arc<AudioHandler> = Arc::new(AudioHandler::new());
+}
 
 #[component]
 pub fn FleetList() -> Element {
@@ -159,6 +190,9 @@ pub fn FleetList() -> Element {
                                     let selected = use_memo(move || { selected_fleet_idx() == Some(idx) });
                                     rsx! {
                                         button {
+                                            onmouseenter: move |_| {
+                                                AUDIO_HANDLER.play_hover_sound();
+                                            },
                                             padding: 0,
                                             margin: 0,
                                             display: "flex",
@@ -250,6 +284,9 @@ pub fn FleetList() -> Element {
                                             let selected = use_memo(move || Some(idx) == selected_ship_idx());
                                             rsx! {
                                                 button {
+                                                    onmouseenter: move |_| {
+                                                        AUDIO_HANDLER.play_hover_sound();
+                                                    },
                                                     display: "flex",
                                                     flex_direction: "column",
                                                     justify_content: "space-between",
@@ -367,7 +404,7 @@ fn Tags(tags: Signal<Vec<Tag>>, tags_dirty: Signal<bool>) -> Element {
                             }
                         },
                     }
-                    button { flex_grow: 0, "Add" }
+                    button { class: "button", flex_grow: 0, "Add" }
                 }
             }
             div { display: "grid", grid_template_columns: "25% 25% 25% 25%",

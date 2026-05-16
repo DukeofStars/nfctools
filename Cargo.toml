@@ -33,3 +33,4 @@ dioxus-primitives = { git = "https://github.com/DioxusLabs/components", version 
 palette = { version = "0.7.6", features = ["serde", "std"] }
 serde_with = "3.19.0"
 tokio = { version = "1.52.3", features = ["time"] }
+rodio = "0.22.2"
