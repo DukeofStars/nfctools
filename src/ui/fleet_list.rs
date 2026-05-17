@@ -1,8 +1,7 @@
+use std::ops::DerefMut;
 use std::time::Duration;
-use std::{ops::DerefMut, sync::Arc};
 
 use dioxus::prelude::*;
-use lazy_static::lazy_static;
 use palette::{
     encoding::{self, Srgb},
     rgb::Rgb,
@@ -11,6 +10,7 @@ use palette::{
 use schemas::Ship;
 
 use crate::{
+    audio::AUDIO_HANDLER,
     components::color_picker::ColorPicker,
     config::load_app_config,
     fleet_data::FleetData,
@@ -20,35 +20,6 @@ use crate::{
     tags::{Color, Tag, TAGS_REPO},
     ui::fleet_editor::ShipEditor,
 };
-
-struct AudioHandler {
-    _handle: rodio::MixerDeviceSink,
-    player: rodio::Player,
-}
-impl AudioHandler {
-    const HOVER_SOUND: &[u8] = include_bytes!("../../assets/hover-click.wav");
-
-    fn new() -> AudioHandler {
-        let handle = rodio::DeviceSinkBuilder::open_default_sink()
-            .expect("open default audio stream");
-        let player = rodio::Player::connect_new(&handle.mixer());
-        AudioHandler {
-            _handle: handle,
-            player,
-        }
-    }
-
-    fn play_hover_sound(&self) {
-        let cursor = std::io::Cursor::new(AudioHandler::HOVER_SOUND);
-        let source = rodio::Decoder::try_from(cursor).unwrap();
-        self.player.skip_one();
-        self.player.append(source);
-    }
-}
-
-lazy_static! {
-    static ref AUDIO_HANDLER: Arc<AudioHandler> = Arc::new(AudioHandler::new());
-}
 
 #[component]
 pub fn FleetList() -> Element {

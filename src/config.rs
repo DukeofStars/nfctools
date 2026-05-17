@@ -19,6 +19,12 @@ pub struct AppConfig {
     pub excluded_dirs: Vec<String>,
     #[serde(default = "default_cache_dir")]
     pub cache_dir: PathBuf,
+    #[serde(default = "default_true")]
+    pub sound_effects: bool,
+}
+
+pub fn default_true() -> bool {
+    true
 }
 
 pub fn load_app_config() -> Result<()> {

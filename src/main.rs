@@ -14,6 +14,7 @@ use tracing_subscriber::{
 
 use crate::ui::fleet_list::FleetList;
 
+mod audio;
 mod config;
 mod dressings;
 mod fleet_data;
