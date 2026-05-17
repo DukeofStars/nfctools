@@ -1,7 +1,8 @@
 use std::ops::DerefMut;
 use std::time::Duration;
 
-use dioxus::prelude::*;
+use dioxus::{desktop::use_muda_event_handler, prelude::*};
+use futures::StreamExt;
 use palette::{
     encoding::{self, Srgb},
     rgb::Rgb,
@@ -28,10 +29,11 @@ pub fn FleetList() -> Element {
         spawn_async(load_app_config).await.unwrap();
         spawn_async(crate::tags::init_tags).await;
         // Then load fleets (load_fleets requires APP_CONFIG to be set)
-        spawn_async(load_fleets::load_fleets).await
+        spawn_async(|| load_fleets::load_fleets(true)).await
     });
 
     let mut selected_fleet_data = use_signal(|| None::<FleetData>);
+    let mut selected_fleet_idx = use_signal(|| None::<usize>);
 
     let mut loading_fleet = use_signal(|| false);
 
@@ -53,6 +55,31 @@ pub fn FleetList() -> Element {
     });
 
     let mut tags_dirty = use_signal(|| false);
+
+    let menu_handler =
+        use_coroutine(move |mut rx: UnboundedReceiver<String>| async move {
+            while let Some(action) = rx.next().await {
+                match action.as_str() {
+                    "fleets-reload" => {
+                        info!("Reloading fleets");
+                        fleets.set(None);
+                        selected_fleet_data.set(None);
+                        selected_fleet_idx.set(None);
+                        selected_ship.set(None);
+                        selected_ship_idx.set(None);
+                        let new_fleets =
+                            spawn_async(|| load_fleets::load_fleets(false))
+                                .await;
+                        fleets.set(Some(new_fleets));
+                    }
+                    "tools-scramble" => todo!(),
+                    _ => {}
+                }
+            }
+        });
+    use_muda_event_handler(move |event| {
+        menu_handler.send(event.id().0.clone())
+    });
 
     // When description is updated, such as when selecting a fleet,
     // read and update the tags.
@@ -132,8 +159,6 @@ pub fn FleetList() -> Element {
             None
         }
     });
-
-    let mut selected_fleet_idx = use_signal(|| None::<usize>);
 
     // When the selected_ship is updated, save the fleet.
     use_effect(move || {

@@ -16,7 +16,7 @@ use tracing::{debug, info, trace, warn};
 
 use crate::{config::APP_CONFIG, fleet_data::FleetData, fleet_io::read_fleet};
 
-pub fn load_fleets() -> Result<Vec<FleetData>> {
+pub fn load_fleets(use_cache: bool) -> Result<Vec<FleetData>> {
     let Some(app_config) = APP_CONFIG.get() else {
         bail!("App configuration not yet loaded");
     };
@@ -36,7 +36,11 @@ pub fn load_fleets() -> Result<Vec<FleetData>> {
         info!("Loading fleets from cache");
         Some(fleet_cache)
     };
-    let mut fleet_cache = get_fleet_cache().unwrap_or_default();
+    let mut fleet_cache = if use_cache {
+        get_fleet_cache().unwrap_or_default()
+    } else {
+        HashMap::new()
+    };
 
     debug!("Loading fleets from {}", path.display());
     let mut output = vec![];

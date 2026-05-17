@@ -1,9 +1,13 @@
-use dioxus::{
-    desktop::muda::{accelerator::Accelerator, Menu, MenuItem, Submenu},
-    html::{Code, Modifiers},
-};
+use std::cell::RefCell;
+
+use dioxus::desktop::muda::{Menu, MenuItem, Submenu};
+
+thread_local! {
+    pub static MENUBARS: RefCell<Option<Menubars>> = const { RefCell::new(None) };
+}
 
 #[allow(unused)]
+#[derive(Clone)]
 pub struct Menubars {
     // Fleets
     fleets_menu: Submenu,
@@ -22,12 +26,8 @@ pub struct Menubars {
 impl Menubars {
     pub fn new() -> Self {
         let fleets_menu = Submenu::new("Fleets", true);
-        let fleets_reload = MenuItem::with_id(
-            "fleets-reload",
-            "Reload Fleets",
-            true,
-            Some(Accelerator::new(Some(Modifiers::CONTROL), Code::KeyR)),
-        );
+        let fleets_reload =
+            MenuItem::with_id("fleets-reload", "Reload Fleets", true, None);
         fleets_menu.append_items(&[&fleets_reload]).unwrap();
 
         let edit_menu = Submenu::new("Edit", true);

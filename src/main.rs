@@ -133,6 +133,8 @@ fn main() -> Result<()> {
     let menu = Menu::new();
     menubars.attach_to_menu(&menu);
 
+    crate::menubar::MENUBARS.set(Some(menubars));
+
     dioxus::LaunchBuilder::new()
         .with_cfg(desktop! {
             Config::new().with_menu(Some(menu)).with_window(
@@ -143,10 +145,6 @@ fn main() -> Result<()> {
         .launch(App);
 
     Ok(())
-}
-
-pub enum UserEvent {
-    MenuEvent(dioxus::desktop::muda::MenuEvent),
 }
 
 #[component]
