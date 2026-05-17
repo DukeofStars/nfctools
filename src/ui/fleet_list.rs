@@ -138,6 +138,11 @@ pub fn FleetList() -> Element {
     let mut selected_fleet = use_resource(move || async move {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
             loading_fleet.set(true);
+            crate::menubar::MENUBARS.with_borrow(|menubars| {
+                if let Some(menubars) = menubars.as_ref() {
+                    menubars.enable_scramble();
+                }
+            });
             selected_ship.set(None);
             selected_ship_idx.set(None);
             let fleet_path = fleet_data.path.clone();
@@ -156,6 +161,11 @@ pub fn FleetList() -> Element {
             loading_fleet.set(false);
             fleet.ok()
         } else {
+            crate::menubar::MENUBARS.with_borrow(|menubars| {
+                if let Some(menubars) = menubars.as_ref() {
+                    menubars.disable_scramble();
+                }
+            });
             None
         }
     });

@@ -63,4 +63,13 @@ impl Menubars {
         ])
         .unwrap();
     }
+
+    pub fn enable_scramble(&self) {
+        // Scramble unimplemented
+        // self.tools_scramble.set_enabled(true);
+    }
+
+    pub fn disable_scramble(&self) {
+        self.tools_scramble.set_enabled(false);
+    }
 }
