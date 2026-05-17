@@ -4,7 +4,10 @@ use std::fs::OpenOptions;
 
 use clap::{Parser, ValueEnum};
 use color_eyre::Result;
-use dioxus::prelude::*;
+use dioxus::{
+    desktop::{muda::Menu, Config, WindowBuilder},
+    prelude::*,
+};
 use tracing::{info, warn, Level};
 use tracing_subscriber::{
     fmt::{self, writer::MakeWriterExt},
@@ -12,7 +15,7 @@ use tracing_subscriber::{
     EnvFilter, Layer, Registry,
 };
 
-use crate::ui::fleet_list::FleetList;
+use crate::{menubar::Menubars, ui::fleet_list::FleetList};
 
 mod audio;
 mod config;
@@ -21,6 +24,7 @@ mod fleet_data;
 mod fleet_edit;
 mod fleet_io;
 mod load_fleets;
+mod menubar;
 mod search;
 mod spawn_async;
 mod tags;
@@ -64,6 +68,7 @@ fn main() -> Result<()> {
         p.parent().map(|p| {
             OpenOptions::new()
                 .create(true)
+                .truncate(true)
                 .write(true)
                 .open(p.join("log.txt"))
         })
@@ -123,9 +128,25 @@ fn main() -> Result<()> {
 
     info!("Starting NebTools");
 
-    dioxus::launch(App);
+    let menubars = Menubars::new();
+
+    let menu = Menu::new();
+    menubars.attach_to_menu(&menu);
+
+    dioxus::LaunchBuilder::new()
+        .with_cfg(desktop! {
+            Config::new().with_menu(Some(menu)).with_window(
+                WindowBuilder::new()
+                    .with_title(format!("NebTools v{}", env!("CARGO_PKG_VERSION")))
+            )
+        })
+        .launch(App);
 
     Ok(())
+}
+
+pub enum UserEvent {
+    MenuEvent(dioxus::desktop::muda::MenuEvent),
 }
 
 #[component]
