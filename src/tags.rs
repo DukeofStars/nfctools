@@ -1,4 +1,12 @@
-use std::{collections::HashMap, fmt::Display, fs::OpenOptions, io::Write, ops::Deref, str::FromStr, sync::{Mutex, OnceLock}};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    fs::OpenOptions,
+    io::Write,
+    ops::Deref,
+    str::FromStr,
+    sync::{Mutex, OnceLock},
+};
 
 use chumsky::prelude::*;
 use color_eyre::{
@@ -38,11 +46,15 @@ impl FromStr for Color {
 pub fn init_tags() {
     let tags_repo = load_tags();
     match tags_repo {
-        Ok(tags_repo) => TAGS_REPO.set(Mutex::new(tags_repo)).expect("init_tags called more than once"),
+        Ok(tags_repo) => TAGS_REPO
+            .set(Mutex::new(tags_repo))
+            .expect("init_tags called more than once"),
         Err(err) => {
             warn!(?err, "Failed to load tag repository file");
-            TAGS_REPO.set(Mutex::new(TagsRepository::default())).expect("init_tags called more than once")
-        },
+            TAGS_REPO
+                .set(Mutex::new(TagsRepository::default()))
+                .expect("init_tags called more than once")
+        }
     }
 }
 
@@ -92,7 +104,6 @@ pub struct Tag {
     #[serde_as(as = "DisplayFromStr")]
     pub color: Color,
 }
-
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug)]

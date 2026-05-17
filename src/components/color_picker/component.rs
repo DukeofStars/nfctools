@@ -2,12 +2,11 @@ use dioxus::prelude::*;
 use dioxus_primitives::color_picker::{
     self, Color, ColorAreaProps, ColorPickerContext,
 };
-use dioxus_primitives::{ContentAlign, ContentSide, popover};
-use dioxus_primitives::use_controlled;
 use dioxus_primitives::label::Label;
 use dioxus_primitives::slider::*;
+use dioxus_primitives::use_controlled;
+use dioxus_primitives::{popover, ContentAlign, ContentSide};
 use palette::{encoding, FromColor, Hsv, IntoColor, RgbHue, Srgb};
-
 
 fn format_color_hex(color: Color) -> String {
     format!("#{color:X}")
@@ -59,7 +58,8 @@ pub static STYLE: &'static str = include_str!("./style.css");
 
 #[component]
 pub fn ColorPickerRoot(props: ColorPickerRootProps) -> Element {
-    let (open, set_open) = use_controlled(props.open, props.default_open, props.on_open_change);
+    let (open, set_open) =
+        use_controlled(props.open, props.default_open, props.on_open_change);
 
     use_context_provider(|| ColorPickerRootContext {
         open,
@@ -67,7 +67,7 @@ pub fn ColorPickerRoot(props: ColorPickerRootProps) -> Element {
         color: props.color,
     });
 
-        #[cfg(not(feature = "bundle"))]
+    #[cfg(not(feature = "bundle"))]
     let style = rsx! {
         document::Stylesheet { href: asset!("./style.css") }
     };
@@ -244,7 +244,8 @@ fn ColorField(props: ColorFieldProps) -> Element {
         format_color_hex(rgb)
     };
     let emit_rgb = move |rgb: Color| {
-        let hsv: Hsv<encoding::Srgb, f64> = rgb.into_format::<f64>().into_color();
+        let hsv: Hsv<encoding::Srgb, f64> =
+            rgb.into_format::<f64>().into_color();
         ctx.set_color(hsv);
     };
 
@@ -257,7 +258,8 @@ fn ColorField(props: ColorFieldProps) -> Element {
         let external = ctx.color();
         let current = value();
         if let Ok(parsed) = current.parse::<Color>() {
-            let external_rgb: Color = Srgb::<f64>::from_color(external).into_format();
+            let external_rgb: Color =
+                Srgb::<f64>::from_color(external).into_format();
             if parsed != external_rgb {
                 value.set(hex_from_hsv(external));
             }
@@ -359,7 +361,8 @@ pub struct ColorSliderProps {
 #[component]
 fn ColorSlider(props: ColorSliderProps) -> Element {
     let ctx = use_context::<ColorPickerContext>();
-    let mut current_hue = use_signal(|| ctx.color().hue.into_positive_degrees());
+    let mut current_hue =
+        use_signal(|| ctx.color().hue.into_positive_degrees());
 
     let thumb_color = use_memo(move || {
         Srgb::<f64>::from_color(Hsv::<encoding::Srgb, f64>::new(

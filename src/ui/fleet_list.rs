@@ -270,7 +270,9 @@ pub fn FleetList() -> Element {
                                     rsx! {
                                         button {
                                             onmouseenter: move |_| {
-                                                AUDIO_HANDLER.play_hover_sound();
+                                               if !selected() {
+                                                   AUDIO_HANDLER.play_hover_sound();
+                                               }
                                             },
                                             padding: 0,
                                             margin: 0,
@@ -363,7 +365,9 @@ pub fn FleetList() -> Element {
                                             rsx! {
                                                 button {
                                                     onmouseenter: move |_| {
-                                                        AUDIO_HANDLER.play_hover_sound();
+                                                        if !selected() {
+                                                            AUDIO_HANDLER.play_hover_sound();
+                                                        }
                                                     },
                                                     display: "flex",
                                                     flex_direction: "column",
@@ -372,7 +376,6 @@ pub fn FleetList() -> Element {
                                                     margin: 0,
                                                     text_align: "left",
                                                     height: "40px",
-                                                    // class: format!("list-button ship-list-item {}", if selected() { "selected" } else { "" }),
                                                     class: if selected() { "list-button selected" } else { "list-button" },
                                                     onclick: move |_| {
                                                         trace!("Selecting ship {}", ship.name);

@@ -98,8 +98,7 @@ fn load_fleets_rec(
                 output,
                 fleet_cache,
             )?;
-        }
-        else if file_type.is_file() {
+        } else if file_type.is_file() {
             let path = child.path();
             for pattern in excluded_patterns {
                 if pattern.matches_path(path.as_path()) {

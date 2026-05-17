@@ -7,22 +7,24 @@ use color_eyre::Result;
 use dioxus::prelude::*;
 use tracing::{info, warn, Level};
 use tracing_subscriber::{
-    EnvFilter, Registry, Layer, fmt::{self, writer::MakeWriterExt}, layer::SubscriberExt
+    fmt::{self, writer::MakeWriterExt},
+    layer::SubscriberExt,
+    EnvFilter, Layer, Registry,
 };
 
 use crate::ui::fleet_list::FleetList;
 
+mod config;
+mod dressings;
 mod fleet_data;
 mod fleet_edit;
 mod fleet_io;
 mod load_fleets;
-mod tags;
-mod config;
-mod dressings;
+mod search;
 mod spawn_async;
+mod tags;
 mod test;
 mod ui;
-mod search;
 
 #[allow(unused)]
 mod components;
@@ -70,15 +72,22 @@ fn main() -> Result<()> {
             .with(
                 fmt::Layer::new()
                     .with_target(true)
-                    .with_span_events(tracing_subscriber::fmt::format::FmtSpan::NONE)
-                    .with_filter(EnvFilter::new("info"))
+                    .with_span_events(
+                        tracing_subscriber::fmt::format::FmtSpan::NONE,
+                    )
+                    .with_filter(EnvFilter::new("info")),
             )
             .with(
                 fmt::Layer::new()
                     .with_writer(file.with_max_level(Level::TRACE))
                     .with_target(true)
-                    .with_span_events(tracing_subscriber::fmt::format::FmtSpan::NONE).with_ansi(false)
-                    .with_filter(EnvFilter::new("trace,warnings=debug,dioxus=debug")),
+                    .with_span_events(
+                        tracing_subscriber::fmt::format::FmtSpan::NONE,
+                    )
+                    .with_ansi(false)
+                    .with_filter(EnvFilter::new(
+                        "trace,warnings=debug,dioxus=debug",
+                    )),
             );
         tracing::subscriber::set_global_default(subscriber).unwrap();
         info!(

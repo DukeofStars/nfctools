@@ -2,13 +2,11 @@ use dioxus::prelude::*;
 use schemas::Ship;
 
 use crate::{
-    components::{
-        dropdown_menu::{
-            DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-            DropdownMenuTrigger,
-        },
+    components::dropdown_menu::{
+        DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+        DropdownMenuTrigger,
     },
-    fleet_edit::{self, EditableHullParams, get_ln_editable_hull_params},
+    fleet_edit::{self, get_ln_editable_hull_params, EditableHullParams},
 };
 
 #[component]
@@ -83,15 +81,13 @@ fn DressingDropdown(
         }
     };
     let dressings = crate::dressings::LN_DRESSINGS
-    .get(&(segment_key, slot))
-    .unwrap();
+        .get(&(segment_key, slot))
+        .unwrap();
 
-    let mut selected_dressing = use_signal(|| {
-        match segment {
-            0 => hull_params.read().bow_dressings[slot] as usize,
-            1 => hull_params.read().core_dressings[slot] as usize,
-            _ => panic!()
-        }
+    let mut selected_dressing = use_signal(|| match segment {
+        0 => hull_params.read().bow_dressings[slot] as usize,
+        1 => hull_params.read().core_dressings[slot] as usize,
+        _ => panic!(),
     });
 
     // This can occur when a segment changes type but it has dressings set, so we just reset the dressing to 0.
@@ -110,7 +106,7 @@ fn DressingDropdown(
         match segment {
             0 => hull_params.write().bow_dressings[slot] = idx,
             1 => hull_params.write().core_dressings[slot] = idx,
-            _ => panic!()
+            _ => panic!(),
         }
     });
 
@@ -172,7 +168,7 @@ fn SegmentTypeDropdown(
             0 => hull_params.write().bow_type = segment_type,
             1 => hull_params.write().core_type = segment_type,
             2 => hull_params.write().stern_type = segment_type,
-            _ => panic!()
+            _ => panic!(),
         }
     });
     rsx! {
@@ -224,7 +220,8 @@ fn ShipConfigTable(
     let mut hull_params = use_signal(|| hull_params);
 
     use_effect(move || {
-        hull_params.write().superstructure_loc = selected_bridge_loc.read().clone();
+        hull_params.write().superstructure_loc =
+            selected_bridge_loc.read().clone();
     });
 
     use_effect(move || {
@@ -236,7 +233,6 @@ fn ShipConfigTable(
             fleet_edit::set_ln_hull_config(ship, hull_params.clone());
         }
     });
-
 
     rsx! {
         table { style: "table-layout: fixed;",
