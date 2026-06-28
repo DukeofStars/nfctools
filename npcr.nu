@@ -25,10 +25,6 @@ def serve [] {
     dx serve
 }
 
-def "test fleets" [] {
-    cargo run -- --test-fleets
-}
-
 # Create a timestamp file before running cargo commands to remove all build artifacts that aren't used in them
 def "sweep stamp" [] {
     cargo sweep -s

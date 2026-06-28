@@ -21,6 +21,10 @@ pub struct Menubars {
     tools_menu: Submenu,
     tools_scramble: MenuItem,
     tools_winpred: MenuItem,
+
+    // Help
+    help_menu: Submenu,
+    help_open_log: MenuItem,
 }
 
 impl Menubars {
@@ -39,10 +43,15 @@ impl Menubars {
         let tools_scramble =
             MenuItem::with_id("tools-scramble", "Scramble Fleet", false, None);
         let tools_winpred =
-            MenuItem::with_id("tools-winpred", "Win Predictor", false, None);
+            MenuItem::with_id("tools-winpred", "Win Predictor", true, None);
         tools_menu
             .append_items(&[&tools_scramble, &tools_winpred])
             .unwrap();
+
+        let help_menu = Submenu::new("Help", true);
+        let help_open_log =
+            MenuItem::with_id("help-open-log", "Open Log File", true, None);
+        help_menu.append_items(&[&help_open_log]).unwrap();
 
         Menubars {
             fleets_menu,
@@ -52,6 +61,8 @@ impl Menubars {
             tools_menu,
             tools_scramble,
             tools_winpred,
+            help_menu,
+            help_open_log,
         }
     }
 
@@ -60,6 +71,7 @@ impl Menubars {
             &self.fleets_menu,
             &self.edit_menu,
             &self.tools_menu,
+            &self.help_menu,
         ])
         .unwrap();
     }

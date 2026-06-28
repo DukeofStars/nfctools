@@ -1,10 +1,14 @@
-use color_eyre::Result;
+use tracing::{error, info};
 
-use crate::{config::load_app_config, load_fleets};
+use crate::load_fleets;
 
-pub fn test_load_fleets() -> Result<()> {
-    load_app_config()?;
-    let _ = load_fleets::load_fleets(false);
-
-    Ok(())
+pub fn test_fleets() {
+    match load_fleets::load_fleets(false) {
+        Ok(_) => {
+            info!("All fleets successfully loaded");
+        }
+        Err(err) => {
+            error!(?err, "Fleet test failed");
+        }
+    }
 }

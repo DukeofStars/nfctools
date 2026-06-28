@@ -1,6 +1,6 @@
 #![cfg_attr(feature = "bundle", windows_subsystem = "windows")]
 
-use std::fs::OpenOptions;
+use std::{fs::OpenOptions, path::PathBuf};
 
 use clap::{Parser, ValueEnum};
 use color_eyre::Result;
@@ -8,6 +8,7 @@ use dioxus::{
     desktop::{muda::Menu, Config, WindowBuilder},
     prelude::*,
 };
+use lazy_static::lazy_static;
 use tracing::{info, warn, Level};
 use tracing_subscriber::{
     fmt::{self, writer::MakeWriterExt},
@@ -47,8 +48,6 @@ struct Cli {
     #[clap(short, long)]
     #[clap(default_value = "debug")]
     logging_level: LoggingLevel,
-    #[clap(long)]
-    test_fleets: bool,
 }
 #[derive(Clone, ValueEnum)]
 enum LoggingLevel {
@@ -58,22 +57,27 @@ enum LoggingLevel {
     None,
 }
 
+lazy_static! {
+    static ref LOG_FILE_PATH: Option<PathBuf> = std::env::current_exe()
+        .map(|p| { p.parent().map(|p| { p.join("log.txt") }) })
+        .ok()
+        .flatten();
+}
+
 fn main() -> Result<()> {
     color_eyre::install()?;
 
     let cli = Cli::parse();
 
     // Initialise logging
-    let log_file = std::env::current_exe().map(|p| {
-        p.parent().map(|p| {
-            OpenOptions::new()
-                .create(true)
-                .truncate(true)
-                .write(true)
-                .open(p.join("log.txt"))
-        })
+    let log_file = LOG_FILE_PATH.as_ref().map(|p| {
+        OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(p)
     });
-    if let Ok(Some(Ok(file))) = log_file {
+    if let Some(Ok(file)) = log_file {
         let subscriber = Registry::default()
             .with(
                 fmt::Layer::new()
@@ -119,11 +123,6 @@ fn main() -> Result<()> {
         tracing::subscriber::set_global_default(subscriber).unwrap();
     }
 
-    if cli.test_fleets {
-        test::test_load_fleets()?;
-        return Ok(());
-    }
-
     // Launch app
 
     info!("Starting NebTools");
@@ -139,7 +138,7 @@ fn main() -> Result<()> {
         .with_cfg(desktop! {
             Config::new().with_menu(Some(menu)).with_window(
                 WindowBuilder::new()
-                    .with_title(format!("NebTools v{}", env!("CARGO_PKG_VERSION")))
+                    .with_title(format!("NebTools v{} @dukeofstars", env!("CARGO_PKG_VERSION")))
             )
         })
         .launch(App);

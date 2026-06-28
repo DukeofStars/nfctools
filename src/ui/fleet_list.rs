@@ -1,7 +1,10 @@
 use std::ops::DerefMut;
 use std::time::Duration;
 
-use dioxus::{desktop::use_muda_event_handler, prelude::*};
+use dioxus::{
+    desktop::{use_muda_event_handler, Config},
+    prelude::*,
+};
 use futures::StreamExt;
 use palette::{
     encoding::{self, Srgb},
@@ -73,6 +76,25 @@ pub fn FleetList() -> Element {
                         fleets.set(Some(new_fleets));
                     }
                     "tools-scramble" => todo!(),
+                    "tools-winpred" => {
+                        let dom = VirtualDom::new(
+                            crate::ui::win_predictor::WinPredictor,
+                        );
+                        let config = Config::new();
+                        dioxus::desktop::window().new_window(dom, config);
+                    }
+                    "help-open-log" => {
+                        if let Some(path) = crate::LOG_FILE_PATH.clone() {
+                            let path = path.parent().unwrap();
+                            let mut cmd = std::process::Command::new("cmd.exe");
+                            cmd.args(["/c", "start", ""]);
+                            cmd.arg(path);
+                            let _ = cmd.spawn();
+                        } else {
+                            // TODO: Error window
+                            warn!("Log file path does not exist")
+                        }
+                    }
                     _ => {}
                 }
             }
