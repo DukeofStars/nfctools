@@ -2,7 +2,7 @@ use std::ops::DerefMut;
 use std::time::Duration;
 
 use dioxus::{
-    desktop::{use_muda_event_handler, Config},
+    desktop::{muda::Menu, use_muda_event_handler, Config, WindowBuilder},
     prelude::*,
 };
 use futures::StreamExt;
@@ -80,7 +80,13 @@ pub fn FleetList() -> Element {
                         let dom = VirtualDom::new(
                             crate::ui::win_predictor::WinPredictor,
                         );
-                        let config = Config::new();
+                        let config = Config::new().with_menu(None).with_window(
+                            WindowBuilder::new().with_title(format!(
+                                "NebTools v{} @dukeofstars",
+                                env!("CARGO_PKG_VERSION")
+                            )),
+                        );
+
                         dioxus::desktop::window().new_window(dom, config);
                     }
                     "help-open-log" => {

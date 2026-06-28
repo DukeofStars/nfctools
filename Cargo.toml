@@ -34,3 +34,4 @@ palette = { version = "0.7.6", features = ["serde", "std"] }
 serde_with = "3.19.0"
 tokio = { version = "1.52.3", features = ["time"] }
 rodio = "0.22.2"
+dioxus-charts = "0.4.0"

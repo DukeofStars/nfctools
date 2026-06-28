@@ -79,6 +79,7 @@ input {
 .button:hover {
     color: rgba(148, 59, 15, 0.9);
     scale: 1.02;
+    cursor: pointer;
 }
 
 .button:active {
@@ -92,4 +93,62 @@ input {
     color: rgba(148, 59, 15, 0.9) !important;
     scale: 1.02;
     text-decoration: line-through;
+}
+
+.cap-slider {
+    cursor: pointer;
+    accent-color: var(--highlight);
+}
+
+#cap-button-container {
+    margin: auto;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 10px;
+}
+
+.cap-button {
+    border-radius: 100%;
+    height: 50px;
+    width: 50px;
+    border: 1px solid var(--border);
+    animation: pop-in 0.18s ease-out both;
+}
+
+.team1 {
+    background-color: red;
+}
+.team2 {
+    background-color: blue;    
+}
+.team-neutral {
+    background-color: grey;
+}
+
+@keyframes pop-in {
+    from {
+        opacity: 0;
+        transform: scale(0.85) translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.dx-grid-labels {
+    fill: var(--text);
+    font-size: 5px;
+}
+
+.dx-line-0 {
+    & path {
+        stroke: red;
+    }
+}
+.dx-line-1 {
+    & path {
+        stroke: blue;
+    }
 }

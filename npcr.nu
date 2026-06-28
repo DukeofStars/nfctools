@@ -1,8 +1,8 @@
 $env.RUSTC_WRAPPER = ""
 
-def build [] {
+def build [--bundled] {
     sweep stamp
-    dx build
+    dx build ...(if $bundled {[--features bundle]} else {[]})
 }
 
 def bundle [] {
@@ -13,8 +13,8 @@ def check [] {
     cargo check
 }
 
-def run [] {
-    dx run
+def run [--bundled] {
+    dx run ...(if $bundled {[--features bundle]} else {[]})
 }
 
 def dev [] {
