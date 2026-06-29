@@ -8,6 +8,13 @@
     --highlight: rgb(148, 59, 15);
 }
 
+html, body, #main {
+    overflow: hidden;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 .spinner {
     display: inline-block;
     width: 14px;

@@ -308,10 +308,12 @@ pub fn FleetList() -> Element {
             }
         }
         div {
-            display: "grid",
-            grid_template_columns: "24% 1% 50% 1% 24%",
-            overflow: "hidden",
-            height: "97vh",
+            style: "
+            display: grid;
+            grid-template-columns: 24% 1% 50% 1% 24%;
+            overflow: hidden;
+            height: 100vh;",
+            class: "hide-scroll",
             // Fleets List
             div { display: "flex", flex_direction: "column", min_height: 0,
                 h2 { margin: 0, padding: 0, flex_shrink: 0, "Fleets" }
@@ -405,11 +407,7 @@ pub fn FleetList() -> Element {
             // Fleet editor (middle)
             ShipEditor { ship: selected_ship }
             div {}
-            div {
-                display: "flex",
-                flex_direction: "column",
-                justify_content: "start",
-                overflow: "hidden",
+            div { display: "flex", flex_direction: "column", min_height: 0,
                 div {
                     {
                         match selected_fleet.read().as_ref() {
@@ -434,11 +432,10 @@ pub fn FleetList() -> Element {
                         }
                     }
                 }
-                div {
+                div { style: "flex: 1; min-height: 0; display: flex; flex-direction: column;",
                     h3 { "Ships" }
                     div {
-                        overflow_y: "scroll",
-                        display: "grid",
+                        style: "flex: 1; overflow-y: auto; min-height: 0; display: grid; align-content: start;",
                         class: "hide-scroll",
                         if loading_fleet() {
                             "Loading fleet..."
