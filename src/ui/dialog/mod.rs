@@ -18,11 +18,6 @@ pub fn DialogWrapper(signal: Signal<bool>, children: Element, non_exitable: Opti
                     signal.set(false);
                 }
             },
-            onclick: move |_| {
-                if !non_exitable {
-                    signal.set(false);
-                }
-            },
             tabindex: "0",
 
             div {

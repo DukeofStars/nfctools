@@ -50,6 +50,8 @@ pub fn MergeFleetsDialog(
                             .save_file()
                             .await else {
                             warn!("Fleet merge aborted; no path selected");
+                            running.set(false);
+                            signal.set(false);
                             return;
                         };
                         info!("Merging {} fleets into {}", fleet_datas.len(), file.path().display());

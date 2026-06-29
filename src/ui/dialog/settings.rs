@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use dioxus::prelude::*;
 use dioxus_primitives::checkbox::CheckboxState;
+use rfd::AsyncFileDialog;
 
 use crate::{components::checkbox::Checkbox, config::APP_CONFIG};
 
@@ -23,10 +24,23 @@ pub fn SettingsDialog(signal: Signal<bool>) -> Element {
                 display: grid;
                 grid-template-columns: 30% 70%",
                     p { "Saves Directory" }
-                    input {
-                        width: "100%",
-                        value: "{config.read().saves_dir.display()}",
-                        oninput: move |evt| { config.write().saves_dir = PathBuf::from(evt.value()) },
+                    div { style: "display: flex; flex-direction: row",
+                        input {
+                            flex: "1",
+                            width: "100%",
+                            value: "{config.read().saves_dir.display()}",
+                            oninput: move |evt| { config.write().saves_dir = PathBuf::from(evt.value()) },
+                        }
+                        button {
+                            class: "button",
+                            onclick: move |_| {
+                                spawn(async move {
+                                    let Some(path) = AsyncFileDialog::new().pick_folder().await else { return };
+                                    config.write().saves_dir = path.path().to_path_buf();
+                                });
+                            },
+                            "..."
+                        }
                     }
                     p { "Sound Effects" }
                     div { style: "display: flex; flex-direction: row; justify-content: center;",
