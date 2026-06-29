@@ -519,7 +519,28 @@ pub fn FleetList() -> Element {
                                                 .map(|x| x.1)
                                                 .unwrap_or_default()
                                         },
-                                        oninput: move |evt| { description.set(evt.value()) },
+                                        oninput: move |evt| {
+                                            description
+                                                .set(
+                                                    format!(
+                                                        "Tags: {}\n{}",
+                                                        tags
+                                                            .iter()
+                                                            .map(|tag| {
+                                                                format!(
+                                                                    "<color=#{:02x}{:02x}{:02x}>{}</color>",
+                                                                    tag.color.red,
+                                                                    tag.color.green,
+                                                                    tag.color.blue,
+                                                                    tag.name,
+                                                                )
+                                                            })
+                                                            .collect::<Vec<_>>()
+                                                            .join(" "),
+                                                        evt.value(),
+                                                    ),
+                                                )
+                                        },
                                     }
                                 }
                             },
