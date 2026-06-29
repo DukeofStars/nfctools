@@ -41,7 +41,7 @@ pub fn FleetList() -> Element {
         spawn_async(load_app_config).await.unwrap();
         spawn_async(crate::tags::init_tags).await;
         // Then load fleets (load_fleets requires APP_CONFIG to be set)
-        spawn_async(|| load_fleets::load_fleets(true)).await
+        spawn_async(|| load_fleets::load_fleets(None)).await
     });
 
     let mut selected_fleet_data = use_signal(|| None::<FleetData>);
@@ -113,9 +113,19 @@ pub fn FleetList() -> Element {
                         selected_ship.set(None);
                         selected_ship_idx.set(None);
                         let new_fleets =
-                            spawn_async(|| load_fleets::load_fleets(false))
+                            spawn_async(|| load_fleets::load_fleets(None))
                                 .await;
                         fleets.set(Some(new_fleets));
+                        show_spinner_dialog.set(false);
+                    }
+                    "fleets-clear-cache" => {
+                        info!("Clearing fleet cache");
+                        show_spinner!("Clearing fleet cache");
+                        let cache_path = crate::config::APP_CONFIG.get().unwrap().lock().unwrap().cache_dir.join("fleets_data.bin");
+                        if let Err(err) = std::fs::remove_file(&cache_path) {
+                            show_spinner_dialog.set(false);
+                            error_popup!("Failed to clear fleet cache", format!("{:?}", err), ErrorType::Fatal);
+                        }
                         show_spinner_dialog.set(false);
                     }
                     "edit-preferences" => {

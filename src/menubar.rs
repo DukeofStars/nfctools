@@ -12,6 +12,7 @@ pub struct Menubars {
     // Fleets
     pub fleets_menu: Submenu,
     pub fleets_reload: MenuItem,
+    pub fleets_clear_cache: MenuItem,
 
     // Edit
     pub edit_preferences: MenuItem,
@@ -32,7 +33,10 @@ impl Menubars {
         let fleets_menu = Submenu::new("Fleets", true);
         let fleets_reload =
             MenuItem::with_id("fleets-reload", "Reload Fleets", true, None);
-        fleets_menu.append_items(&[&fleets_reload]).unwrap();
+        let fleets_clear_cache =
+            MenuItem::with_id("fleets-clear-cache", "Clear Fleet Cache", true, None);
+
+        fleets_menu.append_items(&[&fleets_reload, &fleets_clear_cache]).unwrap();
 
         let edit_menu = Submenu::new("Edit", true);
         let edit_preferences =
@@ -56,6 +60,7 @@ impl Menubars {
         Menubars {
             fleets_menu,
             fleets_reload,
+            fleets_clear_cache,
             edit_menu,
             edit_preferences,
             tools_menu,

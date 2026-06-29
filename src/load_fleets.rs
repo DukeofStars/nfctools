@@ -16,10 +16,12 @@ use tracing::{debug, info, trace, warn};
 
 use crate::{config::APP_CONFIG, fleet_data::FleetData, fleet_io::read_fleet};
 
-pub fn load_fleets(use_cache: bool) -> Result<Vec<FleetData>> {
+pub fn load_fleets(use_cache: Option<bool>) -> Result<Vec<FleetData>> {
     let Some(Ok(app_config)) = APP_CONFIG.get().map(|m| m.lock()) else {
         bail!("App configuration not yet loaded");
     };
+
+    let use_cache = if let Some(use_cache) = use_cache { use_cache } else { app_config.use_fleet_cache };
 
     let path = &app_config.saves_dir.join("Fleets");
     let excluded_patterns = app_config

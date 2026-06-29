@@ -21,6 +21,8 @@ pub struct AppConfig {
     pub cache_dir: PathBuf,
     #[serde(default = "default_true")]
     pub sound_effects: bool,
+    #[serde(default =  "default_true")]
+    pub use_fleet_cache: bool,
 }
 
 pub fn default_true() -> bool {

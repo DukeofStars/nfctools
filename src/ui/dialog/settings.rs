@@ -56,6 +56,19 @@ pub fn SettingsDialog(signal: Signal<bool>) -> Element {
                             },
                         }
                     }
+                    p { "Use cache for fleets" }
+                    div { style: "display: flex; flex-direction: row; justify-content: center;",
+                        Checkbox {
+                            checked: if config.read().use_fleet_cache { CheckboxState::Checked } else { CheckboxState::Unchecked },
+                            on_checked_change: move |checked| {
+                                match checked {
+                                    CheckboxState::Checked => config.write().use_fleet_cache = true,
+                                    CheckboxState::Indeterminate => {}
+                                    CheckboxState::Unchecked => config.write().use_fleet_cache = false,
+                                }
+                            },
+                        }
+                    }
                 }
                 div { style: "margin-top: 10px; display: flex; flex-direction: column; width: 100%;",
                     div { style: "display: flex; flex-direction: row; width: 100%; justify-content: space-between;",
