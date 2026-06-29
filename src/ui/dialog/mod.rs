@@ -1,6 +1,7 @@
 use dioxus::{prelude::*};
 
 pub mod merge_fleets;
+pub mod error;
 
 #[component]
 pub fn DialogWrapper(signal: Signal<bool>, children: Element) -> Element {

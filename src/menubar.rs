@@ -10,22 +10,22 @@ thread_local! {
 #[derive(Clone)]
 pub struct Menubars {
     // Fleets
-    fleets_menu: Submenu,
-    fleets_reload: MenuItem,
+    pub fleets_menu: Submenu,
+    pub fleets_reload: MenuItem,
 
     // Edit
-    edit_preferences: MenuItem,
-    edit_menu: Submenu,
+    pub edit_preferences: MenuItem,
+    pub edit_menu: Submenu,
 
     // Tools
-    tools_menu: Submenu,
-    tools_scramble: MenuItem,
-    tools_winpred: MenuItem,
-    tools_merge: MenuItem,
+    pub tools_menu: Submenu,
+    pub tools_scramble: MenuItem,
+    pub tools_winpred: MenuItem,
+    pub tools_merge: MenuItem,
 
     // Help
-    help_menu: Submenu,
-    help_open_log: MenuItem,
+    pub help_menu: Submenu,
+    pub help_open_log: MenuItem,
 }
 
 impl Menubars {
@@ -77,14 +77,5 @@ impl Menubars {
             &self.help_menu,
         ])
         .unwrap();
-    }
-
-    pub fn enable_scramble(&self) {
-        // Scramble unimplemented
-        // self.tools_scramble.set_enabled(true);
-    }
-
-    pub fn disable_scramble(&self) {
-        self.tools_scramble.set_enabled(false);
     }
 }

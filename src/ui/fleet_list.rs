@@ -22,7 +22,7 @@ use crate::{
     load_fleets,
     spawn_async::spawn_async,
     tags::{Color, TAGS_REPO, Tag},
-    ui::{dialog::merge_fleets::MergeFleetsDialog, dialog::DialogWrapper, fleet_editor::ShipEditor},
+    ui::{dialog::{DialogWrapper, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog}, fleet_editor::ShipEditor},
 };
 
 #[component]
@@ -61,6 +61,11 @@ pub fn FleetList() -> Element {
 
     let mut merge_fleets_dialog_open = use_signal(|| false);
 
+    let mut show_error_dialog = use_signal(|| false);
+    let mut err_title = use_signal(|| "");
+    let mut err_message = use_signal(|| "");
+    let mut err_type = use_signal(|| ErrorType::User);
+
     let menu_handler =
         use_coroutine(move |mut rx: UnboundedReceiver<String>| async move {
             while let Some(action) = rx.next().await {
@@ -92,7 +97,14 @@ pub fn FleetList() -> Element {
                         dioxus::desktop::window().new_window(dom, config);
                     }
                     "tools-merge" => {
+                        if !selected_fleet_idx.read().is_some() {
+                            err_title.set("No fleet selected");
+                            err_message.set("Cannot merge 0 fleets");
+                            err_type.set(ErrorType::User);
+                            show_error_dialog.set(true);
+                        } else {
                         merge_fleets_dialog_open.set(true);
+                        }
                     }
                     "help-open-log" => {
                         if let Some(path) = crate::LOG_FILE_PATH.clone() {
@@ -102,7 +114,10 @@ pub fn FleetList() -> Element {
                             cmd.arg(path);
                             let _ = cmd.spawn();
                         } else {
-                            // TODO: Error window
+                            err_title.set("Log file does not exist");
+                            err_message.set("");
+                            err_type.set(ErrorType::Warn);
+                            show_error_dialog.set(true);
                             warn!("Log file path does not exist")
                         }
                     }
@@ -173,7 +188,8 @@ pub fn FleetList() -> Element {
             loading_fleet.set(true);
             crate::menubar::MENUBARS.with_borrow(|menubars| {
                 if let Some(menubars) = menubars.as_ref() {
-                    menubars.enable_scramble();
+                    menubars.tools_scramble.set_enabled(true);
+                    menubars.tools_merge.set_enabled(true);
                 }
             });
             selected_ship.set(None);
@@ -196,7 +212,8 @@ pub fn FleetList() -> Element {
         } else {
             crate::menubar::MENUBARS.with_borrow(|menubars| {
                 if let Some(menubars) = menubars.as_ref() {
-                    menubars.disable_scramble();
+                    menubars.tools_scramble.set_enabled(false);
+                    menubars.tools_merge.set_enabled(false);
                 }
             });
             None
@@ -302,6 +319,18 @@ pub fn FleetList() -> Element {
                     rsx! {
                         MergeFleetsDialog { fleets, signal: merge_fleets_dialog_open }
                     }
+                }
+            } else {
+
+            }
+        }
+        DialogWrapper { signal: show_error_dialog,
+            if show_error_dialog() {
+                ErrorDialog {
+                    signal: show_error_dialog,
+                    title: err_title().to_string(),
+                    message: err_message().to_string(),
+                    error_type: err_type(),
                 }
             } else {
 
