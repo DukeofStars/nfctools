@@ -3,6 +3,7 @@ use dioxus::{prelude::*};
 pub mod merge_fleets;
 pub mod error;
 pub mod spinner;
+pub mod settings;
 
 #[component]
 pub fn DialogWrapper(signal: Signal<bool>, children: Element, non_exitable: Option<bool>) -> Element {

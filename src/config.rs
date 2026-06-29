@@ -1,17 +1,17 @@
-use std::{path::PathBuf, sync::OnceLock};
+use std::{sync::Mutex, path::PathBuf, sync::OnceLock};
 
 use color_eyre::{
     eyre::{eyre, Context},
     Result,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tracing::{info, trace, warn};
 
 use crate::NEBULOUS_GAME_ID_STEAM;
 
-pub static APP_CONFIG: OnceLock<AppConfig> = OnceLock::new();
+pub static APP_CONFIG: OnceLock<Mutex<AppConfig>> = OnceLock::new();
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct AppConfig {
     #[serde(default = "default_saves_dir")]
     pub saves_dir: PathBuf,
@@ -45,8 +45,24 @@ pub fn load_app_config() -> Result<()> {
         toml::from_str(&config_file).wrap_err("Failed to parse config file")?;
 
     APP_CONFIG
-        .set(app_config)
+        .set(Mutex::new(app_config))
         .expect("load_app_config called twice");
+
+    Ok(())
+}
+
+pub fn save_app_config() -> Result<()> {
+    let config_path = directories::ProjectDirs::from("", "", "NebTools")
+        .ok_or(
+            eyre!("Failed to retrieve config dir")
+                .wrap_err("OS not recognised?"),
+        )?
+        .preference_dir()
+        .join("config.toml");
+    trace!("Saving config to '{}'", config_path.display());
+    
+    let config = APP_CONFIG.get().unwrap().lock().unwrap();
+    std::fs::write(&config_path, toml::to_string_pretty(&*config).wrap_err("Failed to serialize config")?).wrap_err("Failed to write config file")?;
 
     Ok(())
 }

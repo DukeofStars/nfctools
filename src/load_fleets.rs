@@ -17,7 +17,7 @@ use tracing::{debug, info, trace, warn};
 use crate::{config::APP_CONFIG, fleet_data::FleetData, fleet_io::read_fleet};
 
 pub fn load_fleets(use_cache: bool) -> Result<Vec<FleetData>> {
-    let Some(app_config) = APP_CONFIG.get() else {
+    let Some(Ok(app_config)) = APP_CONFIG.get().map(|m| m.lock()) else {
         bail!("App configuration not yet loaded");
     };
 

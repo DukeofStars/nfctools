@@ -1,7 +1,6 @@
 use std::ops::DerefMut;
 use std::time::Duration;
 
-use color_eyre::eyre::eyre;
 use dioxus::{
     desktop::{use_muda_event_handler, Config, WindowBuilder},
     prelude::*,
@@ -23,7 +22,7 @@ use crate::{
     load_fleets,
     spawn_async::spawn_async,
     tags::{Color, TAGS_REPO, Tag},
-    ui::{dialog::{DialogWrapper, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog, spinner::SpinnerDialog}, fleet_editor::ShipEditor},
+    ui::{dialog::{DialogWrapper, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog, settings::SettingsDialog, spinner::SpinnerDialog}, fleet_editor::ShipEditor},
 };
 
 #[component]
@@ -92,6 +91,8 @@ pub fn FleetList() -> Element {
         }}
     }
 
+    let mut show_settings_dialog = use_signal(|| false);
+
     let menu_handler =
         use_coroutine(move |mut rx: UnboundedReceiver<String>| async move {
             while let Some(action) = rx.next().await {
@@ -111,20 +112,21 @@ pub fn FleetList() -> Element {
                         show_spinner_dialog.set(false);
                     }
                     "edit-preferences" => {
-                        info!("Opening settings file");
-                        show_spinner!("Opening settings file");
-                        let config_path = directories::ProjectDirs::from("", "", "NebTools")
-                            .ok_or(
-                                eyre!("Failed to retrieve config dir")
-                                    .wrap_err("OS not recognised?"),
-                            ).unwrap()
-                            .preference_dir()
-                            .join("config.toml");
-                        let mut cmd = std::process::Command::new("cmd.exe");
-                        cmd.args(["/c", "start", ""]);
-                        cmd.arg(config_path);
-                        let _ = cmd.spawn();
-                        show_spinner_dialog.set(false);
+                        show_settings_dialog.set(true);
+                        // info!("Opening settings file");
+                        // show_spinner!("Opening settings file");
+                        // let config_path = directories::ProjectDirs::from("", "", "NebTools")
+                        //     .ok_or(
+                        //         eyre!("Failed to retrieve config dir")
+                        //             .wrap_err("OS not recognised?"),
+                        //     ).unwrap()
+                        //     .preference_dir()
+                        //     .join("config.toml");
+                        // let mut cmd = std::process::Command::new("cmd.exe");
+                        // cmd.args(["/c", "start", ""]);
+                        // cmd.arg(config_path);
+                        // let _ = cmd.spawn();
+                        // show_spinner_dialog.set(false);
                     }
                     "tools-scramble" => todo!(),
                     "tools-winpred" => {
@@ -341,6 +343,13 @@ pub fn FleetList() -> Element {
     });
 
     rsx! {
+        DialogWrapper { signal: show_settings_dialog,
+            if show_settings_dialog() {
+                SettingsDialog { signal: show_settings_dialog }
+            } else {
+
+            }
+        }
         DialogWrapper { signal: show_spinner_dialog, non_exitable: true,
             if show_spinner_dialog() {
                 SpinnerDialog { title: spinner_title() }

@@ -4,3 +4,4 @@ pub mod checkbox;
 pub mod color_picker;
 pub mod dropdown_menu;
 pub mod radio_group;
+pub mod switch;

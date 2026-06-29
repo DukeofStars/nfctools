@@ -42,6 +42,8 @@ pub fn MergeFleetsDialog(
                                 crate::config::APP_CONFIG
                                     .get()
                                     .expect("App configuration not loaded")
+                                    .lock()
+                                    .unwrap()
                                     .saves_dir
                                     .join("Fleets"),
                             )
