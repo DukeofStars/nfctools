@@ -22,7 +22,7 @@ pub struct Fleet {
     #[serde(rename = "FactionKey")]
     pub faction_key: String,
     #[serde(rename = "SortOverrideOrder")]
-    pub sort_override_order: SortOverrideOrder,
+    pub sort_override_order: Option<SortOverrideOrder>,
     #[serde(rename = "Ships")]
     pub ships: Option<Ships>,
     #[serde(rename = "MissileTypes")]
@@ -221,7 +221,7 @@ pub struct Ship {
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "SaveID")]
-    pub save_id: SaveId,
+    pub save_id: Option<SaveId>,
     #[serde(rename = "Key")]
     pub key: String,
     #[serde(rename = "Name")]
@@ -403,6 +403,8 @@ pub struct HullSocket {
 pub struct ComponentData {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
+    #[serde(rename(serialize = "@xmlns:p2", deserialize = "@xmlns:p2"))]
+    pub xmlns_p2: String,
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "MissileLoad")]
@@ -574,6 +576,11 @@ pub struct MissileTemplate {
     pub stripe_color: StripeColor,
     #[serde(rename = "Sockets")]
     pub sockets: Sockets,
+    #[serde(rename = "SaveKey")]
+    pub save_key: Option<String>,
+    #[serde(rename = "ModDependencies")]
+    pub mod_dependencies: Option<String>,
+
 }
 
 #[skip_serializing_none]
@@ -628,6 +635,8 @@ pub struct MissileSocket {
 pub struct InstalledComponent {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: Option<String>,
+    #[serde(rename(serialize = "@xmlns:p2", deserialize = "@xmlns:p2"))]
+    pub xmlns_p2: Option<String>,
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "DetectPDTargets")]

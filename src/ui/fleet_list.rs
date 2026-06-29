@@ -2,7 +2,7 @@ use std::ops::DerefMut;
 use std::time::Duration;
 
 use dioxus::{
-    desktop::{muda::Menu, use_muda_event_handler, Config, WindowBuilder},
+    desktop::{use_muda_event_handler, Config, WindowBuilder},
     prelude::*,
 };
 use futures::StreamExt;
@@ -304,9 +304,9 @@ pub fn FleetList() -> Element {
                                     rsx! {
                                         button {
                                             onmouseenter: move |_| {
-                                               if !selected() {
-                                                   AUDIO_HANDLER.play_hover_sound();
-                                               }
+                                                if !selected() {
+                                                    AUDIO_HANDLER.play_hover_sound();
+                                                }
                                             },
                                             padding: 0,
                                             margin: 0,

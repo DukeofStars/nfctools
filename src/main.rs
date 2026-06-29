@@ -29,7 +29,6 @@ mod menubar;
 mod search;
 mod spawn_async;
 mod tags;
-mod test;
 mod ui;
 
 #[allow(unused)]
