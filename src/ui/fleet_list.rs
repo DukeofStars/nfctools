@@ -62,9 +62,20 @@ pub fn FleetList() -> Element {
     let mut merge_fleets_dialog_open = use_signal(|| false);
 
     let mut show_error_dialog = use_signal(|| false);
-    let mut err_title = use_signal(|| "");
-    let mut err_message = use_signal(|| "");
+    let mut err_title = use_signal(String::new);
+    let mut err_message = use_signal(String::new);
     let mut err_type = use_signal(|| ErrorType::User);
+
+    macro_rules! error_popup {
+        ($title:expr, $msg:expr, $type:expr) => {
+            {
+                err_title.set(String::from($title));
+                err_message.set(String::from($msg));
+                err_type.set($type);
+                show_error_dialog.set(true);
+            }
+        }
+    }
 
     let menu_handler =
         use_coroutine(move |mut rx: UnboundedReceiver<String>| async move {
@@ -98,12 +109,9 @@ pub fn FleetList() -> Element {
                     }
                     "tools-merge" => {
                         if !selected_fleet_idx.read().is_some() {
-                            err_title.set("No fleet selected");
-                            err_message.set("Cannot merge 0 fleets");
-                            err_type.set(ErrorType::User);
-                            show_error_dialog.set(true);
+                            error_popup!("No fleet selected", "Cannot merge 0 fleets", ErrorType::User);
                         } else {
-                        merge_fleets_dialog_open.set(true);
+                            merge_fleets_dialog_open.set(true);
                         }
                     }
                     "help-open-log" => {
@@ -114,10 +122,7 @@ pub fn FleetList() -> Element {
                             cmd.arg(path);
                             let _ = cmd.spawn();
                         } else {
-                            err_title.set("Log file does not exist");
-                            err_message.set("");
-                            err_type.set(ErrorType::Warn);
-                            show_error_dialog.set(true);
+                            error_popup!("Log file does not exist", "", ErrorType::Warn);
                             warn!("Log file path does not exist")
                         }
                     }
@@ -239,8 +244,13 @@ pub fn FleetList() -> Element {
                 .expect("Ship updated without any ship idx being set");
             fleet.ships.as_mut().unwrap().ship.as_mut().unwrap()[ship_idx] =
                 ship.clone();
-            crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet)
-                .expect("Failed to write fleet");
+            match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
+                Ok(_) => {},
+                Err(err) => {
+                    error_popup!("Failed to write fleet file", format!("{:?}", err), ErrorType::Warn);
+                    error!("Failed to write fleet file: {:?}", err);
+                }
+            };
         }
     });
 
@@ -271,8 +281,13 @@ pub fn FleetList() -> Element {
             }
         }
 
-        crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet)
-            .expect("Failed to write fleet");
+        match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
+                Ok(_) => {},
+                Err(err) => {
+                    error_popup!("Failed to write fleet file", format!("{:?}", err), ErrorType::Warn);
+                    error!("Failed to write fleet file: {:?}", err);
+                }
+            };
     });
 
     let mut secondary_selected_fleet_idxs = use_signal(|| Vec::<usize>::new());
@@ -328,8 +343,8 @@ pub fn FleetList() -> Element {
             if show_error_dialog() {
                 ErrorDialog {
                     signal: show_error_dialog,
-                    title: err_title().to_string(),
-                    message: err_message().to_string(),
+                    title: err_title(),
+                    message: err_message(),
                     error_type: err_type(),
                 }
             } else {
