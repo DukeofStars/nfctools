@@ -17,8 +17,8 @@ An all-in-one toolkit for managing and editing Nebulous: Fleet Command fleets.
  - [x] Supports tagging fleets, which are visible in game with colours
  - [x] Search fleets by name, description, or tags
  - [x] Integrated win predictor
+ - [x] Merge fleets together
  - [ ] Edit liner dressings and bridge types
- - [ ] Merge fleets together
  - [ ] Apply updated missile templates to multiple fleets at once
  - [ ] Saving and re-using liner hull config templates
  - [ ] Edit fleet formations geometrically
