@@ -1,6 +1,6 @@
 [package]
 name = "nfctools"
-version = "0.3.0-alpha.d7"
+version = "0.3.0-alpha.d8"
 edition = "2021"
 
 [workspace]
