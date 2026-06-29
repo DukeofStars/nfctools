@@ -96,109 +96,110 @@ fn WinPredictorInner() -> Element {
         }
     });
 
-    rsx! { div {
-        display: "flex",
-        flex_direction: "column",
-        overflow: "hidden",
-        h1 { "Win Predictor" }
-        input {
-            r#type: "range",
-            class: "cap-slider",
-            min: "1",
-            max: "10",
-            value: "{num_caps}",
-            width: "100%",
-            onchange: move |evt| {
-                num_caps.set(evt.value().parse().unwrap())
-            },
-        }
-        div {
-            id: "cap-button-container",
-            for cap in 0usize..num_caps() {
-                {
-                    let char = ALPHABET.chars().nth(cap).unwrap();
-                    rsx! {
-                        button { class: format!("cap-button button {}", cap_status()[cap]),
-                            onclick: move |_| {
-                                cap_status.write()[cap] = match cap_status()[cap] {
-                                    Team::Neutral => Team::Team1,
-                                    Team::Team1 => Team::Team2,
-                                    Team::Team2 => Team::Neutral,
-                                }
-                            },
-                            // Right click to cycle backwards
-                            oncontextmenu: move |evt| {
-                                evt.prevent_default();
-                                cap_status.write()[cap] = match cap_status()[cap] {
-                                    Team::Neutral => Team::Team2,
-                                    Team::Team1 => Team::Neutral,
-                                    Team::Team2 => Team::Team1,
-                                }
-                            },
-                            "{char}",
+    rsx! {
+        div { display: "flex", flex_direction: "column", overflow: "hidden",
+            h1 { "Win Predictor" }
+            input {
+                r#type: "range",
+                class: "cap-slider",
+                min: "1",
+                max: "10",
+                value: "{num_caps}",
+                width: "100%",
+                onchange: move |evt| { num_caps.set(evt.value().parse().unwrap()) },
+            }
+            div { id: "cap-button-container",
+                for cap in 0usize..num_caps() {
+                    {
+                        let char = ALPHABET.chars().nth(cap).unwrap();
+                        rsx! {
+                            button {
+                                class: format!("cap-button button {}", cap_status()[cap]),
+                                onclick: move |_| {
+                                    cap_status.write()[cap] = match cap_status()[cap] {
+                                        Team::Neutral => Team::Team1,
+                                        Team::Team1 => Team::Team2,
+                                        Team::Team2 => Team::Neutral,
+                                    }
+                                },
+                                // Right click to cycle backwards
+                                oncontextmenu: move |evt| {
+                                    evt.prevent_default();
+                                    cap_status.write()[cap] = match cap_status()[cap] {
+                                        Team::Neutral => Team::Team2,
+                                        Team::Team1 => Team::Neutral,
+                                        Team::Team2 => Team::Team1,
+                                    }
+                                },
+                            }
+                            "{char}"
+                        }
+                    }
+                }
+            }
+            div {
+                width: "100%",
+                display: "grid",
+                // flex_grow: 1,
+                overflow: "hidden",
+                grid_template_columns: "60% 40%",
+                onresize: move |evt| {
+                    let rect = evt.data.get_border_box_size().unwrap_or_default();
+                    size.set((rect.width as i32, rect.height as i32));
+                },
+                div {
+                    PointsChart {
+                        // For re-rendering on resize
+                        size: size(),
+                        num_caps: num_caps(),
+                        caps: cap_status(),
+                        team1_points_initial: team1_points(),
+                        team2_points_initial: team2_points(),
+                        max_points: max_points(),
+                    }
+                }
+                div {
+
+                    div {
+                        height: "fit-content",
+                        padding_right: "2px",
+                        display: "grid",
+                        grid_template_columns: "50% 50%",
+                        "Max Points"
+                        input {
+                            value: "1000",
+                            onchange: move |evt| { max_points.set(evt.value().parse().unwrap_or(1000)) },
+                        }
+                        "Team 1 Points"
+                        input {
+                            value: "0",
+                            onchange: move |evt| { team1_points.set(evt.value().parse().unwrap_or_default()) },
+                        }
+                        "Team 2 Points"
+                        input {
+                            value: "0",
+                            onchange: move |evt| { team2_points.set(evt.value().parse().unwrap_or_default()) },
+                        }
+                    }
+                    match winning_team() {
+                        Team::Neutral => "It's a Tie!".to_string(),
+                        Team::Team1 => {
+                            format!(
+                                "Team 1 wins in {winning_ticks} ticks ({} seconds)",
+                                winning_ticks * 10,
+                            )
+                        }
+                        Team::Team2 => {
+                            format!(
+                                "Team 2 wins in {winning_ticks} ticks ({} seconds)",
+                                winning_ticks * 10,
+                            )
                         }
                     }
                 }
             }
         }
-        div {
-            width: "100%",
-            display: "grid",
-            // flex_grow: 1,
-            overflow: "hidden",
-            grid_template_columns: "60% 40%",
-            onresize: move |evt| {
-                let rect = evt.data.get_border_box_size().unwrap_or_default();
-                size.set((rect.width as i32, rect.height as i32));
-            },
-            div {
-                PointsChart {
-                    // For re-rendering on resize
-                    size: size(),
-                    num_caps: num_caps(),
-                    caps: cap_status(),
-                    team1_points_initial: team1_points(),
-                    team2_points_initial: team2_points(),
-                    max_points: max_points(),
-                }
-            }
-            div {
-
-                div {
-                height: "fit-content",
-                padding_right: "2px",
-                display: "grid",
-                grid_template_columns: "50% 50%",
-                "Max Points"
-                input {
-                    value: "1000",
-                    onchange: move |evt| {
-                        max_points.set(evt.value().parse().unwrap_or(1000))
-                    }
-                }
-                "Team 1 Points"
-                input {
-                    value: "0",
-                    onchange: move |evt| {
-                        team1_points.set(evt.value().parse().unwrap_or_default())
-                    }
-                 }
-                 "Team 2 Points"
-                 input {
-                    value: "0",
-                    onchange: move |evt| {
-                        team2_points.set(evt.value().parse().unwrap_or_default())
-                    }
-                }
-                }
-                match winning_team() {
-                    Team::Neutral => "It's a Tie!".to_string(),
-                    Team::Team1 => format!("Team 1 wins in {winning_ticks} ticks ({} seconds)", winning_ticks * 10),
-                    Team::Team2 => format!("Team 2 wins in {winning_ticks} ticks ({} seconds)", winning_ticks * 10)
-                }
-            }
-        }
-    } }
+    }
 }
 
 use dioxus_charts::LineChart;
@@ -246,10 +247,10 @@ fn PointsChart(
             lowest: 0.0,
             highest: max_points as f32,
             series: vec![
-                team1_points,
-                team2_points,
-            ],
-            labels
+                                                                                        team1_points,
+                                                                                        team2_points,
+                                                                                    ],
+            labels,
         }
     }
 }

@@ -1,12 +1,16 @@
-use dioxus::{prelude::*};
+use dioxus::prelude::*;
 
-pub mod merge_fleets;
 pub mod error;
-pub mod spinner;
+pub mod merge_fleets;
 pub mod settings;
+pub mod spinner;
 
 #[component]
-pub fn DialogWrapper(signal: Signal<bool>, children: Element, non_exitable: Option<bool>) -> Element {
+pub fn DialogWrapper(
+    signal: Signal<bool>,
+    children: Element,
+    non_exitable: Option<bool>,
+) -> Element {
     let non_exitable = non_exitable.is_some_and(|x| x);
     rsx! {
         div {

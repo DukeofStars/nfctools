@@ -1,4 +1,4 @@
-use std::{sync::Mutex, path::PathBuf, sync::OnceLock};
+use std::{path::PathBuf, sync::Mutex, sync::OnceLock};
 
 use color_eyre::{
     eyre::{eyre, Context},
@@ -60,9 +60,14 @@ pub fn save_app_config() -> Result<()> {
         .preference_dir()
         .join("config.toml");
     trace!("Saving config to '{}'", config_path.display());
-    
+
     let config = APP_CONFIG.get().unwrap().lock().unwrap();
-    std::fs::write(&config_path, toml::to_string_pretty(&*config).wrap_err("Failed to serialize config")?).wrap_err("Failed to write config file")?;
+    std::fs::write(
+        &config_path,
+        toml::to_string_pretty(&*config)
+            .wrap_err("Failed to serialize config")?,
+    )
+    .wrap_err("Failed to write config file")?;
 
     Ok(())
 }

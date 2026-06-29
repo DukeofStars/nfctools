@@ -21,8 +21,17 @@ use crate::{
     fleet_io::read_fleet,
     load_fleets,
     spawn_async::spawn_async,
-    tags::{Color, TAGS_REPO, Tag},
-    ui::{dialog::{DialogWrapper, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog, settings::SettingsDialog, spinner::SpinnerDialog}, fleet_editor::ShipEditor},
+    tags::{Color, Tag, TAGS_REPO},
+    ui::{
+        dialog::{
+            error::{ErrorDialog, ErrorType},
+            merge_fleets::MergeFleetsDialog,
+            settings::SettingsDialog,
+            spinner::SpinnerDialog,
+            DialogWrapper,
+        },
+        fleet_editor::ShipEditor,
+    },
 };
 
 #[component]
@@ -67,14 +76,12 @@ pub fn FleetList() -> Element {
     let mut err_type = use_signal(|| ErrorType::User);
 
     macro_rules! error_popup {
-        ($title:expr, $msg:expr, $type:expr) => {
-            {
-                err_title.set(String::from($title));
-                err_message.set(String::from($msg));
-                err_type.set($type);
-                show_error_dialog.set(true);
-            }
-        }
+        ($title:expr, $msg:expr, $type:expr) => {{
+            err_title.set(String::from($title));
+            err_message.set(String::from($msg));
+            err_type.set($type);
+            show_error_dialog.set(true);
+        }};
     }
 
     let mut spinner_title = use_signal(String::new);
@@ -88,7 +95,7 @@ pub fn FleetList() -> Element {
         ($title:expr) => {{
             spinner_title.set(String::from($title));
             show_spinner_dialog.set(true);
-        }}
+        }};
     }
 
     let mut show_settings_dialog = use_signal(|| false);
@@ -129,7 +136,11 @@ pub fn FleetList() -> Element {
                     }
                     "tools-merge" => {
                         if !selected_fleet_idx.read().is_some() {
-                            error_popup!("No fleet selected", "Cannot merge 0 fleets", ErrorType::User);
+                            error_popup!(
+                                "No fleet selected",
+                                "Cannot merge 0 fleets",
+                                ErrorType::User
+                            );
                         } else {
                             merge_fleets_dialog_open.set(true);
                         }
@@ -144,7 +155,11 @@ pub fn FleetList() -> Element {
                             let _ = cmd.spawn();
                             show_spinner_dialog.set(false);
                         } else {
-                            error_popup!("Log file does not exist", "", ErrorType::Warn);
+                            error_popup!(
+                                "Log file does not exist",
+                                "",
+                                ErrorType::Warn
+                            );
                             warn!("Log file path does not exist")
                         }
                     }
@@ -265,9 +280,13 @@ pub fn FleetList() -> Element {
             fleet.ships.as_mut().unwrap().ship.as_mut().unwrap()[ship_idx] =
                 ship.clone();
             match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(err) => {
-                    error_popup!("Failed to write fleet file", format!("{:?}", err), ErrorType::Warn);
+                    error_popup!(
+                        "Failed to write fleet file",
+                        format!("{:?}", err),
+                        ErrorType::Warn
+                    );
                     error!("Failed to write fleet file: {:?}", err);
                 }
             };
@@ -302,12 +321,16 @@ pub fn FleetList() -> Element {
         }
 
         match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
-                Ok(_) => {},
-                Err(err) => {
-                    error_popup!("Failed to write fleet file", format!("{:?}", err), ErrorType::Warn);
-                    error!("Failed to write fleet file: {:?}", err);
-                }
-            };
+            Ok(_) => {}
+            Err(err) => {
+                error_popup!(
+                    "Failed to write fleet file",
+                    format!("{:?}", err),
+                    ErrorType::Warn
+                );
+                error!("Failed to write fleet file: {:?}", err);
+            }
+        };
     });
 
     let mut secondary_selected_fleet_idxs = use_signal(|| Vec::<usize>::new());

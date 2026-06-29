@@ -234,13 +234,14 @@ fn ShipConfigTable(
         }
     });
 
-    let mut selected_bridge_type = use_signal(|| match hull_params.read().superstructure_type {
-        0 => "A",
-        1 => "B",
-        2 => "C",
-        3 => "D",
-        _ => panic!(),
-    });
+    let mut selected_bridge_type =
+        use_signal(|| match hull_params.read().superstructure_type {
+            0 => "A",
+            1 => "B",
+            2 => "C",
+            3 => "D",
+            _ => panic!(),
+        });
     use_effect(move || {
         let bridge_type = selected_bridge_type();
         hull_params.write().superstructure_type = match bridge_type {

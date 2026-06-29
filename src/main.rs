@@ -160,6 +160,7 @@ fn App() -> Element {
         document::Style { {include_str!("../assets/dx-components-theme.css")} }
         document::Style { {crate::components::dropdown_menu::STYLE} }
         document::Style { {crate::components::color_picker::STYLE} }
+        document::Style { {crate::components::checkbox::STYLE} }
 
         FleetList {}
     };

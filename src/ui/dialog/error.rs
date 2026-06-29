@@ -9,7 +9,12 @@ pub enum ErrorType {
 }
 
 #[component]
-pub fn ErrorDialog(signal: Signal<bool>, title: String, message: String, error_type: ErrorType) -> Element {
+pub fn ErrorDialog(
+    signal: Signal<bool>,
+    title: String,
+    message: String,
+    error_type: ErrorType,
+) -> Element {
     rsx! {
         match error_type {
             ErrorType::Fatal | ErrorType::Warn => rsx! {

@@ -582,7 +582,6 @@ pub struct MissileTemplate {
     pub save_key: Option<String>,
     #[serde(rename = "ModDependencies")]
     pub mod_dependencies: Option<String>,
-
 }
 
 #[skip_serializing_none]

@@ -25,7 +25,9 @@ impl AudioHandler {
         &self,
         source: rodio::Decoder<std::io::Cursor<&'static [u8]>>,
     ) {
-        if let Some(Ok(config)) = crate::config::APP_CONFIG.get().map(|m| m.lock()) {
+        if let Some(Ok(config)) =
+            crate::config::APP_CONFIG.get().map(|m| m.lock())
+        {
             if !config.sound_effects {
                 return;
             }

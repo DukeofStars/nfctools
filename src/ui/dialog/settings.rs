@@ -8,7 +8,8 @@ use crate::{components::checkbox::Checkbox, config::APP_CONFIG};
 
 #[component]
 pub fn SettingsDialog(signal: Signal<bool>) -> Element {
-    let mut config = use_signal(|| APP_CONFIG.get().unwrap().lock().unwrap().clone());
+    let mut config =
+        use_signal(|| APP_CONFIG.get().unwrap().lock().unwrap().clone());
 
     let mut saving = use_signal(|| false);
 

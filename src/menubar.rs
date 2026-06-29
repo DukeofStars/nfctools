@@ -42,7 +42,8 @@ impl Menubars {
         let tools_menu = Submenu::new("Tools", true);
         let tools_winpred =
             MenuItem::with_id("tools-winpred", "Win Predictor", true, None);
-        let tools_merge = MenuItem::with_id("tools-merge", "Merge Fleets", true, None);
+        let tools_merge =
+            MenuItem::with_id("tools-merge", "Merge Fleets", true, None);
         tools_menu
             .append_items(&[&tools_winpred, &tools_merge])
             .unwrap();

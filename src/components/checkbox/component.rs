@@ -2,10 +2,19 @@ use dioxus::prelude::*;
 use dioxus_primitives::checkbox::{self, CheckboxProps};
 use dioxus_primitives::icon;
 
+#[cfg(feature = "bundle")]
+pub static STYLE: &'static str = include_str!("./style.css");
+
 #[component]
 pub fn Checkbox(props: CheckboxProps) -> Element {
+    #[cfg(not(feature = "bundle"))]
+    let style = rsx! {
+        document::Stylesheet { href: asset!("./style.css") }
+    };
+    #[cfg(feature = "bundle")]
+    let style = rsx! {};
     rsx! {
-        document::Link { rel: "stylesheet", href: asset!("./style.css") }
+        {style}
         checkbox::Checkbox {
             class: "dx-checkbox",
             checked: props.checked,
