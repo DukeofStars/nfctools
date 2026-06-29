@@ -234,10 +234,29 @@ fn ShipConfigTable(
         }
     });
 
+    let mut selected_bridge_type = use_signal(|| match hull_params.read().superstructure_type {
+        0 => "A",
+        1 => "B",
+        2 => "C",
+        3 => "D",
+        _ => panic!(),
+    });
+    use_effect(move || {
+        let bridge_type = selected_bridge_type();
+        hull_params.write().superstructure_type = match bridge_type {
+            "A" => 0,
+            "B" => 1,
+            "C" => 2,
+            "D" => 3,
+            _ => unreachable!(),
+        }
+    });
+
     rsx! {
         table { style: "table-layout: fixed;",
             colgroup {
                 col { style: "width: 0px;" } // row label
+                col { style: "width: 60px;" } // superstructure type column
                 col { style: "" } // Bow
                 col { style: "" } // Core
                 col { style: "" } // Stern
@@ -245,6 +264,7 @@ fn ShipConfigTable(
 
             thead {
                 tr {
+                    th { "" }
                     th { "" }
                     th { "Bow" }
                     th { "Core" }
@@ -255,6 +275,7 @@ fn ShipConfigTable(
             tbody {
                 tr {
                     td { "Segment Type" }
+                    td {}
                     td {
                         SegmentTypeDropdown { segment: 0, hull_params }
                     }
@@ -268,6 +289,40 @@ fn ShipConfigTable(
 
                 tr {
                     td { "Superstructure" }
+                    td {
+                        DropdownMenu {
+                            DropdownMenuTrigger {
+                                "{selected_bridge_type}"
+                                ChevronDown {}
+                            }
+                            DropdownMenuContent {
+                                DropdownMenuItem {
+                                    index: 0usize,
+                                    value: "A",
+                                    on_select: move |value: &'static str| { selected_bridge_type.set(value) },
+                                    "A"
+                                }
+                                DropdownMenuItem {
+                                    index: 1usize,
+                                    value: "B",
+                                    on_select: move |value: &'static str| { selected_bridge_type.set(value) },
+                                    "B"
+                                }
+                                DropdownMenuItem {
+                                    index: 2usize,
+                                    value: "C",
+                                    on_select: move |value: &'static str| { selected_bridge_type.set(value) },
+                                    "C"
+                                }
+                                DropdownMenuItem {
+                                    index: 3usize,
+                                    value: "D",
+                                    on_select: move |value: &'static str| { selected_bridge_type.set(value) },
+                                    "D"
+                                }
+                            }
+                        }
+                    }
                     td {
                         input {
                             r#type: "radio",
@@ -303,6 +358,7 @@ fn ShipConfigTable(
                 for slot in 0..8 {
                     tr {
                         td { "Dressing Slot {slot+1}" }
+                        td {}
                         td {
                             DressingDropdown { segment: 0, slot, hull_params }
                         }
