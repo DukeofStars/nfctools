@@ -1,6 +1,7 @@
 use std::ops::DerefMut;
 use std::time::Duration;
 
+use color_eyre::eyre::eyre;
 use dioxus::{
     desktop::{use_muda_event_handler, Config, WindowBuilder},
     prelude::*,
@@ -22,7 +23,7 @@ use crate::{
     load_fleets,
     spawn_async::spawn_async,
     tags::{Color, TAGS_REPO, Tag},
-    ui::{dialog::{DialogWrapper, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog}, fleet_editor::ShipEditor},
+    ui::{dialog::{DialogWrapper, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog, spinner::SpinnerDialog}, fleet_editor::ShipEditor},
 };
 
 #[component]
@@ -77,12 +78,27 @@ pub fn FleetList() -> Element {
         }
     }
 
+    let mut spinner_title = use_signal(String::new);
+    let mut show_spinner_dialog = use_signal(|| false);
+
+    macro_rules! show_spinner {
+        () => {{
+            spinner_title.clear();
+            show_spinner_dialog.set(true);
+        }};
+        ($title:expr) => {{
+            spinner_title.set(String::from($title));
+            show_spinner_dialog.set(true);
+        }}
+    }
+
     let menu_handler =
         use_coroutine(move |mut rx: UnboundedReceiver<String>| async move {
             while let Some(action) = rx.next().await {
                 match action.as_str() {
                     "fleets-reload" => {
                         info!("Reloading fleets");
+                        show_spinner!("Reloading fleets");
                         fleets.set(None);
                         selected_fleet_data.set(None);
                         selected_fleet_idx.set(None);
@@ -92,6 +108,23 @@ pub fn FleetList() -> Element {
                             spawn_async(|| load_fleets::load_fleets(false))
                                 .await;
                         fleets.set(Some(new_fleets));
+                        show_spinner_dialog.set(false);
+                    }
+                    "edit-preferences" => {
+                        info!("Opening settings file");
+                        show_spinner!("Opening settings file");
+                        let config_path = directories::ProjectDirs::from("", "", "NebTools")
+                            .ok_or(
+                                eyre!("Failed to retrieve config dir")
+                                    .wrap_err("OS not recognised?"),
+                            ).unwrap()
+                            .preference_dir()
+                            .join("config.toml");
+                        let mut cmd = std::process::Command::new("cmd.exe");
+                        cmd.args(["/c", "start", ""]);
+                        cmd.arg(config_path);
+                        let _ = cmd.spawn();
+                        show_spinner_dialog.set(false);
                     }
                     "tools-scramble" => todo!(),
                     "tools-winpred" => {
@@ -116,11 +149,13 @@ pub fn FleetList() -> Element {
                     }
                     "help-open-log" => {
                         if let Some(path) = crate::LOG_FILE_PATH.clone() {
+                            show_spinner!("Opening log file directory");
                             let path = path.parent().unwrap();
                             let mut cmd = std::process::Command::new("cmd.exe");
                             cmd.args(["/c", "start", ""]);
                             cmd.arg(path);
                             let _ = cmd.spawn();
+                            show_spinner_dialog.set(false);
                         } else {
                             error_popup!("Log file does not exist", "", ErrorType::Warn);
                             warn!("Log file path does not exist")
@@ -306,6 +341,13 @@ pub fn FleetList() -> Element {
     });
 
     rsx! {
+        DialogWrapper { signal: show_spinner_dialog, non_exitable: true,
+            if show_spinner_dialog() {
+                SpinnerDialog { title: spinner_title() }
+            } else {
+
+            }
+        }
         DialogWrapper { signal: merge_fleets_dialog_open,
             if merge_fleets_dialog_open() {
                 {

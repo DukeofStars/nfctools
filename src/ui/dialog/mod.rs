@@ -2,21 +2,25 @@ use dioxus::{prelude::*};
 
 pub mod merge_fleets;
 pub mod error;
+pub mod spinner;
 
 #[component]
-pub fn DialogWrapper(signal: Signal<bool>, children: Element) -> Element {
+pub fn DialogWrapper(signal: Signal<bool>, children: Element, non_exitable: Option<bool>) -> Element {
+    let non_exitable = non_exitable.is_some_and(|x| x);
     rsx! {
         div {
             style: "position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100;",
             hidden: !signal(),
 
             onkeydown: move |e| {
-                if e.key() == Key::Escape {
+                if e.key() == Key::Escape && !non_exitable {
                     signal.set(false);
                 }
             },
             onclick: move |_| {
-                signal.set(false);
+                if !non_exitable {
+                    signal.set(false);
+                }
             },
             tabindex: "0",
 
