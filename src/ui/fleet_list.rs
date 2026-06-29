@@ -113,22 +113,7 @@ pub fn FleetList() -> Element {
                     }
                     "edit-preferences" => {
                         show_settings_dialog.set(true);
-                        // info!("Opening settings file");
-                        // show_spinner!("Opening settings file");
-                        // let config_path = directories::ProjectDirs::from("", "", "NebTools")
-                        //     .ok_or(
-                        //         eyre!("Failed to retrieve config dir")
-                        //             .wrap_err("OS not recognised?"),
-                        //     ).unwrap()
-                        //     .preference_dir()
-                        //     .join("config.toml");
-                        // let mut cmd = std::process::Command::new("cmd.exe");
-                        // cmd.args(["/c", "start", ""]);
-                        // cmd.arg(config_path);
-                        // let _ = cmd.spawn();
-                        // show_spinner_dialog.set(false);
                     }
-                    "tools-scramble" => todo!(),
                     "tools-winpred" => {
                         let dom = VirtualDom::new(
                             crate::ui::win_predictor::WinPredictor,
@@ -230,7 +215,6 @@ pub fn FleetList() -> Element {
             loading_fleet.set(true);
             crate::menubar::MENUBARS.with_borrow(|menubars| {
                 if let Some(menubars) = menubars.as_ref() {
-                    menubars.tools_scramble.set_enabled(true);
                     menubars.tools_merge.set_enabled(true);
                 }
             });
@@ -254,7 +238,6 @@ pub fn FleetList() -> Element {
         } else {
             crate::menubar::MENUBARS.with_borrow(|menubars| {
                 if let Some(menubars) = menubars.as_ref() {
-                    menubars.tools_scramble.set_enabled(false);
                     menubars.tools_merge.set_enabled(false);
                 }
             });
