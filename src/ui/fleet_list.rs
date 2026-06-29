@@ -21,8 +21,8 @@ use crate::{
     fleet_io::read_fleet,
     load_fleets,
     spawn_async::spawn_async,
-    tags::{Color, Tag, TAGS_REPO},
-    ui::fleet_editor::ShipEditor,
+    tags::{Color, TAGS_REPO, Tag},
+    ui::{dialog::merge_fleets::MergeFleetsDialog, dialog::DialogWrapper, fleet_editor::ShipEditor},
 };
 
 #[component]
@@ -59,6 +59,8 @@ pub fn FleetList() -> Element {
 
     let mut tags_dirty = use_signal(|| false);
 
+    let mut merge_fleets_dialog_open = use_signal(|| false);
+
     let menu_handler =
         use_coroutine(move |mut rx: UnboundedReceiver<String>| async move {
             while let Some(action) = rx.next().await {
@@ -88,6 +90,9 @@ pub fn FleetList() -> Element {
                         );
 
                         dioxus::desktop::window().new_window(dom, config);
+                    }
+                    "tools-merge" => {
+                        merge_fleets_dialog_open.set(true);
                     }
                     "help-open-log" => {
                         if let Some(path) = crate::LOG_FILE_PATH.clone() {
@@ -253,6 +258,8 @@ pub fn FleetList() -> Element {
             .expect("Failed to write fleet");
     });
 
+    let mut secondary_selected_fleet_idxs = use_signal(|| Vec::<usize>::new());
+
     let mut search_text = use_signal(String::new);
     let search_filters = use_memo(move || {
         // Reset all selections on search
@@ -261,13 +268,45 @@ pub fn FleetList() -> Element {
         selected_ship.set(None);
         selected_ship_idx.set(None);
         selected_fleet_data.set(None);
+        secondary_selected_fleet_idxs.clear();
 
         crate::search::parse_search_text(search_text())
     });
 
-    let mut secondary_selected_fleet_idxs = use_signal(|| Vec::<usize>::new());
-
     rsx! {
+        DialogWrapper { signal: merge_fleets_dialog_open,
+            if merge_fleets_dialog_open() {
+                {
+                    let fleets = fleets.read();
+                    let Some(Ok(all_fleets)) = fleets.as_ref() else {
+                        warn!("Tried to open merge dialog but fleets not loaded. This is a bug");
+                        return rsx! {};
+                    };
+
+                    // Indexes of fleets to be merged
+                    let mut fleet_idxs = secondary_selected_fleet_idxs();
+                    if let Some(idx) = selected_fleet_idx() {
+                        fleet_idxs.push(idx);
+                    }
+                    fleet_idxs.dedup();
+
+                    // Fleets to merge
+                    let mut fleets = vec![];
+                    for idx in fleet_idxs {
+                        fleets.push(all_fleets[idx].clone());
+                    }
+
+                    // Sort fleets alphabetically
+                    fleets.sort_by(|a, b| a.name.cmp(&b.name));
+
+                    rsx! {
+                        MergeFleetsDialog { fleets, signal: merge_fleets_dialog_open }
+                    }
+                }
+            } else {
+
+            }
+        }
         div {
             display: "grid",
             grid_template_columns: "24% 1% 50% 1% 24%",

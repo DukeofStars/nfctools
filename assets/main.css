@@ -8,13 +8,27 @@
     --highlight: rgb(148, 59, 15);
 }
 
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 td,th {
     border: 1px solid var(--border);
     text-align: center;
 }
 
 p, h1, h2, h3, h4, h5, h6, div, button {
-    background-color: var(--bg);
+    /* background-color: var(--bg); */
     color: var(--text);
     margin: 0;
 }
@@ -42,6 +56,7 @@ body {
     text-overflow: ellipsis;
     border: 1px solid var(--border);
     transition-duration: 100ms;
+    background-color: var(--bg);
 }
 
 .list-button:hover {
@@ -72,8 +87,14 @@ input {
 }
 
 .button {
+    background-color: var(--bg);
     border: 2px solid var(--border);
     transition-duration: 100ms;
+}
+
+.button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .button:hover {

@@ -18,7 +18,7 @@ pub struct Fleet {
     #[serde(rename = "Version")]
     pub version: String,
     #[serde(rename = "TotalPoints")]
-    pub total_points: String,
+    pub total_points: usize,
     #[serde(rename = "FactionKey")]
     pub faction_key: String,
     #[serde(rename = "SortOverrideOrder")]
@@ -248,6 +248,8 @@ pub struct Ship {
     pub template_spacecraft_types: Option<TemplateSpacecraftTypes>,
     #[serde(rename = "InitialFormation")]
     pub initial_formation: Option<InitialFormation>,
+    #[serde(rename = "ModDependencies")]
+    pub mod_dependencies: Option<ModDependencies>,
 }
 
 #[skip_serializing_none]
@@ -404,7 +406,7 @@ pub struct ComponentData {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
     #[serde(rename(serialize = "@xmlns:p2", deserialize = "@xmlns:p2"))]
-    pub xmlns_p2: String,
+    pub xmlns_p2: Option<String>,
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "MissileLoad")]
