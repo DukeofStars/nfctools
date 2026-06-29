@@ -265,6 +265,8 @@ pub fn FleetList() -> Element {
         crate::search::parse_search_text(search_text())
     });
 
+    let mut secondary_selected_fleet_idxs = use_signal(|| Vec::<usize>::new());
+
     rsx! {
         div {
             display: "grid",
@@ -300,7 +302,10 @@ pub fn FleetList() -> Element {
                                         return rsx! {};
                                     }
 
-                                    let selected = use_memo(move || { selected_fleet_idx() == Some(idx) });
+                                    let selected = use_memo(move || {
+                                        selected_fleet_idx() == Some(idx)
+                                            || secondary_selected_fleet_idxs.iter().any(|idx2| *idx2 == idx)
+                                    });
                                     rsx! {
                                         button {
                                             onmouseenter: move |_| {
@@ -316,7 +321,23 @@ pub fn FleetList() -> Element {
                                             align_items: "center",
                                             key: "{fleet.path.display()}",
                                             class: if selected() { "list-button selected" } else { "list-button" },
-                                            onclick: move |_| {
+                                            onclick: move |evt| {
+                                                let mods = evt.modifiers();
+                                                if mods.ctrl() && selected_fleet_idx().is_some() {
+                                                    secondary_selected_fleet_idxs.push(selected_fleet_idx().unwrap());
+                                                } else if mods.shift() && selected_fleet_idx().is_some() {
+                                                    let idx1 = idx;
+                                                    let idx2 = selected_fleet_idx().unwrap();
+
+                                                    let min = if idx1 > idx2 { idx2 } else { idx1 };
+                                                    let max = if idx1 < idx2 { idx2 } else { idx1 };
+
+                                                    for idx in min..=max {
+                                                        secondary_selected_fleet_idxs.push(idx);
+                                                    }
+                                                } else {
+                                                    secondary_selected_fleet_idxs.clear();
+                                                }
                                                 debug!("Selected fleet {}", fleet.name);
                                                 loading_fleet.set(true);
                                                 selected_fleet_data.set(Some(fleet.clone()));

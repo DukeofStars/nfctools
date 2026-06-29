@@ -117,10 +117,10 @@ input {
 }
 
 .team1 {
-    background-color: red;
+    background-color: blue;
 }
 .team2 {
-    background-color: blue;    
+    background-color: red;    
 }
 .team-neutral {
     background-color: grey;
@@ -144,11 +144,11 @@ input {
 
 .dx-line-0 {
     & path {
-        stroke: red;
+        stroke: blue;
     }
 }
 .dx-line-1 {
     & path {
-        stroke: blue;
+        stroke: red;
     }
 }
