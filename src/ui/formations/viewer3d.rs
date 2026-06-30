@@ -10,38 +10,10 @@
 //! [dependencies]
 //! dioxus = { version = "0.6", features = ["desktop"] }
 
-use dioxus::prelude::*;
+use dioxus::{html::geometry::WheelDelta, prelude::*};
+use nalgebra::{Isometry3, Perspective3, Vector3};
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Point3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-}
-
-impl Point3 {
-    pub fn new(x: f64, y: f64, z: f64) -> Self {
-        Self { x, y, z }
-    }
-
-    fn rotate_y(self, angle: f64) -> Self {
-        let (sin, cos) = angle.sin_cos();
-        Point3 {
-            x: self.x * cos + self.z * sin,
-            y: self.y,
-            z: -self.x * sin + self.z * cos,
-        }
-    }
-
-    fn rotate_x(self, angle: f64) -> Self {
-        let (sin, cos) = angle.sin_cos();
-        Point3 {
-            x: self.x,
-            y: self.y * cos - self.z * sin,
-            z: self.y * sin + self.z * cos,
-        }
-    }
-}
+pub type Point3 = nalgebra::Point3<f64>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Scene {
@@ -49,76 +21,153 @@ pub struct Scene {
     pub lines: Vec<(usize, usize)>,
 }
 
-impl Scene {
-    pub fn cube() -> Self {
-        Scene {
-            points: vec![
-                Point3::new(-1.0, -1.0, -1.0),
-                Point3::new(1.0, -1.0, -1.0),
-                Point3::new(1.0, 1.0, -1.0),
-                Point3::new(-1.0, 1.0, -1.0),
-                Point3::new(-1.0, -1.0, 1.0),
-                Point3::new(1.0, -1.0, 1.0),
-                Point3::new(1.0, 1.0, 1.0),
-                Point3::new(-1.0, 1.0, 1.0),
-            ],
-            lines: vec![
-                (0, 1), (1, 2), (2, 3), (3, 0), // back face
-                (4, 5), (5, 6), (6, 7), (7, 4), // front face
-                (0, 4), (1, 5), (2, 6), (3, 7), // connecting edges
-            ],
-        }
+const NEAR: f64 = 0.1;
+const FAR: f64 = 500.0;
+
+fn build_view_projection(
+    camera_pos: &Point3,
+    width: f64,
+    height: f64,
+) -> (Isometry3<f64>, Perspective3<f64>) {
+    let target = Point3::new(0.0, 0.0, 0.0);
+    let up = Vector3::y();
+    let view: Isometry3<f64> = Isometry3::look_at_rh(camera_pos, &target, &up);
+
+    let fov = 3.14159 / 4.0; // 90deg (nebulous max FOV)
+    let aspect_ratio = width / height;
+    let projection = Perspective3::new(aspect_ratio, fov, NEAR, FAR);
+
+    (view, projection)
+}
+
+fn project_view_point(view_point: &Point3, projection: &Perspective3<f64>, width: f64, height: f64) -> (f64, f64) {
+    let clip_point = projection.project_point(view_point);
+    let screen_x = (clip_point.x + 1.0) * 0.5 * width;
+    // flip y because screen space usually has y increasing downward
+    let screen_y = (1.0 - clip_point.y) * 0.5 * height;
+    (screen_x, screen_y)
+}
+
+/// Clip a line segment (already in view space, camera looking down -z) against
+/// the near plane z = -near. Returns None if the whole segment is behind it.
+fn clip_segment_near(a: Point3, b: Point3, near: f64) -> Option<(Point3, Point3)> {
+    let a_visible = a.z < -near;
+    let b_visible = b.z < -near;
+
+    if !a_visible && !b_visible {
+        return None;
+    }
+    if a_visible && b_visible {
+        return Some((a, b));
+    }
+
+    // Exactly one endpoint is behind the near plane: find where the segment
+    // crosses z = -near and trim it there instead of projecting the
+    // out-of-frustum endpoint.
+    let t = (-near - a.z) / (b.z - a.z);
+    let clipped = Point3::new(
+        a.x + t * (b.x - a.x),
+        a.y + t * (b.y - a.y),
+        -near,
+    );
+
+    if a_visible {
+        Some((a, clipped))
+    } else {
+        Some((clipped, b))
     }
 }
 
-/// Simple perspective projection: closer points (smaller z after camera offset)
-/// get scaled up; farther points get scaled down.
-fn project(p: Point3, width: f64, height: f64, fov: f64, camera_distance: f64) -> (f64, f64) {
-    let z = (p.z + camera_distance).max(0.001);
-    let scale = fov / z;
-    let x = p.x * scale + width / 2.0;
-    let y = -p.y * scale + height / 2.0; // flip y: canvas y grows downward
-    (x, y)
+/// Projects a set of points and returns only the ones in front of the near
+/// plane, as a JS array literal of [x, y] pairs.
+fn project_points_js(
+    points: &[Point3],
+    view: &Isometry3<f64>,
+    projection: &Perspective3<f64>,
+    width: f64,
+    height: f64,
+) -> String {
+    points
+        .iter()
+        .filter_map(|p| {
+            let vp = view.transform_point(p);
+            if vp.z < -NEAR {
+                let (x, y) = project_view_point(&vp, projection, width, height);
+                Some(format!("[{x:.2},{y:.2}]"))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+/// Projects a set of edges (clipping each against the near plane first) and
+/// returns a JS array literal of [x1, y1, x2, y2] segments.
+fn project_lines_js(
+    points: &[Point3],
+    edges: &[(usize, usize)],
+    view: &Isometry3<f64>,
+    projection: &Perspective3<f64>,
+    width: f64,
+    height: f64,
+) -> String {
+    let view_points: Vec<Point3> = points.iter().map(|p| view.transform_point(p)).collect();
+
+    edges
+        .iter()
+        .filter_map(|&(a, b)| {
+            let va = view_points[a];
+            let vb = view_points[b];
+            clip_segment_near(va, vb, NEAR).map(|(ca, cb)| {
+                let (x1, y1) = project_view_point(&ca, projection, width, height);
+                let (x2, y2) = project_view_point(&cb, projection, width, height);
+                format!("[{x1:.2},{y1:.2},{x2:.2},{y2:.2}]")
+            })
+        })
+        .collect::<Vec<_>>()
+        .join(",")
 }
 
 const CONTAINER_ID: &str = "canvas-container";
 const CANVAS_ID: &str = "scene-canvas";
-const FOV: f64 = 300.0;
-const CAMERA_DISTANCE: f64 = 5.0;
+const CAMERA_DISTANCE: f64 = 500.0;
 
-/// Projects the scene in Rust, then builds a JS snippet that draws the
-/// already-projected 2D coordinates onto the canvas. Keeping the math in
-/// Rust and only sending final pixel coordinates to JS keeps the eval
-/// payload simple and avoids re-implementing the projection in JS.
-///
-/// `width`/`height` here are CSS pixels (the container's current size).
-/// The JS sets the canvas's backing-store resolution to width/height
-/// scaled by devicePixelRatio, then uses setTransform so all the drawing
-/// calls below can stay in CSS-pixel coordinates regardless of DPI.
-fn build_draw_js(scene: &Scene, width: f64, height: f64, angle_x: f64, angle_y: f64) -> String {
-    let transformed: Vec<Point3> = scene
-        .points
-        .iter()
-        .map(|p| p.rotate_y(angle_y).rotate_x(angle_x))
-        .collect();
+fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, camera_distance: f64) -> String {
+    // Px = distance * sin(yaw) * cos(pitch)
+    // Py = distance * sin(pitch)
+    // Pz = distance * cos(yaw) * cos(pitch)
+    let camera_x = camera_distance * yaw.sin() * pitch.cos();
+    let camera_y = camera_distance * pitch.sin();
+    let camera_z = camera_distance * yaw.cos() * pitch.cos();
+    let camera_pos = Point3::new(camera_x, camera_y, camera_z);
 
-    let projected: Vec<(f64, f64)> = transformed
-        .iter()
-        .map(|p| project(*p, width, height, FOV, CAMERA_DISTANCE))
-        .collect();
+    let (view, projection) = build_view_projection(&camera_pos, width, height);
 
-    let points_js = projected
-        .iter()
-        .map(|(x, y)| format!("[{x:.2},{y:.2}]"))
-        .collect::<Vec<_>>()
-        .join(",");
+    let points_js = project_points_js(&scene.points, &view, &projection, width, height);
+    let lines_js = project_lines_js(&scene.points, &scene.lines, &view, &projection, width, height);
 
-    let lines_js = scene
-        .lines
-        .iter()
-        .map(|(a, b)| format!("[{a},{b}]"))
-        .collect::<Vec<_>>()
-        .join(",");
+    let grid_width: i32 = 10;
+    let step = 50.0;
+
+    let mut grid_points = vec![];
+    let mut grid_lines = vec![];
+    for i in -grid_width..=grid_width {
+        for j in -grid_width..=grid_width {
+            let x = i as f64 * step;
+            let z = j as f64 * step;
+            grid_points.push(Point3::new(x, 0.0, z));
+
+            if i < grid_width {
+                grid_lines.push((grid_points.len() - 1, grid_points.len() + 2 * grid_width as usize));
+            }
+            if j < grid_width {
+                grid_lines.push((grid_points.len() - 1, grid_points.len()));
+            }
+        }
+    }
+
+    let grid_lines_js = project_lines_js(&grid_points, &grid_lines, &view, &projection, width, height);
 
     format!(
         r#"
@@ -128,6 +177,7 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, angle_x: f64, angle_y: 
             const ctx = canvas.getContext("2d");
             const points = [{points_js}];
             const lines = [{lines_js}];
+            const grid_lines = [{grid_lines_js}];
 
             // Resize the backing store to match CSS size * DPI, only when it
             // actually changed (resizing the buffer clears it as a side effect).
@@ -148,10 +198,19 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, angle_x: f64, angle_y: 
 
             ctx.strokeStyle = "\#4ade80";
             ctx.lineWidth = 1.5;
-            for (const [a, b] of lines) {{
+            for (const [x1, y1, x2, y2] of lines) {{
                 ctx.beginPath();
-                ctx.moveTo(points[a][0], points[a][1]);
-                ctx.lineTo(points[b][0], points[b][1]);
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+            }}
+
+            ctx.fillStyle = "\#101010";
+            ctx.lineWidth = 1.0;
+            for (const [x1, y1, x2, y2] of grid_lines) {{
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
                 ctx.stroke();
             }}
 
@@ -166,34 +225,59 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, angle_x: f64, angle_y: 
     )
 }
 
+const MAX_PITCH: f64 = std::f64::consts::FRAC_PI_2 - 0.001;
+
 #[component]
 pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Scene) -> Element {
-    let mut angle_x = use_signal(|| 0.3_f64);
-    let mut angle_y = use_signal(|| 0.0_f64);
-    // Sensible fallback size in case the observer hasn't fired yet.
+    let mut pitch = use_signal(|| 0.3_f64);
+    let mut yaw = use_signal(|| 0.0_f64);
+    let mut camera_distance = use_signal(|| CAMERA_DISTANCE);
 
-    // Drag state for mouse-driven rotation.
     let mut dragging = use_signal(|| false);
     let mut last_pos = use_signal(|| (0.0_f64, 0.0_f64));
-    const DRAG_SENSITIVITY: f64 = -0.01;
+    const DRAG_SENSITIVITY: f64 = 0.01;
 
-    // Re-runs whenever size, angle_x, or angle_y change, since use_effect
-    // auto-tracks any signals read inside its closure.
     use_effect(move || {
         let (width, height) = size();
-        let js = build_draw_js(&scene, width, height, angle_x(), angle_y());
+        let js = build_draw_js(&scene, width, height, pitch(), yaw(), camera_distance());
         document::eval(&js);
     });
 
     let (width, height) = size();
 
     rsx! {
-        div { id: CONTAINER_ID,
+        div {
+            id: CONTAINER_ID,
+            onwheel: move |evt: WheelEvent| {
+                let vec_y;
+                let scroll_multiplier;
+
+                match evt.delta() {
+                    WheelDelta::Pixels(vec) => {
+                        debug!("Scrolling by pixels");
+                        vec_y = vec.y;
+                        scroll_multiplier = 0.5;
+                    }
+                    WheelDelta::Lines(vec) => {
+                        debug!("Scrolling by lines");
+                        vec_y = vec.y;
+                        scroll_multiplier = 2.0;
+                    }
+                    WheelDelta::Pages(vec) => {
+                        debug!("Scrolling by pages");
+                        vec_y = vec.y;
+                        scroll_multiplier = 1.0;
+                    }
+                }
+
+                camera_distance += vec_y * scroll_multiplier;
+            },
             canvas {
                 id: CANVAS_ID,
-                style: "width: {width}px; height: {height}px; display: block; \
-                        background: var(--bg2); cursor: grab; \
-                        user-select: none; touch-action: none;",
+                style: format!(
+                    "width: {width}px; height: {height}px; display: block; background: var(--bg2); cursor: {}; user-select: none; touch-action: none;",
+                    if dragging() { "grab" } else { "default" },
+                ),
 
                 onmousedown: move |evt| {
                     dragging.set(true);
@@ -206,8 +290,8 @@ pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Scene) -> Element {
                         let (last_x, last_y) = last_pos();
                         let dx = c.x - last_x;
                         let dy = c.y - last_y;
-                        angle_y += dx * DRAG_SENSITIVITY;
-                        angle_x += dy * DRAG_SENSITIVITY;
+                        yaw -= dx * DRAG_SENSITIVITY;
+                        pitch.set((pitch() + dy * DRAG_SENSITIVITY).clamp(-MAX_PITCH, MAX_PITCH));
                         last_pos.set((c.x, c.y));
                     }
                 },
