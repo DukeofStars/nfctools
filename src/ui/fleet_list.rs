@@ -26,9 +26,16 @@ use crate::{
         dialog::{
             DialogWrapper, backup::BackupDialog, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog, settings::SettingsDialog, spinner::SpinnerDialog
         },
-        fleet_editor::ShipEditor,
+        fleet_editor::ShipEditor, formations::FleetFormationViewer,
     },
 };
+
+#[derive(Debug, Clone, Copy)]
+pub enum FleetEditorTab {
+    Blank,
+    FormationViewer,
+    LinerEditor,
+}
 
 #[component]
 pub fn FleetList() -> Element {
@@ -359,6 +366,8 @@ pub fn FleetList() -> Element {
         crate::search::parse_search_text(search_text())
     });
 
+    let mut fleet_editor_tab = use_signal(|| FleetEditorTab::Blank);
+
     rsx! {
         DialogWrapper { signal: show_settings_dialog,
             if show_settings_dialog() {
@@ -524,7 +533,37 @@ pub fn FleetList() -> Element {
             }
             div {}
             // Fleet editor (middle)
-            ShipEditor { ship: selected_ship }
+            div {
+                div { style: "display: flex; flex-direction: row; justify-content: start; gap: 10px;
+                border-bottom: 3px solid var(--highlight);",
+                    button {
+                        disabled: selected_fleet.read().is_none(),
+                        class: "button",
+                        style: "height: 30px;",
+                        onclick: move |_| { fleet_editor_tab.set(FleetEditorTab::FormationViewer) },
+                        "Formation Editor"
+                    }
+                    button {
+                        disabled: !selected_ship
+                            .read()
+                            .as_ref()
+                            .is_some_and(|ship| ship.hull_type == "Stock/Bulk Hauler"),
+                        class: "button",
+                        style: "height: 30px;",
+                        onclick: move |_| { fleet_editor_tab.set(FleetEditorTab::LinerEditor) },
+                        "Liner Editor"
+                    }
+                }
+                match fleet_editor_tab() {
+                    FleetEditorTab::Blank => rsx! { "" },
+                    FleetEditorTab::LinerEditor => rsx! {
+                        ShipEditor { ship: selected_ship }
+                    },
+                    FleetEditorTab::FormationViewer => rsx! {
+                        FleetFormationViewer { fleet: selected_fleet }
+                    },
+                }
+            }
             div {}
             div { display: "flex", flex_direction: "column", min_height: 0,
                 div {
@@ -612,6 +651,9 @@ pub fn FleetList() -> Element {
                                                         trace!("Selecting ship {}", ship.name);
                                                         selected_ship.set(Some(ship.clone()));
                                                         selected_ship_idx.set(Some(idx));
+                                                        if ship.hull_type.as_str() == "Stock/Bulk Hauler" {
+                                                            fleet_editor_tab.set(FleetEditorTab::LinerEditor)
+                                                        }
                                                     },
                                                     "{ship.name}"
                                                     div {

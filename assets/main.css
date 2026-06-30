@@ -104,7 +104,7 @@ input {
     cursor: not-allowed;
 }
 
-.button:hover {
+.button:hover:not(:disabled) {
     color: rgba(148, 59, 15, 0.9);
     scale: 1.02;
     cursor: pointer;
