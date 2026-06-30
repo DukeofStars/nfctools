@@ -6,8 +6,7 @@ use dioxus_primitives::dropdown_menu::{
 };
 use dioxus_primitives::merge_attributes;
 
-#[cfg(feature = "bundle")]
-pub static STYLE: &'static str = include_str!("./style.css");
+use crate::include_style;
 
 #[component]
 pub fn DropdownMenu(props: DropdownMenuProps) -> Element {
@@ -16,14 +15,8 @@ pub fn DropdownMenu(props: DropdownMenuProps) -> Element {
     });
     let merged = merge_attributes(vec![base, props.attributes.clone()]);
 
-    #[cfg(not(feature = "bundle"))]
-    let style = rsx! {
-        document::Stylesheet { href: asset!("./style.css") }
-    };
-    #[cfg(feature = "bundle")]
-    let style = rsx! {};
     rsx! {
-        {style}
+        {include_style!("src/components/dropdown_menu/style.css")}
         dropdown_menu::DropdownMenu {
             open: props.open,
             default_open: props.default_open,

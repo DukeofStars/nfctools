@@ -5,7 +5,7 @@ use std::{fs::OpenOptions, path::PathBuf};
 use clap::{Parser, ValueEnum};
 use color_eyre::Result;
 use dioxus::{
-    desktop::{muda::Menu, Config, WindowBuilder},
+    desktop::{Config, WindowBuilder, muda::Menu, wry::dpi::PhysicalSize},
     prelude::*,
 };
 use lazy_static::lazy_static;
@@ -34,10 +34,7 @@ mod ui;
 #[allow(unused)]
 mod components;
 
-#[cfg(not(feature = "bundle"))]
-static COMPONENT_CSS: Asset = asset!("../assets/dx-components-theme.css");
-#[cfg(not(feature = "bundle"))]
-static MAIN_CSS: Asset = asset!("../assets/main.css");
+
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
 
@@ -137,6 +134,7 @@ fn main() -> Result<()> {
         .with_cfg(desktop! {
             Config::new().with_menu(Some(menu)).with_window(
                 WindowBuilder::new()
+                    .with_inner_size(PhysicalSize::new(850, 600))
                     .with_title(format!("NebTools v{} @dukeofstars", env!("CARGO_PKG_VERSION")))
             )
         })
@@ -145,22 +143,29 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[macro_export]
+macro_rules! include_style {
+    ($path:literal) => {{
+        #[component]
+        fn ComponentStyle() -> Element {
+            #[cfg(feature = "bundle")]
+            rsx! {
+                dioxus::document::Style {
+                    {include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/", $path))}
+                }
+            }
+            #[cfg(not(feature = "bundle"))]
+            rsx! { dioxus::document::Stylesheet { href: asset!(concat!("/", $path)) } }
+        }
+        rsx! { ComponentStyle {} }
+    }}
+}
+
 #[component]
 fn App() -> Element {
-    #[cfg(not(feature = "bundle"))]
     return rsx! {
-        document::Stylesheet { href: COMPONENT_CSS }
-        document::Stylesheet { href: MAIN_CSS }
-
-        FleetList {}
-    };
-    #[cfg(feature = "bundle")]
-    return rsx! {
-        document::Style { {include_str!("../assets/main.css")} }
-        document::Style { {include_str!("../assets/dx-components-theme.css")} }
-        document::Style { {crate::components::dropdown_menu::STYLE} }
-        document::Style { {crate::components::color_picker::STYLE} }
-        document::Style { {crate::components::checkbox::STYLE} }
+        {include_style!("assets/dx-components-theme.css")}
+        {include_style!("assets/main.css")}
 
         FleetList {}
     };

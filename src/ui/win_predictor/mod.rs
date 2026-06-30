@@ -2,22 +2,13 @@ use std::fmt::Display;
 
 use dioxus::prelude::*;
 
+use crate::include_style;
+
 #[component]
 pub fn WinPredictor() -> Element {
-    #[cfg(not(feature = "bundle"))]
     return rsx! {
-        document::Stylesheet { href: crate::COMPONENT_CSS }
-        document::Stylesheet { href: crate::MAIN_CSS }
-
-        WinPredictorInner {}
-    };
-    #[cfg(feature = "bundle")]
-    return rsx! {
-        document::Style { {include_str!("../../../assets/main.css")} }
-        document::Style { {include_str!("../../../assets/dx-components-theme.css")} }
-        document::Style { {crate::components::dropdown_menu::STYLE} }
-        document::Style { {crate::components::color_picker::STYLE} }
-
+        {include_style!("assets/main.css")}
+        {include_style!("assets/dx-components-theme.css")}
         WinPredictorInner {}
     };
 }
@@ -120,7 +111,7 @@ fn WinPredictorInner() -> Element {
                                         Team::Neutral => Team::Team1,
                                         Team::Team1 => Team::Team2,
                                         Team::Team2 => Team::Neutral,
-                                    }
+                                    };
                                 },
                                 // Right click to cycle backwards
                                 oncontextmenu: move |evt| {
@@ -129,10 +120,10 @@ fn WinPredictorInner() -> Element {
                                         Team::Neutral => Team::Team2,
                                         Team::Team1 => Team::Neutral,
                                         Team::Team2 => Team::Team1,
-                                    }
+                                    };
                                 },
+                                "{char}"
                             }
-                            "{char}"
                         }
                     }
                 }
@@ -247,9 +238,9 @@ fn PointsChart(
             lowest: 0.0,
             highest: max_points as f32,
             series: vec![
-                                                                                        team1_points,
-                                                                                        team2_points,
-                                                                                    ],
+                                                                                                                                                                                                                                                    team1_points,
+                                                                                                                                                                                                                                                    team2_points,
+                                                                                                                                                                                                                                                ],
             labels,
         }
     }

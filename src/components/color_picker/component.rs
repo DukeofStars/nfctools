@@ -8,6 +8,8 @@ use dioxus_primitives::use_controlled;
 use dioxus_primitives::{popover, ContentAlign, ContentSide};
 use palette::{encoding, FromColor, Hsv, IntoColor, RgbHue, Srgb};
 
+use crate::include_style;
+
 fn format_color_hex(color: Color) -> String {
     format!("#{color:X}")
 }
@@ -53,9 +55,6 @@ pub struct ColorPickerRootProps {
     pub children: Element,
 }
 
-#[cfg(feature = "bundle")]
-pub static STYLE: &'static str = include_str!("./style.css");
-
 #[component]
 pub fn ColorPickerRoot(props: ColorPickerRootProps) -> Element {
     let (open, set_open) =
@@ -67,14 +66,8 @@ pub fn ColorPickerRoot(props: ColorPickerRootProps) -> Element {
         color: props.color,
     });
 
-    #[cfg(not(feature = "bundle"))]
-    let style = rsx! {
-        document::Stylesheet { href: asset!("./style.css") }
-    };
-    #[cfg(feature = "bundle")]
-    let style = rsx! {};
     rsx! {
-        {style}
+        {include_style!("src/components/color_picker/style.css")}
 
         color_picker::ColorPicker {
             class: "dx-color-picker",
