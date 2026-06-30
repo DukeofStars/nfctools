@@ -21,14 +21,10 @@ use crate::{
     fleet_io::read_fleet,
     load_fleets,
     spawn_async::spawn_async,
-    tags::{Color, Tag, TAGS_REPO},
+    tags::{Color, TAGS_REPO, Tag},
     ui::{
         dialog::{
-            error::{ErrorDialog, ErrorType},
-            merge_fleets::MergeFleetsDialog,
-            settings::SettingsDialog,
-            spinner::SpinnerDialog,
-            DialogWrapper,
+            DialogWrapper, backup::BackupDialog, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog, settings::SettingsDialog, spinner::SpinnerDialog
         },
         fleet_editor::ShipEditor,
     },
@@ -100,6 +96,8 @@ pub fn FleetList() -> Element {
 
     let mut show_settings_dialog = use_signal(|| false);
 
+    let mut show_backup_dialog = use_signal(|| false);
+
     let menu_handler =
         use_coroutine(move |mut rx: UnboundedReceiver<String>| async move {
             while let Some(action) = rx.next().await {
@@ -127,6 +125,9 @@ pub fn FleetList() -> Element {
                             error_popup!("Failed to clear fleet cache", format!("{:?}", err), ErrorType::Fatal);
                         }
                         show_spinner_dialog.set(false);
+                    }
+                    "fleets-backup" => {
+                        show_backup_dialog.set(true);
                     }
                     "edit-preferences" => {
                         show_settings_dialog.set(true);
@@ -362,6 +363,13 @@ pub fn FleetList() -> Element {
         DialogWrapper { signal: show_settings_dialog,
             if show_settings_dialog() {
                 SettingsDialog { signal: show_settings_dialog }
+            } else {
+
+            }
+        }
+        DialogWrapper { signal: show_backup_dialog,
+            if show_backup_dialog() {
+                BackupDialog { signal: show_backup_dialog }
             } else {
 
             }

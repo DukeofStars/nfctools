@@ -4,6 +4,7 @@ pub mod error;
 pub mod merge_fleets;
 pub mod settings;
 pub mod spinner;
+pub mod backup;
 
 #[component]
 pub fn DialogWrapper(
