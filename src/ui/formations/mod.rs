@@ -2,16 +2,21 @@ use dioxus::prelude::*;
 use schemas::{Fleet, InitialFormation, RelativePosition, Ship};
 use std::str::FromStr;
 
+pub mod swarm;
 mod viewer3d;
 
 use crate::{
-    audio::AUDIO_HANDLER, components::dropdown_menu::{
+    audio::AUDIO_HANDLER,
+    components::dropdown_menu::{
         DropdownMenu, DropdownMenuContent, DropdownMenuItem,
         DropdownMenuTrigger,
-    }, fleet_data::FleetData, ui::{
+    },
+    fleet_data::FleetData,
+    ui::{
+        dialog::{swarm_config::SwarmConfigDialog, DialogWrapper},
         fleet_editor::ChevronDown,
         formations::viewer3d::{Canvas3D, Point3, Scene},
-    }
+    },
 };
 
 #[component]
@@ -131,7 +136,9 @@ pub fn FleetFormationViewer(
                     }
                 }
                 let Some(ship) = matched_ship else {
-                    warn!("Could not find matching ship for formation in fleet");
+                    warn!(
+                        "Could not find matching ship for formation in fleet"
+                    );
                     continue;
                 };
 
@@ -147,7 +154,9 @@ pub fn FleetFormationViewer(
         }
 
         let fleet_data = fleet_data.read();
-        let Some(fleet_data) = fleet_data.as_ref() else { return };
+        let Some(fleet_data) = fleet_data.as_ref() else {
+            return;
+        };
         match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
             Ok(_) => {}
             Err(err) => {
@@ -155,7 +164,6 @@ pub fn FleetFormationViewer(
             }
         };
     });
-
 
     let selected_ship_point = use_memo(move || {
         if selected_point()? == 0 {
@@ -173,7 +181,7 @@ pub fn FleetFormationViewer(
     let mapped_points = use_signal(Vec::new);
 
     let mut ctx_x = use_signal(|| 0f64);
-    let mut ctx_y = use_signal(|| 0f64); 
+    let mut ctx_y = use_signal(|| 0f64);
 
     let mut update_selected_point = move || {
         let Some(near_point) = near_point() else {
@@ -228,7 +236,40 @@ pub fn FleetFormationViewer(
 
     let mut show_ctx = use_signal(|| false);
 
+    let mut show_swarm_dialog = use_signal(|| false);
+
+    let mut swarm_config = use_signal(|| None);
+    let mut swarm_compression_running = use_signal(|| false);
+
+    use_effect(move || {
+        if let Some(config) = swarm_config() {
+            swarm_compression_running.set(true);
+
+            let mut formations = formations.write();
+            let Some(formations) = formations.as_mut() else {
+                return;
+            };
+            let Some(formation) = formations.get_mut(selected_formation())
+            else {
+                return;
+            };
+            swarm::compress_swarm(formation, config);
+
+            swarm_compression_running.set(false);
+            show_swarm_dialog.set(false);
+            swarm_config.set(None);
+        }
+    });
+
     rsx! {
+        DialogWrapper { signal: show_swarm_dialog,
+            SwarmConfigDialog {
+                open: show_swarm_dialog,
+                config: swarm_config,
+                running: swarm_compression_running,
+            }
+        }
+
         h3 { "Formations" }
 
         div { style: "display: flex; flex-direction: row; justify-content: start; gap: 10px; align-content: center;",
@@ -268,31 +309,41 @@ pub fn FleetFormationViewer(
                 let Ok(size) = evt.get_border_box_size() else { return };
                 canvas_size.set((size.width, size.height));
             },
-            div {
-                hidden: !show_ctx(),
-                style: "position: fixed; top: {ctx_y}px; left: {ctx_x}px; tab-index: 0;",
-                class: "context-container",
-                onfocusout: move |_| {
-                    info!("Focus out");
-                    show_ctx.set(false)
-                },
-                if let Some(selected_point) = selected_point() {
-                    if selected_point != 0 {
-                        button {
-                            class: "context-button",
-                            onmouseenter: move |_| AUDIO_HANDLER.play_hover_sound(),
-                            onclick: move |_| {
-                                show_ctx.set(false);
-                                let mut formations = formations.write();
-                                let Some(formations) = formations.as_mut() else {
-                                    return;
-                                };
-                                let Some(formation) = formations.get_mut(selected_formation()) else {
-                                    return;
-                                };
-                                change_leader(formation, selected_point - 1);
-                            },
-                            "Make ship leader"
+            if show_ctx() {
+                div {
+                    style: "position: fixed; top: {ctx_y}px; left: {ctx_x}px; tab-index: 0; display: flex; flex-direction: column;",
+                    class: "context-container",
+                    onfocusout: move |_| {
+                        info!("Focus out");
+                        show_ctx.set(false)
+                    },
+                    button {
+                        class: "context-button",
+                        onmouseenter: move |_| AUDIO_HANDLER.play_hover_sound(),
+                        onclick: move |_| {
+                            show_ctx.set(false);
+                            show_swarm_dialog.set(true);
+                        },
+                        "Compress swarm"
+                    }
+                    if let Some(selected_point) = selected_point() {
+                        if selected_point != 0 {
+                            button {
+                                class: "context-button",
+                                onmouseenter: move |_| AUDIO_HANDLER.play_hover_sound(),
+                                onclick: move |_| {
+                                    show_ctx.set(false);
+                                    let mut formations = formations.write();
+                                    let Some(formations) = formations.as_mut() else {
+                                        return;
+                                    };
+                                    let Some(formation) = formations.get_mut(selected_formation()) else {
+                                        return;
+                                    };
+                                    change_leader(formation, selected_point - 1);
+                                },
+                                "Make ship leader"
+                            }
                         }
                     }
                 }
@@ -486,9 +537,11 @@ fn formation_to_scene(form: &Formation) -> Scene {
 
 fn change_leader(formation: &mut Formation, new_lead: usize) {
     let (lead_ship, new_centre) = formation.escorts.remove(new_lead);
-    formation.escorts.push((formation.lead_ship.clone(), Point3::new(0.0, 0.0, 0.0)));
+    formation
+        .escorts
+        .push((formation.lead_ship.clone(), Point3::new(0.0, 0.0, 0.0)));
     formation.lead_ship = lead_ship;
-    
+
     for (_key, point) in &mut formation.escorts {
         point.x -= new_centre.x;
         point.y -= new_centre.y;

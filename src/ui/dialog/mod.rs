@@ -5,6 +5,7 @@ pub mod error;
 pub mod merge_fleets;
 pub mod settings;
 pub mod spinner;
+pub mod swarm_config;
 
 #[component]
 pub fn DialogWrapper(
