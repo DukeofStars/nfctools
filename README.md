@@ -19,6 +19,8 @@ An all-in-one toolkit for managing and editing Nebulous: Fleet Command fleets.
  - [x] Integrated win predictor
  - [x] Merge fleets together
  - [x] Backup fleets to folders or zip files
+ - [x] Edit fleet formations with manual coordinates
+ - [x] Optimise swarm fleet formations
  - [ ] Edit liner dressings
  - [ ] Apply updated missile templates to multiple fleets at once
  - [ ] Saving and re-using liner hull config templates
@@ -57,6 +59,18 @@ Just above the edit description textbox, there is a tag creation menu, where you
 
 ### Predict victories based on points
 At the top of the main window, click Tools > Win Predictor. This should open another window where you can enter the relevant match details.
+
+### Edit formations
+Select a fleet, then press the `Formation Viewer` button at the top of the screen. If the fleet has multiple formations, selected the one you wish to edit by choosing the formation lead ship.
+
+#### Change ship position in formation
+Click on the ship you wish to maneuver, then edit it's relative X, Y, and Z coordinates.
+
+#### Change formation leader
+Right click on the new formation lead, then press `Make leader`
+
+#### Optimise Swarms
+Right click anywhere in the formation viewer, then select `Compress Swarm`. Change the desired distance in the `Minimum distance between ships` field then press go.
 
 ## Configuration
 NebTools supports a couple of configuration options which can be set in the app by opening the settings dialog (Edit > Preferences).
