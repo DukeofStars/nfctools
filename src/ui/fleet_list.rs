@@ -241,6 +241,9 @@ pub fn FleetList() -> Element {
         description.set(new_desc);
     });
 
+    
+    let mut fleet_editor_tab = use_signal(|| FleetEditorTab::Blank);
+
     let mut prev_path = use_signal(|| None);
     // When the selected_fleet_data is changed, asynchronously load the fleet.
     let mut selected_fleet = use_resource(move || async move {
@@ -251,6 +254,7 @@ pub fn FleetList() -> Element {
                     menubars.tools_merge.set_enabled(true);
                 }
             });
+            fleet_editor_tab.set(FleetEditorTab::Blank);
             selected_ship.set(None);
             selected_ship_idx.set(None);
             let fleet_path = fleet_data.path.clone();
@@ -274,6 +278,7 @@ pub fn FleetList() -> Element {
                     menubars.tools_merge.set_enabled(false);
                 }
             });
+            fleet_editor_tab.set(FleetEditorTab::Blank);
             None
         }
     });
@@ -366,7 +371,6 @@ pub fn FleetList() -> Element {
         crate::search::parse_search_text(search_text())
     });
 
-    let mut fleet_editor_tab = use_signal(|| FleetEditorTab::Blank);
 
     rsx! {
         DialogWrapper { signal: show_settings_dialog,

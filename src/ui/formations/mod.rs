@@ -1,5 +1,6 @@
+use std::str::FromStr;
 use dioxus::prelude::*;
-use schemas::{Fleet, Ship};
+use schemas::{Fleet, InitialFormation, RelativePosition, Ship};
 
 mod viewer3d;
 
@@ -9,7 +10,7 @@ use crate::{components::dropdown_menu::{DropdownMenu, DropdownMenuContent, Dropd
 pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: Signal<Option<usize>>, selected_ship: Signal<Option<Ship>>) -> Element {
     let mut canvas_size = use_signal(|| (0f64, 0f64));
     
-    let formations = use_memo(move || {
+    let mut formations = use_memo(move || {
         if let Some(Some(fleet)) = fleet.read().as_ref() {
             Some(get_formations(fleet))
         } else {
@@ -41,20 +42,81 @@ pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: S
     let mut selected_point = use_signal(|| None);
     
     let mut scene = use_signal(|| None);
+    let mut old_form_lead = use_signal(String::new);
     use_effect(move || {
         let formations = formations.read();
         let Some(formations) = formations.as_ref() else { return };
         let Some(formation) = formations.get(selected_formation()) else { return };
-        info!("Updating scene");
-        selected_point.set(None);
-        near_point.set(None);
-        scene.set(Some(formation_to_scene(formation)))
+        trace!("Updating scene");
+        if formation.lead_ship != old_form_lead() {
+            selected_point.set(None);
+            near_point.set(None);
+            old_form_lead.set(formation.lead_ship.clone());
+        }
+        scene.set(Some(formation_to_scene(formation)));
+
+        trace!("Updating fleet formation");
+        let mut fleet = fleet.write();
+        let Some(Some(fleet)) = fleet.as_mut() else { return; };
+        
+        let mut empty_vec = Vec::new();
+        for (key, point) in &formation.escorts {
+            let mut matched_ship = None;
+            for ship in fleet.ships.as_mut().map(|ships| ships.ship.as_mut()).flatten().unwrap_or(&mut empty_vec) {
+                if &ship.key == key {
+                    matched_ship = Some(ship);
+                }
+            }
+            let Some(ship) = matched_ship else { warn!("Could not find matching ship for formation in fleet"); continue };
+
+            ship.initial_formation = Some(InitialFormation { guide_key: formation.lead_ship.clone(), relative_position: RelativePosition { x: point.x / 10.0, y: point.y / 10.0, z: point.z / 10.0 } });
+        }
     });
 
     let mapped_points = use_signal(|| Vec::new());
 
+    let selected_ship_point = use_memo(move || {
+        if selected_point()? == 0 {
+            return Some(Point3::new(0.0, 0.0, 0.0));
+        }
+        let formations = formations.read();
+        let point: &(String, Point3) = formations.as_ref()?.get(selected_formation())?.escorts.get(selected_point()? - 1)?;
+        Some(point.1.clone())
+    });
+
     rsx! {
         h3 { "Formations" }
+
+        div { style: "display: flex; flex-direction: row; justify-content: start; gap: 10px; align-content: center;",
+            p { style: "align-self: center;", "Formation Lead: " }
+            DropdownMenu {
+                DropdownMenuTrigger {
+                    "{formation_lead_name}"
+                    ChevronDown {}
+                }
+                DropdownMenuContent {
+                    for (idx , _) in formations.read().as_ref().unwrap_or(&Vec::new()).iter().enumerate() {
+                        {
+                            let lead_name = formation_lead_names
+                                .read()
+                                .as_ref()
+                                .unwrap_or(&Vec::new())
+                                .get(idx)
+                                .map(String::clone)
+                                .unwrap_or_default();
+                            rsx! {
+                                DropdownMenuItem {
+                                    index: idx,
+                                    value: idx,
+                                    on_select: move |value| selected_formation.set(value),
+                                    "{lead_name}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         div {
             style: "width: 50vw; height: 50vh;",
@@ -62,39 +124,9 @@ pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: S
                 let Ok(size) = evt.get_border_box_size() else { return };
                 canvas_size.set((size.width, size.height));
             },
-            div { style: "display: flex; flex-direction: row; justify-content: start; gap: 10px; align-content: center;",
-                p { style: "align-self: center;", "Formation Lead: " }
-                DropdownMenu {
-                    DropdownMenuTrigger {
-                        "{formation_lead_name}"
-                        ChevronDown {}
-                    }
-                    DropdownMenuContent {
-                        for (idx , _) in formations.read().as_ref().unwrap_or(&Vec::new()).iter().enumerate() {
-                            {
-                                let lead_name = formation_lead_names
-                                    .read()
-                                    .as_ref()
-                                    .unwrap_or(&Vec::new())
-                                    .get(idx)
-                                    .map(String::clone)
-                                    .unwrap_or_default();
-                                rsx! {
-                                    DropdownMenuItem {
-                                        index: idx,
-                                        value: idx,
-                                        on_select: move |value| selected_formation.set(value),
-                                        "{lead_name}"
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             div {
                 onmousemove: move |evt: MouseEvent| {
-                    const SNAPPING_DIST: f64 = 10.0;
+                    const SNAPPING_DIST: f64 = 20.0;
 
                     let coords = evt.element_coordinates();
                     let mouse_x = coords.x;
@@ -185,6 +217,74 @@ pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: S
                 }
             }
         }
+        if let Some(selected_point) = selected_point() {
+            if selected_point == 0 {
+                "Ship is leader"
+            } else {
+                div { style: "display: grid; grid-template-columns: 40% 60%; width: 50%;",
+                    "Relative X:"
+                    input {
+                        value: "{selected_ship_point().map(|point| point.x).unwrap_or_default()}",
+                        onchange: move |evt| {
+                            let mut formations = formations.write();
+                            let Some(formations) = formations.as_mut() else { return };
+                            let Some(formation): Option<&mut Formation> = formations
+                                .get_mut(selected_formation()) else { return };
+                            let entry: Option<&mut (String, Point3)> = formation
+                                .escorts
+                                .get_mut(selected_point - 1);
+                            if let Some((_, point)) = entry {
+                                let Ok(parsed) = f64::from_str(&evt.value()) else {
+                                    warn!("Invalid X coordinate");
+                                    return;
+                                };
+                                point.x = parsed;
+                            }
+                        },
+                    }
+                    "Relative Y:"
+                    input {
+                        value: "{selected_ship_point().map(|point| point.y).unwrap_or_default()}",
+                        onchange: move |evt| {
+                            let mut formations = formations.write();
+                            let Some(formations) = formations.as_mut() else { return };
+                            let Some(formation): Option<&mut Formation> = formations
+                                .get_mut(selected_formation()) else { return };
+                            let entry: Option<&mut (String, Point3)> = formation
+                                .escorts
+                                .get_mut(selected_point - 1);
+                            if let Some((_, point)) = entry {
+                                let Ok(parsed) = f64::from_str(&evt.value()) else {
+                                    warn!("Invalid Y coordinate");
+                                    return;
+                                };
+                                point.y = parsed;
+                            }
+                        },
+                    }
+                    "Relative Z:"
+                    input {
+                        value: "{selected_ship_point().map(|point| point.z).unwrap_or_default()}",
+                        onchange: move |evt| {
+                            let mut formations = formations.write();
+                            let Some(formations) = formations.as_mut() else { return };
+                            let Some(formation): Option<&mut Formation> = formations
+                                .get_mut(selected_formation()) else { return };
+                            let entry: Option<&mut (String, Point3)> = formation
+                                .escorts
+                                .get_mut(selected_point - 1);
+                            if let Some((_, point)) = entry {
+                                let Ok(parsed) = f64::from_str(&evt.value()) else {
+                                    warn!("Invalid Z coordinate");
+                                    return;
+                                };
+                                point.z = parsed;
+                            }
+                        },
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -205,9 +305,9 @@ fn get_formations(fleet: &Fleet) -> Vec<Formation> {
         if let Some(ship_form) = &ship.initial_formation {
             let mut found_form = false;
             let point = Point3::new(
-                ship_form.relative_position.x,
-                ship_form.relative_position.y,
-                ship_form.relative_position.z,
+                ship_form.relative_position.x * 10.0,
+                ship_form.relative_position.y * 10.0,
+                ship_form.relative_position.z * 10.0,
             );
             for formation in &mut formations {
                 if ship_form.guide_key == formation.lead_ship {

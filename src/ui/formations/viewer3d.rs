@@ -117,7 +117,7 @@ fn project_lines_js(
 
 const CONTAINER_ID: &str = "canvas-container";
 const CANVAS_ID: &str = "scene-canvas";
-const CAMERA_DISTANCE: f64 = 500.0;
+const CAMERA_DISTANCE: f64 = 1000.0;
 const HIGHLIGHT_RADIUS: f64 = 7.0;
 
 fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, camera_distance: f64, mut mapped_points: Signal<Vec<(f64, f64)>>) -> String {
@@ -137,7 +137,7 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
     let lines_js = project_lines_js(&scene.points, &scene.lines, &view, &projection, width, height);
 
     let grid_width: i32 = 10;
-    let step = 50.0;
+    let step = 100.0;
 
     let mut grid_points = vec![];
     let mut grid_lines = vec![];
