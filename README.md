@@ -2,6 +2,8 @@
 
 An all-in-one toolkit for managing and editing Nebulous: Fleet Command fleets.
 
+![Preview of nebtools UI](assets/ui-preview.png)
+
 ## Contents
  - Features
  - Installation
