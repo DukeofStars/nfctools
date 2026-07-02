@@ -24,7 +24,7 @@ pub(super) fn compress_swarm(
     );
 
     let mut points = formation.escorts.clone();
-    points.push((formation.lead_ship.clone(), Point3::new(0.0, 0.0, 0.0)) );
+    points.push((formation.lead_ship.clone(), Point3::new(0.0, 0.0, 0.0)));
 
     let min_sq = config.min_dist * config.min_dist;
 

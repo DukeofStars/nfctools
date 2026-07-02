@@ -96,7 +96,9 @@ pub fn FleetFormationViewer(
         names.push(formation_lead_name());
 
         let fleet = fleet.read();
-        let Some(Some(fleet)) = fleet.as_ref() else { return Vec::new() };
+        let Some(Some(fleet)) = fleet.as_ref() else {
+            return Vec::new();
+        };
         let formations = formations.read();
         let Some(formations) = formations.as_ref() else {
             return Vec::new();
@@ -106,19 +108,19 @@ pub fn FleetFormationViewer(
         };
         'escort_loop: for (key, _) in &formation.escorts {
             for ship in fleet
-                        .ships
-                        .as_ref()
-                        .map(|ships| ships.ship.as_ref())
-                        .flatten()
-                        .unwrap_or(&Vec::new())
-                    {
-                        if ship.key == *key {
-                            names.push(ship.name.clone());
-                            continue 'escort_loop;
-                        }
-                    }
-                    warn!("Ship key not found in fleet");
-                    return Vec::new();
+                .ships
+                .as_ref()
+                .map(|ships| ships.ship.as_ref())
+                .flatten()
+                .unwrap_or(&Vec::new())
+            {
+                if ship.key == *key {
+                    names.push(ship.name.clone());
+                    continue 'escort_loop;
+                }
+            }
+            warn!("Ship key not found in fleet");
+            return Vec::new();
         }
 
         names
