@@ -44,7 +44,7 @@ pub fn ShipEditor(ship: Signal<Option<Ship>>) -> Element {
 
 /// A small chevron-down icon rendered as inline SVG.
 #[component]
-fn ChevronDown() -> Element {
+pub fn ChevronDown() -> Element {
     rsx! {
         svg {
             xmlns: "http://www.w3.org/2000/svg",

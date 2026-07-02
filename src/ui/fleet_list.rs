@@ -442,6 +442,7 @@ pub fn FleetList() -> Element {
             overflow: hidden;
             height: 100vh;",
             class: "hide-scroll",
+            oncontextmenu: move |evt| evt.prevent_default(),
             // Fleets List
             div { display: "flex", flex_direction: "column", min_height: 0,
                 h2 { margin: 0, padding: 0, flex_shrink: 0, "Fleets" }
@@ -560,7 +561,7 @@ pub fn FleetList() -> Element {
                         ShipEditor { ship: selected_ship }
                     },
                     FleetEditorTab::FormationViewer => rsx! {
-                        FleetFormationViewer { fleet: selected_fleet }
+                        FleetFormationViewer { fleet: selected_fleet, selected_ship_idx, selected_ship }
                     },
                 }
             }

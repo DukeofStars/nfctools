@@ -1,15 +1,3 @@
-//! 3D point/line/shape renderer for Dioxus Desktop.
-//!
-//! Desktop apps are native binaries (not wasm), so web-sys/wasm-bindgen DOM
-//! bindings don't apply here. Instead we drive the embedded webview's canvas
-//! via `document::eval`, sending it JS to run. This same approach also works
-//! unmodified on the `web` target.
-//!
-//! Cargo.toml:
-//!
-//! [dependencies]
-//! dioxus = { version = "0.6", features = ["desktop"] }
-
 use dioxus::{html::geometry::WheelDelta, prelude::*};
 use nalgebra::{Isometry3, Perspective3, Vector3};
 
@@ -19,6 +7,8 @@ pub type Point3 = nalgebra::Point3<f64>;
 pub struct Scene {
     pub points: Vec<Point3>,
     pub lines: Vec<(usize, usize)>,
+    /// Draws a circle around these points
+    pub highlight_points: Vec<(usize, String)>, // Point index, and colour.
 }
 
 const NEAR: f64 = 0.1;
@@ -78,28 +68,24 @@ fn clip_segment_near(a: Point3, b: Point3, near: f64) -> Option<(Point3, Point3)
     }
 }
 
-/// Projects a set of points and returns only the ones in front of the near
-/// plane, as a JS array literal of [x, y] pairs.
-fn project_points_js(
+fn project_points(
     points: &[Point3],
     view: &Isometry3<f64>,
     projection: &Perspective3<f64>,
     width: f64,
     height: f64,
-) -> String {
+) -> Vec<(f64, f64)> {
     points
         .iter()
         .filter_map(|p| {
             let vp = view.transform_point(p);
             if vp.z < -NEAR {
                 let (x, y) = project_view_point(&vp, projection, width, height);
-                Some(format!("[{x:.2},{y:.2}]"))
+                Some((x, y))
             } else {
                 None
             }
-        })
-        .collect::<Vec<_>>()
-        .join(",")
+        }).collect::<Vec<_>>()
 }
 
 /// Projects a set of edges (clipping each against the near plane first) and
@@ -132,8 +118,9 @@ fn project_lines_js(
 const CONTAINER_ID: &str = "canvas-container";
 const CANVAS_ID: &str = "scene-canvas";
 const CAMERA_DISTANCE: f64 = 500.0;
+const HIGHLIGHT_RADIUS: f64 = 7.0;
 
-fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, camera_distance: f64) -> String {
+fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, camera_distance: f64, mut mapped_points: Signal<Vec<(f64, f64)>>) -> String {
     // Px = distance * sin(yaw) * cos(pitch)
     // Py = distance * sin(pitch)
     // Pz = distance * cos(yaw) * cos(pitch)
@@ -144,7 +131,9 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
 
     let (view, projection) = build_view_projection(&camera_pos, width, height);
 
-    let points_js = project_points_js(&scene.points, &view, &projection, width, height);
+    let points = project_points(&scene.points, &view, &projection, width, height);
+    let points_js = points.iter().map(|(x, y)| format!("[{x:.2},{y:.2}]")).collect::<Vec<_>>().join(",");
+    mapped_points.set(points);
     let lines_js = project_lines_js(&scene.points, &scene.lines, &view, &projection, width, height);
 
     let grid_width: i32 = 10;
@@ -169,6 +158,8 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
 
     let grid_lines_js = project_lines_js(&grid_points, &grid_lines, &view, &projection, width, height);
 
+    let highlight_points_js = scene.highlight_points.iter().map(|(idx, col)| format!("[{idx},\"{col}\"]")).collect::<Vec<_>>().join(",");
+
     format!(
         r#"
         (function() {{
@@ -178,6 +169,7 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
             const points = [{points_js}];
             const lines = [{lines_js}];
             const grid_lines = [{grid_lines_js}];
+            const highlight_points = [{highlight_points_js}];
 
             // Resize the backing store to match CSS size * DPI, only when it
             // actually changed (resizing the buffer clears it as a side effect).
@@ -220,15 +212,23 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
                 ctx.arc(x, y, 4, 0, Math.PI * 2);
                 ctx.fill();
             }}
+
+            for (const [idx, col] of highlight_points) {{
+                ctx.strokeStyle = col;
+                ctx.beginPath();
+                ctx.arc(points[idx][0], points[idx][1], {HIGHLIGHT_RADIUS}, 0, Math.PI * 2);
+                ctx.stroke();
+            }}
         }})();
         "#
     )
 }
 
 const MAX_PITCH: f64 = std::f64::consts::FRAC_PI_2 - 0.001;
+const MIN_CAM_DIST: f64 = 100.0;
 
 #[component]
-pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Scene) -> Element {
+pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Signal<Option<Scene>>, mapped_points: Signal<Vec<(f64, f64)>>, children: Element) -> Element {
     let mut pitch = use_signal(|| 0.3_f64);
     let mut yaw = use_signal(|| 0.0_f64);
     let mut camera_distance = use_signal(|| CAMERA_DISTANCE);
@@ -239,7 +239,7 @@ pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Scene) -> Element {
 
     use_effect(move || {
         let (width, height) = size();
-        let js = build_draw_js(&scene, width, height, pitch(), yaw(), camera_distance());
+        let js = build_draw_js(scene.read().as_ref().unwrap(), width, height, pitch(), yaw(), camera_distance(), mapped_points);
         document::eval(&js);
     });
 
@@ -271,6 +271,9 @@ pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Scene) -> Element {
                 }
 
                 camera_distance += vec_y * scroll_multiplier;
+                if camera_distance() <= MIN_CAM_DIST {
+                    camera_distance.set(MIN_CAM_DIST);
+                }
             },
             canvas {
                 id: CANVAS_ID,
@@ -302,6 +305,7 @@ pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Scene) -> Element {
                 // not wiring up a window-level listener via eval.
                 onmouseleave: move |_| dragging.set(false),
             }
+            {children}
         }
     }
 }

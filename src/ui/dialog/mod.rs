@@ -15,6 +15,7 @@ pub fn DialogWrapper(
     let non_exitable = non_exitable.is_some_and(|x| x);
     rsx! {
         div {
+            oncontextmenu: move |evt| evt.prevent_default(),
             style: "position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100;",
             hidden: !signal(),
 
