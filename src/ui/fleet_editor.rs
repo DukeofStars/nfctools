@@ -355,20 +355,20 @@ fn ShipConfigTable(
                         }
                     }
                 }
-
-                for slot in 0..8 {
-                    tr {
-                        td { "Dressing Slot {slot+1}" }
-                        td {}
-                        td {
-                            DressingDropdown { segment: 0, slot, hull_params }
-                        }
-                        td {
-                            DressingDropdown { segment: 1, slot, hull_params }
-                        }
-                        td {}
-                    }
-                }
+            
+            // for slot in 0..8 {
+            //     tr {
+            //         td { "Dressing Slot {slot+1}" }
+            //         td {}
+            //         td {
+            //             DressingDropdown { segment: 0, slot, hull_params }
+            //         }
+            //         td {
+            //             DressingDropdown { segment: 1, slot, hull_params }
+            //         }
+            //         td {}
+            //     }
+            // }
             }
         }
     }
