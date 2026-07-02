@@ -297,6 +297,8 @@ pub fn FleetFormationViewer(
         }
     });
 
+    let mut mouse_pos = use_signal(|| (0f64, 0f64));
+
     rsx! {
         DialogWrapper { signal: show_swarm_dialog,
             SwarmConfigDialog {
@@ -345,14 +347,59 @@ pub fn FleetFormationViewer(
                 let Ok(size) = evt.get_border_box_size() else { return };
                 canvas_size.set((size.width, size.height));
             },
+            oncontextmenu: move |evt| {
+                evt.prevent_default();
+                let coords = evt.client_coordinates();
+                ctx_x.set(coords.x);
+                ctx_y.set(coords.y);
+                update_selected_point();
+                show_ctx.set(true);
+            },
+            onclick: move |_| {
+                show_ctx.set(false);
+                update_selected_point()
+            },
+            onmousemove: move |evt: MouseEvent| {
+                mouse_pos.set((evt.client_coordinates().x, evt.client_coordinates().y));
+
+                const SNAPPING_DIST: f64 = 20.0;
+
+                let coords = evt.element_coordinates();
+                let mouse_x = coords.x;
+                let mouse_y = coords.y;
+
+                let mut min_dist_sq = f64::MAX;
+                let mut point_idx = 0;
+                for (idx, (x, y)) in mapped_points.read().iter().enumerate() {
+                    let dist_sq = (mouse_x - x) * (mouse_x - x)
+                        + (mouse_y - y) * (mouse_y - y);
+                    if dist_sq < min_dist_sq {
+                        min_dist_sq = dist_sq;
+                        point_idx = idx;
+                    }
+                }
+                scene
+                    .write()
+                    .as_mut()
+                    .map(|scene| {
+                        if min_dist_sq <= SNAPPING_DIST * SNAPPING_DIST {
+                            scene.highlight_points.clear();
+                            scene.highlight_points.push((point_idx, "#a0a0a0".to_string()));
+                            near_point.set(Some(point_idx));
+                        } else {
+                            scene.highlight_points.clear();
+                            near_point.set(None);
+                        }
+                        if let Some(selected_point) = selected_point() {
+                            scene.highlight_points.push((selected_point, "#f0f0f0".to_string()));
+                        }
+                    });
+            },
             if show_ctx() {
                 div {
                     style: "position: fixed; top: {ctx_y}px; left: {ctx_x}px; tab-index: 0; display: flex; flex-direction: column; z-index: 100;",
                     class: "context-container",
-                    onfocusout: move |_| {
-                        info!("Focus out");
-                        show_ctx.set(false)
-                    },
+                    onfocusout: move |_| show_ctx.set(false),
                     button {
                         class: "context-button",
                         onmouseenter: move |_| AUDIO_HANDLER.play_hover_sound(),
@@ -390,54 +437,14 @@ pub fn FleetFormationViewer(
                 }
             }
             div {
-                onmousemove: move |evt: MouseEvent| {
-                    const SNAPPING_DIST: f64 = 20.0;
 
-                    let coords = evt.element_coordinates();
-                    let mouse_x = coords.x;
-                    let mouse_y = coords.y;
-
-                    let mut min_dist_sq = f64::MAX;
-                    let mut point_idx = 0;
-                    for (idx, (x, y)) in mapped_points.read().iter().enumerate() {
-                        let dist_sq = (mouse_x - x) * (mouse_x - x)
-                            + (mouse_y - y) * (mouse_y - y);
-                        if dist_sq < min_dist_sq {
-                            min_dist_sq = dist_sq;
-                            point_idx = idx;
-                        }
-                    }
-                    scene
-                        .write()
-                        .as_mut()
-                        .map(|scene| {
-                            if min_dist_sq <= SNAPPING_DIST * SNAPPING_DIST {
-                                scene.highlight_points.clear();
-                                scene.highlight_points.push((point_idx, "#a0a0a0".to_string()));
-                                near_point.set(Some(point_idx));
-                            } else {
-                                scene.highlight_points.clear();
-                                near_point.set(None);
-                            }
-                            if let Some(selected_point) = selected_point() {
-                                scene.highlight_points.push((selected_point, "#f0f0f0".to_string()));
-                            }
-                        });
-                },
-                oncontextmenu: move |evt| {
-                    evt.prevent_default();
-                    let coords = evt.client_coordinates();
-                    ctx_x.set(coords.x);
-                    ctx_y.set(coords.y);
-                    update_selected_point();
-                    show_ctx.set(true);
-                },
-                onclick: move |_| {
-                    show_ctx.set(false);
-                    update_selected_point()
-                },
                 if scene.read().is_some() {
-                    Canvas3D { size: canvas_size, scene, mapped_points }
+                    Canvas3D {
+                        size: canvas_size,
+                        mouse_pos,
+                        scene,
+                        mapped_points,
+                    }
                 }
             }
         }

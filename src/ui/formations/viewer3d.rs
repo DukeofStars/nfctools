@@ -278,14 +278,27 @@ pub fn Canvas3D(
     scene: Signal<Option<Scene>>,
     mapped_points: Signal<Vec<(f64, f64)>>,
     children: Element,
+    mouse_pos: Signal<(f64, f64)>,
 ) -> Element {
-    let mut pitch = use_signal(|| 0.3_f64);
+    let mut pitch = use_signal(|| 1.0_f64);
     let mut yaw = use_signal(|| 0.0_f64);
     let mut camera_distance = use_signal(|| CAMERA_DISTANCE);
 
     let mut dragging = use_signal(|| false);
     let mut last_pos = use_signal(|| (0.0_f64, 0.0_f64));
     const DRAG_SENSITIVITY: f64 = 0.01;
+
+    use_effect(move || {
+        if dragging() {
+            let c = mouse_pos();
+            let (last_x, last_y) = last_pos();
+            let dx = c.0 - last_x;
+            let dy = c.1 - last_y;
+            yaw -= dx * DRAG_SENSITIVITY;
+            pitch.set((pitch() + dy * DRAG_SENSITIVITY).clamp(-MAX_PITCH, MAX_PITCH));
+            last_pos.set((c.0, c.1));
+        }
+    });
 
     use_effect(move || {
         let (width, height) = size();
@@ -345,23 +358,12 @@ pub fn Canvas3D(
                     let c = evt.client_coordinates();
                     last_pos.set((c.x, c.y));
                 },
-                onmousemove: move |evt| {
-                    if dragging() {
-                        let c = evt.client_coordinates();
-                        let (last_x, last_y) = last_pos();
-                        let dx = c.x - last_x;
-                        let dy = c.y - last_y;
-                        yaw -= dx * DRAG_SENSITIVITY;
-                        pitch.set((pitch() + dy * DRAG_SENSITIVITY).clamp(-MAX_PITCH, MAX_PITCH));
-                        last_pos.set((c.x, c.y));
-                    }
-                },
                 onmouseup: move |_| dragging.set(false),
-                // Releasing outside the canvas only stops the drag once the
-                // cursor re-enters and leaves again, since mouseup only fires
-                // over the element itself -- this is the simple tradeoff for
-                // not wiring up a window-level listener via eval.
-                onmouseleave: move |_| dragging.set(false),
+                        // Releasing outside the canvas only stops the drag once the
+            // cursor re-enters and leaves again, since mouseup only fires
+            // over the element itself -- this is the simple tradeoff for
+            // not wiring up a window-level listener via eval.
+            // onmouseleave: move |_| dragging.set(false),
             }
             {children}
         }
