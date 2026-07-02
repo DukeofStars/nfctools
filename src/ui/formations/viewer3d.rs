@@ -30,7 +30,12 @@ fn build_view_projection(
     (view, projection)
 }
 
-fn project_view_point(view_point: &Point3, projection: &Perspective3<f64>, width: f64, height: f64) -> (f64, f64) {
+fn project_view_point(
+    view_point: &Point3,
+    projection: &Perspective3<f64>,
+    width: f64,
+    height: f64,
+) -> (f64, f64) {
     let clip_point = projection.project_point(view_point);
     let screen_x = (clip_point.x + 1.0) * 0.5 * width;
     // flip y because screen space usually has y increasing downward
@@ -40,7 +45,11 @@ fn project_view_point(view_point: &Point3, projection: &Perspective3<f64>, width
 
 /// Clip a line segment (already in view space, camera looking down -z) against
 /// the near plane z = -near. Returns None if the whole segment is behind it.
-fn clip_segment_near(a: Point3, b: Point3, near: f64) -> Option<(Point3, Point3)> {
+fn clip_segment_near(
+    a: Point3,
+    b: Point3,
+    near: f64,
+) -> Option<(Point3, Point3)> {
     let a_visible = a.z < -near;
     let b_visible = b.z < -near;
 
@@ -55,11 +64,8 @@ fn clip_segment_near(a: Point3, b: Point3, near: f64) -> Option<(Point3, Point3)
     // crosses z = -near and trim it there instead of projecting the
     // out-of-frustum endpoint.
     let t = (-near - a.z) / (b.z - a.z);
-    let clipped = Point3::new(
-        a.x + t * (b.x - a.x),
-        a.y + t * (b.y - a.y),
-        -near,
-    );
+    let clipped =
+        Point3::new(a.x + t * (b.x - a.x), a.y + t * (b.y - a.y), -near);
 
     if a_visible {
         Some((a, clipped))
@@ -85,7 +91,8 @@ fn project_points(
             } else {
                 None
             }
-        }).collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>()
 }
 
 /// Projects a set of edges (clipping each against the near plane first) and
@@ -98,7 +105,8 @@ fn project_lines_js(
     width: f64,
     height: f64,
 ) -> String {
-    let view_points: Vec<Point3> = points.iter().map(|p| view.transform_point(p)).collect();
+    let view_points: Vec<Point3> =
+        points.iter().map(|p| view.transform_point(p)).collect();
 
     edges
         .iter()
@@ -106,8 +114,10 @@ fn project_lines_js(
             let va = view_points[a];
             let vb = view_points[b];
             clip_segment_near(va, vb, NEAR).map(|(ca, cb)| {
-                let (x1, y1) = project_view_point(&ca, projection, width, height);
-                let (x2, y2) = project_view_point(&cb, projection, width, height);
+                let (x1, y1) =
+                    project_view_point(&ca, projection, width, height);
+                let (x2, y2) =
+                    project_view_point(&cb, projection, width, height);
                 format!("[{x1:.2},{y1:.2},{x2:.2},{y2:.2}]")
             })
         })
@@ -120,7 +130,15 @@ const CANVAS_ID: &str = "scene-canvas";
 const CAMERA_DISTANCE: f64 = 1000.0;
 const HIGHLIGHT_RADIUS: f64 = 7.0;
 
-fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, camera_distance: f64, mut mapped_points: Signal<Vec<(f64, f64)>>) -> String {
+fn build_draw_js(
+    scene: &Scene,
+    width: f64,
+    height: f64,
+    pitch: f64,
+    yaw: f64,
+    camera_distance: f64,
+    mut mapped_points: Signal<Vec<(f64, f64)>>,
+) -> String {
     // Px = distance * sin(yaw) * cos(pitch)
     // Py = distance * sin(pitch)
     // Pz = distance * cos(yaw) * cos(pitch)
@@ -131,10 +149,22 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
 
     let (view, projection) = build_view_projection(&camera_pos, width, height);
 
-    let points = project_points(&scene.points, &view, &projection, width, height);
-    let points_js = points.iter().map(|(x, y)| format!("[{x:.2},{y:.2}]")).collect::<Vec<_>>().join(",");
+    let points =
+        project_points(&scene.points, &view, &projection, width, height);
+    let points_js = points
+        .iter()
+        .map(|(x, y)| format!("[{x:.2},{y:.2}]"))
+        .collect::<Vec<_>>()
+        .join(",");
     mapped_points.set(points);
-    let lines_js = project_lines_js(&scene.points, &scene.lines, &view, &projection, width, height);
+    let lines_js = project_lines_js(
+        &scene.points,
+        &scene.lines,
+        &view,
+        &projection,
+        width,
+        height,
+    );
 
     let grid_width: i32 = 10;
     let step = 100.0;
@@ -148,7 +178,10 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
             grid_points.push(Point3::new(x, 0.0, z));
 
             if i < grid_width {
-                grid_lines.push((grid_points.len() - 1, grid_points.len() + 2 * grid_width as usize));
+                grid_lines.push((
+                    grid_points.len() - 1,
+                    grid_points.len() + 2 * grid_width as usize,
+                ));
             }
             if j < grid_width {
                 grid_lines.push((grid_points.len() - 1, grid_points.len()));
@@ -156,9 +189,21 @@ fn build_draw_js(scene: &Scene, width: f64, height: f64, pitch: f64, yaw: f64, c
         }
     }
 
-    let grid_lines_js = project_lines_js(&grid_points, &grid_lines, &view, &projection, width, height);
+    let grid_lines_js = project_lines_js(
+        &grid_points,
+        &grid_lines,
+        &view,
+        &projection,
+        width,
+        height,
+    );
 
-    let highlight_points_js = scene.highlight_points.iter().map(|(idx, col)| format!("[{idx},\"{col}\"]")).collect::<Vec<_>>().join(",");
+    let highlight_points_js = scene
+        .highlight_points
+        .iter()
+        .map(|(idx, col)| format!("[{idx},\"{col}\"]"))
+        .collect::<Vec<_>>()
+        .join(",");
 
     format!(
         r#"
@@ -228,7 +273,12 @@ const MAX_PITCH: f64 = std::f64::consts::FRAC_PI_2 - 0.001;
 const MIN_CAM_DIST: f64 = 100.0;
 
 #[component]
-pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Signal<Option<Scene>>, mapped_points: Signal<Vec<(f64, f64)>>, children: Element) -> Element {
+pub fn Canvas3D(
+    size: Signal<(f64, f64)>,
+    scene: Signal<Option<Scene>>,
+    mapped_points: Signal<Vec<(f64, f64)>>,
+    children: Element,
+) -> Element {
     let mut pitch = use_signal(|| 0.3_f64);
     let mut yaw = use_signal(|| 0.0_f64);
     let mut camera_distance = use_signal(|| CAMERA_DISTANCE);
@@ -239,7 +289,15 @@ pub fn Canvas3D(size: Signal<(f64, f64)>, scene: Signal<Option<Scene>>, mapped_p
 
     use_effect(move || {
         let (width, height) = size();
-        let js = build_draw_js(scene.read().as_ref().unwrap(), width, height, pitch(), yaw(), camera_distance(), mapped_points);
+        let js = build_draw_js(
+            scene.read().as_ref().unwrap(),
+            width,
+            height,
+            pitch(),
+            yaw(),
+            camera_distance(),
+            mapped_points,
+        );
         document::eval(&js);
     });
 

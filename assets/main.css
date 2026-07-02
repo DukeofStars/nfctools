@@ -188,3 +188,22 @@ input {
         stroke: red;
     }
 }
+
+.context-container {
+    background-color: var(--bg2);
+    border: 2px solid var(--border);
+}
+.context-button {
+    background-color: var(--bg2);
+    border: none;
+    height: 20px;
+    cursor: pointer;
+    font-size: 16px;
+    transition-duration: 200ms;
+}
+.context-button:hover {
+    background-color: rgba(255,255,255,0.6);
+}
+.context-button:active {
+    background-color: var(--highlight);
+}

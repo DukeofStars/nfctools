@@ -34,11 +34,21 @@ impl Menubars {
         let fleets_menu = Submenu::new("Fleets", true);
         let fleets_reload =
             MenuItem::with_id("fleets-reload", "Reload Fleets", true, None);
-        let fleets_clear_cache =
-            MenuItem::with_id("fleets-clear-cache", "Clear Fleet Cache", true, None);
+        let fleets_clear_cache = MenuItem::with_id(
+            "fleets-clear-cache",
+            "Clear Fleet Cache",
+            true,
+            None,
+        );
         let fleets_backup =
             MenuItem::with_id("fleets-backup", "Backup Fleets", true, None);
-        fleets_menu.append_items(&[&fleets_reload, &fleets_clear_cache, &fleets_backup]).unwrap();
+        fleets_menu
+            .append_items(&[
+                &fleets_reload,
+                &fleets_clear_cache,
+                &fleets_backup,
+            ])
+            .unwrap();
 
         let edit_menu = Submenu::new("Edit", true);
         let edit_preferences =

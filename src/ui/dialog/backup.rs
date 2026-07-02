@@ -1,12 +1,18 @@
-use std::{fs::{File, OpenOptions}, path::{Path, PathBuf}};
+use std::{
+    fs::{File, OpenOptions},
+    path::{Path, PathBuf},
+};
 
-use dioxus::{prelude::*};
+use color_eyre::Result;
+use dioxus::prelude::*;
 use dioxus_primitives::checkbox::CheckboxState;
 use rfd::AsyncFileDialog;
-use color_eyre::Result;
 use zip::write::FileOptions;
 
-use crate::{components::checkbox::Checkbox, config::APP_CONFIG, ui::dialog::DialogWrapper};
+use crate::{
+    components::checkbox::Checkbox, config::APP_CONFIG,
+    ui::dialog::DialogWrapper,
+};
 
 #[component]
 pub fn BackupDialog(signal: Signal<bool>) -> Element {
@@ -122,9 +128,16 @@ pub fn BackupDialog(signal: Signal<bool>) -> Element {
 }
 
 fn backup_to_zip(out_path: &Path) -> Result<()> {
-    let fleets_root = APP_CONFIG.get().unwrap().lock().unwrap().saves_dir.join("Fleets");
+    let fleets_root = APP_CONFIG
+        .get()
+        .unwrap()
+        .lock()
+        .unwrap()
+        .saves_dir
+        .join("Fleets");
 
-    let mut file = OpenOptions::new().write(true).create(true).open(out_path)?;
+    let mut file =
+        OpenOptions::new().write(true).create(true).open(out_path)?;
     let mut zip_writer = zip::ZipWriter::new_stream(&mut file);
 
     let mut dirs_queue = Vec::new();
@@ -141,10 +154,16 @@ fn backup_to_zip(out_path: &Path) -> Result<()> {
             let sub_path = path.strip_prefix(&fleets_root).unwrap();
 
             if path.is_dir() {
-                zip_writer.add_directory_from_path(sub_path, FileOptions::DEFAULT)?;
+                zip_writer
+                    .add_directory_from_path(sub_path, FileOptions::DEFAULT)?;
                 dirs_queue.push(path);
-            } else if path.is_file() && path.extension().is_some_and(|ext| ext.to_str().unwrap() == "fleet") {
-                zip_writer.start_file_from_path(sub_path, FileOptions::DEFAULT)?;
+            } else if path.is_file()
+                && path
+                    .extension()
+                    .is_some_and(|ext| ext.to_str().unwrap() == "fleet")
+            {
+                zip_writer
+                    .start_file_from_path(sub_path, FileOptions::DEFAULT)?;
                 let mut src_file = File::open(&path)?;
                 std::io::copy(&mut src_file, &mut zip_writer)?;
             }
@@ -157,7 +176,13 @@ fn backup_to_zip(out_path: &Path) -> Result<()> {
 }
 
 fn backup_to_folder(out_path: &Path) -> Result<()> {
-    let fleets_root = APP_CONFIG.get().unwrap().lock().unwrap().saves_dir.join("Fleets");
+    let fleets_root = APP_CONFIG
+        .get()
+        .unwrap()
+        .lock()
+        .unwrap()
+        .saves_dir
+        .join("Fleets");
 
     let mut dirs_queue = Vec::new();
 
@@ -167,7 +192,7 @@ fn backup_to_folder(out_path: &Path) -> Result<()> {
         let dir = dirs_queue.remove(0);
         let read_dir = dir.read_dir()?;
         for child in read_dir {
-            let Ok(entry) = child else {continue};
+            let Ok(entry) = child else { continue };
             let path = entry.path();
 
             let sub_path = path.strip_prefix(&fleets_root).unwrap();
@@ -179,12 +204,20 @@ fn backup_to_folder(out_path: &Path) -> Result<()> {
                     trace!("Creating directory: '{}'", new_path.display());
                     std::fs::create_dir(new_path)?;
                 }
-            } else if path.is_file() && path.extension().is_some_and(|ext| ext.to_str().unwrap() == "fleet") {
+            } else if path.is_file()
+                && path
+                    .extension()
+                    .is_some_and(|ext| ext.to_str().unwrap() == "fleet")
+            {
                 if new_path.exists() {
                     trace!("Removing old file: '{}'", new_path.display());
                     std::fs::remove_file(&new_path)?;
                 }
-                trace!("Copying file: '{}' -> '{}'", path.display(), new_path.display());
+                trace!(
+                    "Copying file: '{}' -> '{}'",
+                    path.display(),
+                    new_path.display()
+                );
                 std::fs::copy(&path, &new_path)?;
             }
         }

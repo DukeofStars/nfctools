@@ -21,7 +21,11 @@ pub fn load_fleets(use_cache: Option<bool>) -> Result<Vec<FleetData>> {
         bail!("App configuration not yet loaded");
     };
 
-    let use_cache = if let Some(use_cache) = use_cache { use_cache } else { app_config.use_fleet_cache };
+    let use_cache = if let Some(use_cache) = use_cache {
+        use_cache
+    } else {
+        app_config.use_fleet_cache
+    };
 
     let path = &app_config.saves_dir.join("Fleets");
     let excluded_patterns = app_config

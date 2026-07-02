@@ -5,7 +5,7 @@ use std::{fs::OpenOptions, path::PathBuf};
 use clap::{Parser, ValueEnum};
 use color_eyre::Result;
 use dioxus::{
-    desktop::{Config, WindowBuilder, muda::Menu, wry::dpi::PhysicalSize},
+    desktop::{muda::Menu, wry::dpi::PhysicalSize, Config, WindowBuilder},
     prelude::*,
 };
 use lazy_static::lazy_static;
@@ -33,8 +33,6 @@ mod ui;
 
 #[allow(unused)]
 mod components;
-
-
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
 

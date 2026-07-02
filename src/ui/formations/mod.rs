@@ -1,52 +1,103 @@
-use std::str::FromStr;
 use dioxus::prelude::*;
 use schemas::{Fleet, InitialFormation, RelativePosition, Ship};
+use std::str::FromStr;
 
 mod viewer3d;
 
-use crate::{components::dropdown_menu::{DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger}, ui::{fleet_editor::ChevronDown, formations::viewer3d::{Canvas3D, Point3, Scene}}};
+use crate::{
+    audio::AUDIO_HANDLER, components::dropdown_menu::{
+        DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+        DropdownMenuTrigger,
+    }, fleet_data::FleetData, ui::{
+        fleet_editor::ChevronDown,
+        formations::viewer3d::{Canvas3D, Point3, Scene},
+    }
+};
 
 #[component]
-pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: Signal<Option<usize>>, selected_ship: Signal<Option<Ship>>) -> Element {
+pub fn FleetFormationViewer(
+    fleet: Resource<Option<Fleet>>,
+    fleet_data: Signal<Option<FleetData>>,
+    selected_ship_idx: Signal<Option<usize>>,
+    selected_ship: Signal<Option<Ship>>,
+) -> Element {
     let mut canvas_size = use_signal(|| (0f64, 0f64));
-    
-    let mut formations = use_memo(move || {
-        if let Some(Some(fleet)) = fleet.read().as_ref() {
+
+    let mut formations = use_signal(|| None);
+    // Prevent infinite looping, as formations update -> fleet update -> formations update.
+    // Formations update -> fleet update gated behind this signal.
+    // Enabled when UI makes changes to formations that must be saved.
+    let mut fleet_dirty = use_signal(|| false);
+    use_effect(move || {
+        fleet_data.read();
+        fleet_dirty.set(true);
+    });
+    use_effect(move || {
+        if !fleet_dirty() {
+            return;
+        }
+        formations.set(if let Some(Some(fleet)) = fleet.read().as_ref() {
             Some(get_formations(fleet))
         } else {
             None
-        }
+        });
+        fleet_dirty.set(false);
     });
     let formation_lead_names = use_memo(move || {
         let fleet = fleet.read();
         let formations = formations.read();
-        let Some(Some(fleet)) = fleet.as_ref() else { return None };
-        let Some(formations) = formations.as_ref() else { return None };
+        let Some(Some(fleet)) = fleet.as_ref() else {
+            return None;
+        };
+        let Some(formations) = formations.as_ref() else {
+            return None;
+        };
 
-        Some(formations.iter().map(move |formation| {
-            let mut lead_ship_name = String::new();
-            for ship in fleet.ships.as_ref().map(|ships| ships.ship.as_ref()).flatten().unwrap_or(&Vec::new()) {
-                if ship.key == formation.lead_ship {
-                    lead_ship_name = ship.name.clone();
-                }
-            }
-            lead_ship_name
-        }).collect::<Vec<_>>())
+        Some(
+            formations
+                .iter()
+                .map(move |formation| {
+                    let mut lead_ship_name = String::new();
+                    for ship in fleet
+                        .ships
+                        .as_ref()
+                        .map(|ships| ships.ship.as_ref())
+                        .flatten()
+                        .unwrap_or(&Vec::new())
+                    {
+                        if ship.key == formation.lead_ship {
+                            lead_ship_name = ship.name.clone();
+                        }
+                    }
+                    lead_ship_name
+                })
+                .collect::<Vec<_>>(),
+        )
     });
     let mut selected_formation = use_signal(|| 0usize);
     let formation_lead_name = use_memo(move || {
-        formation_lead_names.read().as_ref().map(|x| x.get(selected_formation())).flatten().map(String::clone).unwrap_or_default()
+        formation_lead_names
+            .read()
+            .as_ref()
+            .map(|x| x.get(selected_formation()))
+            .flatten()
+            .map(String::clone)
+            .unwrap_or_default()
     });
-    
-    let mut near_point = use_signal(|| None);
-    let mut selected_point = use_signal(|| None);
-    
+
+    let mut near_point: Signal<Option<usize>> = use_signal(|| None);
+    let mut selected_point: Signal<Option<usize>> = use_signal(|| None);
+
     let mut scene = use_signal(|| None);
     let mut old_form_lead = use_signal(String::new);
     use_effect(move || {
         let formations = formations.read();
-        let Some(formations) = formations.as_ref() else { return };
-        let Some(formation) = formations.get(selected_formation()) else { return };
+        let Some(formations) = formations.as_ref() else {
+            return;
+        };
+        let Some(formation) = formations.get(selected_formation()) else {
+            return;
+        };
         trace!("Updating scene");
         if formation.lead_ship != old_form_lead() {
             selected_point.set(None);
@@ -57,32 +108,125 @@ pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: S
 
         trace!("Updating fleet formation");
         let mut fleet = fleet.write();
-        let Some(Some(fleet)) = fleet.as_mut() else { return; };
-        
-        let mut empty_vec = Vec::new();
-        for (key, point) in &formation.escorts {
-            let mut matched_ship = None;
-            for ship in fleet.ships.as_mut().map(|ships| ships.ship.as_mut()).flatten().unwrap_or(&mut empty_vec) {
-                if &ship.key == key {
-                    matched_ship = Some(ship);
-                }
-            }
-            let Some(ship) = matched_ship else { warn!("Could not find matching ship for formation in fleet"); continue };
+        let Some(Some(fleet)) = fleet.as_mut() else {
+            return;
+        };
 
-            ship.initial_formation = Some(InitialFormation { guide_key: formation.lead_ship.clone(), relative_position: RelativePosition { x: point.x / 10.0, y: point.y / 10.0, z: point.z / 10.0 } });
+        let mut empty_vec = Vec::new();
+        for formation in formations {
+            for (key, point) in &formation.escorts {
+                let mut matched_ship = None;
+                for ship in fleet
+                    .ships
+                    .as_mut()
+                    .map(|ships| ships.ship.as_mut())
+                    .flatten()
+                    .unwrap_or(&mut empty_vec)
+                {
+                    if &ship.key == key {
+                        matched_ship = Some(ship);
+                        break;
+                    } else if &ship.key == &formation.lead_ship {
+                        ship.initial_formation = None;
+                    }
+                }
+                let Some(ship) = matched_ship else {
+                    warn!("Could not find matching ship for formation in fleet");
+                    continue;
+                };
+
+                ship.initial_formation = Some(InitialFormation {
+                    guide_key: formation.lead_ship.clone(),
+                    relative_position: RelativePosition {
+                        x: point.x / 10.0,
+                        y: point.y / 10.0,
+                        z: point.z / 10.0,
+                    },
+                });
+            }
         }
+
+        let fleet_data = fleet_data.read();
+        let Some(fleet_data) = fleet_data.as_ref() else { return };
+        match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
+            Ok(_) => {}
+            Err(err) => {
+                error!("Failed to write fleet file: {:?}", err);
+            }
+        };
     });
 
-    let mapped_points = use_signal(|| Vec::new());
 
     let selected_ship_point = use_memo(move || {
         if selected_point()? == 0 {
             return Some(Point3::new(0.0, 0.0, 0.0));
         }
         let formations = formations.read();
-        let point: &(String, Point3) = formations.as_ref()?.get(selected_formation())?.escorts.get(selected_point()? - 1)?;
+        let point: &(String, Point3) = formations
+            .as_ref()?
+            .get(selected_formation())?
+            .escorts
+            .get(selected_point()? - 1)?;
         Some(point.1.clone())
     });
+
+    let mapped_points = use_signal(Vec::new);
+
+    let mut ctx_x = use_signal(|| 0f64);
+    let mut ctx_y = use_signal(|| 0f64); 
+
+    let mut update_selected_point = move || {
+        let Some(near_point) = near_point() else {
+            return;
+        };
+        selected_point.set(Some(near_point));
+
+        let formations = formations.read();
+        let empty_vec = Vec::new();
+        let escort_key: &String = if near_point == 0 {
+            &formations
+                .as_ref()
+                .unwrap_or(&empty_vec)
+                .get(selected_formation())
+                .unwrap()
+                .lead_ship
+        } else {
+            &formations
+                .as_ref()
+                .unwrap_or(&empty_vec)
+                .get(selected_formation())
+                .unwrap()
+                .escorts
+                .get(near_point - 1)
+                .unwrap()
+                .0
+        };
+        let mut idx = None;
+        let mut ship = None;
+        let fleet_read = fleet.read();
+        for (ship_idx, s) in fleet_read
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .ships
+            .as_ref()
+            .map(|ships| ships.ship.as_ref())
+            .flatten()
+            .unwrap_or(&Vec::new())
+            .iter()
+            .enumerate()
+        {
+            if &s.key == escort_key {
+                idx = Some(ship_idx);
+                ship = Some(s.clone());
+            }
+        }
+        selected_ship_idx.set(idx);
+        selected_ship.set(ship);
+    };
+
+    let mut show_ctx = use_signal(|| false);
 
     rsx! {
         h3 { "Formations" }
@@ -125,6 +269,35 @@ pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: S
                 canvas_size.set((size.width, size.height));
             },
             div {
+                hidden: !show_ctx(),
+                style: "position: fixed; top: {ctx_y}px; left: {ctx_x}px; tab-index: 0;",
+                class: "context-container",
+                onfocusout: move |_| {
+                    info!("Focus out");
+                    show_ctx.set(false)
+                },
+                if let Some(selected_point) = selected_point() {
+                    if selected_point != 0 {
+                        button {
+                            class: "context-button",
+                            onmouseenter: move |_| AUDIO_HANDLER.play_hover_sound(),
+                            onclick: move |_| {
+                                show_ctx.set(false);
+                                let mut formations = formations.write();
+                                let Some(formations) = formations.as_mut() else {
+                                    return;
+                                };
+                                let Some(formation) = formations.get_mut(selected_formation()) else {
+                                    return;
+                                };
+                                change_leader(formation, selected_point - 1);
+                            },
+                            "Make ship leader"
+                        }
+                    }
+                }
+            }
+            div {
                 onmousemove: move |evt: MouseEvent| {
                     const SNAPPING_DIST: f64 = 20.0;
 
@@ -161,62 +334,22 @@ pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: S
                 },
                 oncontextmenu: move |evt| {
                     evt.prevent_default();
+                    let coords = evt.client_coordinates();
+                    ctx_x.set(coords.x);
+                    ctx_y.set(coords.y);
+                    update_selected_point();
+                    show_ctx.set(true);
                 },
-                onclick: {
-                    move |_| {
-                        let Some(near_point) = near_point() else { return };
-                        selected_point.set(Some(near_point));
-
-                        let formations = formations.read();
-                        let empty_vec = Vec::new();
-                        let escort_key = if near_point == 0 {
-                            &formations
-                                .as_ref()
-                                .unwrap_or(&empty_vec)
-                                .get(selected_formation())
-                                .unwrap()
-                                .lead_ship
-                        } else {
-                            &formations
-                                .as_ref()
-                                .unwrap_or(&empty_vec)
-                                .get(selected_formation())
-                                .unwrap()
-                                .escorts
-                                .get(near_point - 1)
-                                .unwrap()
-                                .0
-                        };
-                        let mut idx = None;
-                        let mut ship = None;
-                        let fleet_read = fleet.read();
-                        for (ship_idx, s) in fleet_read
-                            .as_ref()
-                            .unwrap()
-                            .as_ref()
-                            .unwrap()
-                            .ships
-                            .as_ref()
-                            .map(|ships| ships.ship.as_ref())
-                            .flatten()
-                            .unwrap_or(&Vec::new())
-                            .iter()
-                            .enumerate()
-                        {
-                            if &s.key == escort_key {
-                                idx = Some(ship_idx);
-                                ship = Some(s.clone());
-                            }
-                        }
-                        selected_ship_idx.set(idx);
-                        selected_ship.set(ship);
-                    }
+                onclick: move |_| {
+                    show_ctx.set(false);
+                    update_selected_point()
                 },
                 if scene.read().is_some() {
                     Canvas3D { size: canvas_size, scene, mapped_points }
                 }
             }
         }
+
         if let Some(selected_point) = selected_point() {
             if selected_point == 0 {
                 "Ship is leader"
@@ -291,13 +424,18 @@ pub fn FleetFormationViewer(fleet: Resource<Option<Fleet>>, selected_ship_idx: S
 #[derive(PartialEq, Debug, Clone)]
 struct Formation {
     lead_ship: String,
-    escorts: Vec<(String, Point3)>
+    escorts: Vec<(String, Point3)>,
 }
 
 fn get_formations(fleet: &Fleet) -> Vec<Formation> {
     let mut formations: Vec<Formation> = Vec::new();
 
-    let ships = match fleet.ships.as_ref().map(|ships| ships.ship.as_ref()).flatten() {
+    let ships = match fleet
+        .ships
+        .as_ref()
+        .map(|ships| ships.ship.as_ref())
+        .flatten()
+    {
         Some(ships) => ships,
         None => &Vec::new(),
     };
@@ -319,7 +457,7 @@ fn get_formations(fleet: &Fleet) -> Vec<Formation> {
             if !found_form {
                 formations.push(Formation {
                     lead_ship: ship_form.guide_key.clone(),
-                    escorts: vec![(ship.key.clone(), point)]
+                    escorts: vec![(ship.key.clone(), point)],
                 })
             }
         }
@@ -343,5 +481,17 @@ fn formation_to_scene(form: &Formation) -> Scene {
         points,
         lines,
         highlight_points: Vec::new(),
+    }
+}
+
+fn change_leader(formation: &mut Formation, new_lead: usize) {
+    let (lead_ship, new_centre) = formation.escorts.remove(new_lead);
+    formation.escorts.push((formation.lead_ship.clone(), Point3::new(0.0, 0.0, 0.0)));
+    formation.lead_ship = lead_ship;
+    
+    for (_key, point) in &mut formation.escorts {
+        point.x -= new_centre.x;
+        point.y -= new_centre.y;
+        point.z -= new_centre.z;
     }
 }

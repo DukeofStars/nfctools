@@ -21,12 +21,18 @@ use crate::{
     fleet_io::read_fleet,
     load_fleets,
     spawn_async::spawn_async,
-    tags::{Color, TAGS_REPO, Tag},
+    tags::{Color, Tag, TAGS_REPO},
     ui::{
         dialog::{
-            DialogWrapper, backup::BackupDialog, error::{ErrorDialog, ErrorType}, merge_fleets::MergeFleetsDialog, settings::SettingsDialog, spinner::SpinnerDialog
+            backup::BackupDialog,
+            error::{ErrorDialog, ErrorType},
+            merge_fleets::MergeFleetsDialog,
+            settings::SettingsDialog,
+            spinner::SpinnerDialog,
+            DialogWrapper,
         },
-        fleet_editor::ShipEditor, formations::FleetFormationViewer,
+        fleet_editor::ShipEditor,
+        formations::FleetFormationViewer,
     },
 };
 
@@ -126,10 +132,20 @@ pub fn FleetList() -> Element {
                     "fleets-clear-cache" => {
                         info!("Clearing fleet cache");
                         show_spinner!("Clearing fleet cache");
-                        let cache_path = crate::config::APP_CONFIG.get().unwrap().lock().unwrap().cache_dir.join("fleets_data.bin");
+                        let cache_path = crate::config::APP_CONFIG
+                            .get()
+                            .unwrap()
+                            .lock()
+                            .unwrap()
+                            .cache_dir
+                            .join("fleets_data.bin");
                         if let Err(err) = std::fs::remove_file(&cache_path) {
                             show_spinner_dialog.set(false);
-                            error_popup!("Failed to clear fleet cache", format!("{:?}", err), ErrorType::Fatal);
+                            error_popup!(
+                                "Failed to clear fleet cache",
+                                format!("{:?}", err),
+                                ErrorType::Fatal
+                            );
                         }
                         show_spinner_dialog.set(false);
                     }
@@ -241,7 +257,6 @@ pub fn FleetList() -> Element {
         description.set(new_desc);
     });
 
-    
     let mut fleet_editor_tab = use_signal(|| FleetEditorTab::Blank);
 
     let mut prev_path = use_signal(|| None);
@@ -287,6 +302,7 @@ pub fn FleetList() -> Element {
     use_effect(move || {
         let ship = selected_ship.read();
         if let Some(ship) = ship.as_ref() {
+            debug!("Saving fleet");
             let fleet_data_r = selected_fleet_data.read();
             let fleet_data = fleet_data_r
                 .as_ref()
@@ -370,7 +386,6 @@ pub fn FleetList() -> Element {
 
         crate::search::parse_search_text(search_text())
     });
-
 
     rsx! {
         DialogWrapper { signal: show_settings_dialog,
@@ -565,7 +580,12 @@ pub fn FleetList() -> Element {
                         ShipEditor { ship: selected_ship }
                     },
                     FleetEditorTab::FormationViewer => rsx! {
-                        FleetFormationViewer { fleet: selected_fleet, selected_ship_idx, selected_ship }
+                        FleetFormationViewer {
+                            fleet: selected_fleet,
+                            fleet_data: selected_fleet_data,
+                            selected_ship_idx,
+                            selected_ship,
+                        }
                     },
                 }
             }

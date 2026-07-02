@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use dioxus_primitives::context_menu::{
-    self, ContextMenuContentProps, ContextMenuItemProps, ContextMenuProps, ContextMenuTriggerProps,
+    self, ContextMenuContentProps, ContextMenuItemProps, ContextMenuProps,
+    ContextMenuTriggerProps,
 };
 
 use crate::include_style;
