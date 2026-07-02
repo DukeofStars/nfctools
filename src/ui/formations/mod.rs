@@ -90,6 +90,40 @@ pub fn FleetFormationViewer(
             .unwrap_or_default()
     });
 
+    let ship_names = use_memo(move || {
+        let mut names = Vec::new();
+
+        names.push(formation_lead_name());
+
+        let fleet = fleet.read();
+        let Some(Some(fleet)) = fleet.as_ref() else { return Vec::new() };
+        let formations = formations.read();
+        let Some(formations) = formations.as_ref() else {
+            return Vec::new();
+        };
+        let Some(formation) = formations.get(selected_formation()) else {
+            return Vec::new();
+        };
+        'escort_loop: for (key, _) in &formation.escorts {
+            for ship in fleet
+                        .ships
+                        .as_ref()
+                        .map(|ships| ships.ship.as_ref())
+                        .flatten()
+                        .unwrap_or(&Vec::new())
+                    {
+                        if ship.key == *key {
+                            names.push(ship.name.clone());
+                            continue 'escort_loop;
+                        }
+                    }
+                    warn!("Ship key not found in fleet");
+                    return Vec::new();
+        }
+
+        names
+    });
+
     let mut near_point: Signal<Option<usize>> = use_signal(|| None);
     let mut selected_point: Signal<Option<usize>> = use_signal(|| None);
 
@@ -304,14 +338,14 @@ pub fn FleetFormationViewer(
         }
 
         div {
-            style: "width: 50vw; height: 50vh;",
+            style: "width: 50vw; height: 50vh; position: relative;",
             onresize: move |evt: ResizeEvent| {
                 let Ok(size) = evt.get_border_box_size() else { return };
                 canvas_size.set((size.width, size.height));
             },
             if show_ctx() {
                 div {
-                    style: "position: fixed; top: {ctx_y}px; left: {ctx_x}px; tab-index: 0; display: flex; flex-direction: column;",
+                    style: "position: fixed; top: {ctx_y}px; left: {ctx_x}px; tab-index: 0; display: flex; flex-direction: column; z-index: 100;",
                     class: "context-container",
                     onfocusout: move |_| {
                         info!("Focus out");
@@ -342,10 +376,15 @@ pub fn FleetFormationViewer(
                                     };
                                     change_leader(formation, selected_point - 1);
                                 },
-                                "Make ship leader"
+                                "Make leader"
                             }
                         }
                     }
+                }
+            }
+            for (i , (x , y)) in mapped_points.read().iter().enumerate() {
+                p { style: "position: absolute; left: {x}px; top: {y+2.0}px; font-size: 10px; anchor: top;",
+                    "{ship_names.get(i).map(|s| s.clone()).unwrap_or_default()}"
                 }
             }
             div {
