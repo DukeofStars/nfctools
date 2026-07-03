@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use schemas::Ship;
+use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 lazy_static! {
@@ -41,17 +42,17 @@ lazy_static! {
     ]);
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Deserialize, Serialize)]
 pub struct EditableHullParams {
     pub bow_type: usize,
     pub core_type: usize,
     pub stern_type: usize,
 
-    pub bow_dressings: [u8; 8],
-    pub core_dressings: [u8; 8],
-
     pub superstructure_loc: usize,
     pub superstructure_type: usize,
+
+    pub bow_dressings: [u8; 8],
+    pub core_dressings: [u8; 8],
 }
 
 pub fn get_ln_editable_hull_params(ship: &Ship) -> Option<EditableHullParams> {

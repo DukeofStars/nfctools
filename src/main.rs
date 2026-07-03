@@ -30,6 +30,7 @@ mod search;
 mod spawn_async;
 mod tags;
 mod ui;
+mod export;
 
 #[allow(unused)]
 mod components;

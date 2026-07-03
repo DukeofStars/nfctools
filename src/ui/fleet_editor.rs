@@ -1,3 +1,4 @@
+use arboard::Clipboard;
 use dioxus::prelude::*;
 use schemas::Ship;
 
@@ -10,32 +11,82 @@ use crate::{
 };
 
 #[component]
-pub fn ShipEditor(ship: Signal<Option<Ship>>) -> Element {
-    let ship_config_table = use_memo(move || {
+pub fn ShipEditor(mut ship: Signal<Option<Ship>>) -> Element {
+    let memo = use_memo(move || {
         let ship_read = ship.read();
         let Some(ship_r) = ship_read.as_ref() else {
-            return rsx! { "No ship selected" };
+            return (rsx! { "No ship selected" }, None);
         };
 
         if ship_r.hull_type != "Stock/Bulk Hauler" {
-            return rsx! { "Ship is not a liner" };
+            return (rsx! { "Ship is not a liner" }, None);
         }
 
         let hull_params = get_ln_editable_hull_params(ship_r);
 
         if let Some(hull_params) = hull_params {
-            rsx! {
-                ShipConfigTable { key: "{ship_r.name}", ship, hull_params }
-            }
+            (rsx! {
+                ShipConfigTable {
+                    key: "{ship_r.name}{hull_params:?}",
+                    ship,
+                    hull_params: hull_params.clone(),
+                }
+            }, Some(hull_params))
         } else {
-            rsx! { "Ship is not a liner" }
+            (rsx! { "Ship is not a liner" }, None)
         }
     });
 
+    let ship_config_table = use_memo(move || memo().0);
+    let hull_params = use_memo(move || memo().1);
+
     rsx! {
         div { display: "flex", flex_direction: "column",
-            if let Some(ship) = ship.read().as_ref() {
-                h3 { "Editing Ship '{ship.name}'" }
+            if let Some(ship_read) = ship.read().as_ref() {
+                div { style: "display: flex; flex-direction: row; justify-content: space-between;",
+                    h3 { style: "overflow: hidden; white-space: nowrap; text-overflow: ellipsis;",
+                        "Editing Ship '{ship_read.name}'"
+                    }
+                    div { style: "display: flex; flex-direction: row; gap: 3px; width: 263px;",
+                        button {
+                            style: "width: 130px;",
+                            class: "button",
+                            onclick: move |_| {
+                                if let Some(hull_params) = hull_params.read().as_ref() {
+                                    let Ok(hex) = crate::export::export_hull_config(hull_params) else {
+                                        warn!("Failed to serialize hull parameters");
+                                        return;
+                                    };
+                                    info!("Exported LN config: '{}'", hex);
+                                    let mut clipboard = Clipboard::new().unwrap();
+                                    clipboard.set_text(hex).unwrap();
+                                }
+                            },
+                            "Copy to clipboard"
+                        }
+                        button {
+                            style: "width: 130px;",
+                            class: "button",
+                            onclick: move |_| {
+                                let mut clipboard = Clipboard::new().unwrap();
+                                let hull_params = crate::export::import_hull_config(
+                                    &clipboard.get_text().unwrap(),
+                                );
+                                if let Err(err) = hull_params {
+                                    warn!(? err, "Invalid hull ln config text");
+                                    return;
+                                }
+                                let hull_params = hull_params.unwrap();
+                                let mut ship = ship.write();
+                                if let Some(ship) = ship.as_mut() {
+                                    debug!("Updating hull configuration for ship '{}'", ship.name);
+                                    fleet_edit::set_ln_hull_config(ship, hull_params.clone());
+                                }
+                            },
+                            "Paste from clipboard"
+                        }
+                    }
+                }
             }
             {ship_config_table}
         }
