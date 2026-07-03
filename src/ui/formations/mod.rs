@@ -1,5 +1,7 @@
+use arboard::Clipboard;
 use dioxus::prelude::*;
 use schemas::{Fleet, InitialFormation, RelativePosition, Ship};
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 pub mod swarm;
@@ -339,6 +341,72 @@ pub fn FleetFormationViewer(
                     }
                 }
             }
+            div { style: "display: flex; flex-direction: row; justify-content: end; gap: 3px; flex: 1;",
+                button {
+                    style: "width: 130px;",
+                    class: "button",
+                    onclick: move |_| {
+                        let Ok(mut clipboard) = Clipboard::new() else {
+                            return;
+                        };
+
+                        let formations = formations.read();
+                        let Some(formations) = formations.as_ref() else {
+                            return;
+                        };
+                        let Some(formation) = formations.get(selected_formation())
+                        else {
+                            return;
+                        };
+                        let template = formation.to_template();
+                        info!("Exporting formation: '{:?}'", template);
+
+                        let Ok(s) = crate::export::export_formation(&template) else {
+                            warn!("Failed to export formation");
+                            return;
+                        };
+                        info!("Exported formation: '{}'", & s);
+                        clipboard.set_text(s).unwrap();
+                    },
+                    "Copy to clipboard"
+                }
+                button {
+                    style: "width: 130px;",
+                    class: "button",
+                    onclick: move |_| {
+                        let Ok(mut clipboard) = Clipboard::new() else {
+                            return;
+                        };
+
+                        let mut formations = formations.write();
+                        let Some(formations) = formations.as_mut() else {
+                            return;
+                        };
+                        let Some(formation) = formations.get_mut(selected_formation())
+                        else {
+                            return;
+                        };
+
+                        let Ok(clipboard_text) = clipboard.get_text() else {
+                            return;
+                        };
+                        let Ok(new_form) = crate::export::import_formation(&clipboard_text) else {
+                            return;
+                        };
+
+                        info!("Importing formation: {:?}", & new_form);
+
+                        for ((_, old_escort), new_escort) in formation
+                            .escorts
+                            .iter_mut()
+                            .zip(new_form.escorts.into_iter())
+                        {
+                            *old_escort = new_escort.into();
+                        }
+                    },
+                    "Paste from clipboard"
+                }
+            }
         }
 
         div {
@@ -525,6 +593,17 @@ struct Formation {
     lead_ship: String,
     escorts: Vec<(String, Point3)>,
 }
+impl Formation {
+    fn to_template(&self) -> FormationTemplate {
+        let mut points = Vec::new();
+        for (_, point) in &self.escorts {
+            points.push(point.clone().into());
+        }
+        FormationTemplate {
+            escorts: points,
+        }
+    }
+}
 
 fn get_formations(fleet: &Fleet) -> Vec<Formation> {
     let mut formations: Vec<Formation> = Vec::new();
@@ -594,5 +673,32 @@ fn change_leader(formation: &mut Formation, new_lead: usize) {
         point.x -= new_centre.x;
         point.y -= new_centre.y;
         point.z -= new_centre.z;
+    }
+}
+
+// Can be taken from one fleet and applied to other fleets, therefore it is simply a formation with the ship keys stripped.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+pub struct FormationTemplate {
+    pub escorts: Vec<Point3Serde>
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug, Copy, PartialEq)]
+pub struct Point3Serde {
+    pub x: f64,
+    pub y: f64,
+    pub z: f64,
+}
+impl From<Point3> for Point3Serde {
+    fn from(value: Point3) -> Self {
+        Point3Serde {
+            x: value.x,
+            y: value.y,
+            z: value.z,
+        }
+    }
+}
+impl Into<Point3> for Point3Serde {
+    fn into(self) -> Point3 {
+        Point3::new(self.x, self.y, self.z)
     }
 }
