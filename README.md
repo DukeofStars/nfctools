@@ -44,7 +44,7 @@ An all-in-one toolkit for managing and editing Nebulous: Fleet Command fleets.
 **Note**: If you are using an operating system other than windows it is assumed you will have decent technical knowledge.
 
 To install on another operating system, you will need to install the latest Rust toolchain [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install). You will also need the files of this repository. You can either download as a zip (Click the green 'Code' button on GitHub), or clone it using git.
-Now, navigate to the downloaded repository root in a terminal (There should be a `Cargo.toml` and a `src/`, as well as other files and folders) and run `cargo build --release`. The output binary should be located at `target/release/nfctools` or similar.
+Now, navigate to the downloaded repository root in a terminal (There should be a `Cargo.toml` and a `src/`, as well as other files and folders) and run `cargo build --release -F bundle`. The output binary should be located at `target/release/nfctools` or similar.
 
 ## How to...
 ### Submit log files

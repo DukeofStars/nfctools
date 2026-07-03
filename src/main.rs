@@ -62,8 +62,6 @@ lazy_static! {
 fn main() -> Result<()> {
     color_eyre::install()?;
 
-    update()?;
-
     let cli = Cli::parse();
 
     // Initialise logging
@@ -120,6 +118,13 @@ fn main() -> Result<()> {
         tracing::subscriber::set_global_default(subscriber).unwrap();
     }
 
+    std::thread::spawn(|| {
+        info!("Checking for updates");
+        if let Err(err) = update() {
+            warn!("Self update failed: {:?}", err);
+        }
+    });
+
     // Launch app
 
     info!("Starting NebTools");
@@ -174,6 +179,7 @@ fn App() -> Element {
 
 #[cfg(feature = "auto-update")]
 fn update() -> Result<()> {
+    info!("Checking for app updates!");
     let status = self_update::backends::github::Update::configure()
         .repo_owner("DukeofStars")
         .repo_name("nfctools")
@@ -182,7 +188,12 @@ fn update() -> Result<()> {
         .current_version(self_update::cargo_crate_version!())
         .build()?
         .update()?;
-    println!("Update status: `{}`!", status.version());
+    match status {
+        self_update::Status::UpToDate(_) => info!("NebTools up to date!"),
+        self_update::Status::Updated(ver) => {
+            info!("NebTools updated to `{ver}`")
+        }
+    }
     Ok(())
 }
 #[cfg(not(feature = "auto-update"))]
