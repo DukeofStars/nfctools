@@ -1,6 +1,6 @@
 [package]
 name = "nfctools"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 
 [workspace]
@@ -8,6 +8,7 @@ members = ["schemas"]
 
 [features]
 bundle = []
+auto-update = []
 
 [dependencies]
 chumsky = "0.8"
@@ -39,3 +40,4 @@ rfd = "0.17.2"
 zip = "8.6.0"
 nalgebra = { version = "0.35.0", features = ["serde"] }
 arboard = "3.6.1"
+self_update = "0.44.0"

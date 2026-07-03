@@ -62,6 +62,8 @@ lazy_static! {
 fn main() -> Result<()> {
     color_eyre::install()?;
 
+    update()?;
+
     let cli = Cli::parse();
 
     // Initialise logging
@@ -168,4 +170,22 @@ fn App() -> Element {
 
         FleetList {}
     };
+}
+
+#[cfg(feature = "auto-update")]
+fn update() -> Result<()> {
+    let status = self_update::backends::github::Update::configure()
+        .repo_owner("DukeofStars")
+        .repo_name("nfctools")
+        .bin_name("nfctools")
+        .show_download_progress(true)
+        .current_version(self_update::cargo_crate_version!())
+        .build()?
+        .update()?;
+    println!("Update status: `{}`!", status.version());
+    Ok(())
+}
+#[cfg(not(feature = "auto-update"))]
+fn update() -> Result<()> {
+    Ok(())
 }

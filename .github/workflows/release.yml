@@ -22,11 +22,16 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - run: cargo build --release -F bundle
+      - run: cargo build --release -F bundle -F auto-update
       - uses: actions/upload-artifact@v4
         with:
           name: nfctools-bin
           path: target/release/nfctools.exe
+      - run: cp target/release/nfctools.exe target/release/nfctools-${{ github.ref_name }}-x86_64-pc-windows-msvc.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nfctools-bin-versioned
+          path: target/release/nfctools-${{ github.ref_name }}-x86_64-pc-windows-msvc.exe
 
   build-installer:
     runs-on: windows-latest
@@ -56,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: nfctools-bin
+          name: nfctools-bin-versioned
           path: target/release/
       - uses: actions/download-artifact@v4
         with:
@@ -66,7 +71,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/nfctools.exe
+          file: target/release/nfctools-${{ github.ref_name }}-x86_64-pc-windows-msvc.exe
       - name: Upload installer to release
         uses: svenstaro/upload-release-action@v2
         with:
