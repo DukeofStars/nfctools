@@ -312,36 +312,38 @@ pub fn FleetFormationViewer(
 
         h3 { "Formations" }
 
-        div { style: "display: flex; flex-direction: row; justify-content: start; gap: 10px; align-content: center;",
-            p { style: "align-self: center;", "Formation Lead: " }
-            DropdownMenu {
-                DropdownMenuTrigger {
-                    "{formation_lead_name}"
-                    ChevronDown {}
-                }
-                DropdownMenuContent {
-                    for (idx , _) in formations.read().as_ref().unwrap_or(&Vec::new()).iter().enumerate() {
-                        {
-                            let lead_name = formation_lead_names
-                                .read()
-                                .as_ref()
-                                .unwrap_or(&Vec::new())
-                                .get(idx)
-                                .map(String::clone)
-                                .unwrap_or_default();
-                            rsx! {
-                                DropdownMenuItem {
-                                    index: idx,
-                                    value: idx,
-                                    on_select: move |value| selected_formation.set(value),
-                                    "{lead_name}"
+        div { style: "display: flex; flex-direction: row; justify-content: space-between; gap: 10px; align-content: center;",
+            div { style: "display: flex; flex-direction: row;",
+                p { style: "align-self: center;", "Formation Lead: " }
+                DropdownMenu {
+                    DropdownMenuTrigger {
+                        "{formation_lead_name}"
+                        ChevronDown {}
+                    }
+                    DropdownMenuContent {
+                        for (idx , _) in formations.read().as_ref().unwrap_or(&Vec::new()).iter().enumerate() {
+                            {
+                                let lead_name = formation_lead_names
+                                    .read()
+                                    .as_ref()
+                                    .unwrap_or(&Vec::new())
+                                    .get(idx)
+                                    .map(String::clone)
+                                    .unwrap_or_default();
+                                rsx! {
+                                    DropdownMenuItem {
+                                        index: idx,
+                                        value: idx,
+                                        on_select: move |value| selected_formation.set(value),
+                                        "{lead_name}"
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-            div { style: "display: flex; flex-direction: row; justify-content: end; gap: 3px; flex: 1;",
+            div { style: "display: flex; flex-direction: row; justify-content: end; gap: 3px;",
                 button {
                     style: "width: 130px;",
                     class: "button",
@@ -359,8 +361,6 @@ pub fn FleetFormationViewer(
                             return;
                         };
                         let template = formation.to_template();
-                        info!("Exporting formation: '{:?}'", template);
-
                         let Ok(s) = crate::export::export_formation(&template) else {
                             warn!("Failed to export formation");
                             return;
@@ -599,9 +599,7 @@ impl Formation {
         for (_, point) in &self.escorts {
             points.push(point.clone().into());
         }
-        FormationTemplate {
-            escorts: points,
-        }
+        FormationTemplate { escorts: points }
     }
 }
 
@@ -679,7 +677,7 @@ fn change_leader(formation: &mut Formation, new_lead: usize) {
 // Can be taken from one fleet and applied to other fleets, therefore it is simply a formation with the ship keys stripped.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct FormationTemplate {
-    pub escorts: Vec<Point3Serde>
+    pub escorts: Vec<Point3Serde>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug, Copy, PartialEq)]

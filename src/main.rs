@@ -21,6 +21,7 @@ use crate::{menubar::Menubars, ui::fleet_list::FleetList};
 mod audio;
 mod config;
 mod dressings;
+mod export;
 mod fleet_data;
 mod fleet_edit;
 mod fleet_io;
@@ -30,7 +31,6 @@ mod search;
 mod spawn_async;
 mod tags;
 mod ui;
-mod export;
 
 #[allow(unused)]
 mod components;
@@ -133,7 +133,7 @@ fn main() -> Result<()> {
         .with_cfg(desktop! {
             Config::new().with_menu(Some(menu)).with_window(
                 WindowBuilder::new()
-                    .with_inner_size(PhysicalSize::new(850, 600))
+                    .with_inner_size(PhysicalSize::new(1100, 600))
                     .with_title(format!("NebTools v{} @dukeofstars", env!("CARGO_PKG_VERSION")))
             )
         })

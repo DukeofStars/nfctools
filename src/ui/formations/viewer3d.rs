@@ -295,7 +295,9 @@ pub fn Canvas3D(
             let dx = c.0 - last_x;
             let dy = c.1 - last_y;
             yaw -= dx * DRAG_SENSITIVITY;
-            pitch.set((pitch() + dy * DRAG_SENSITIVITY).clamp(-MAX_PITCH, MAX_PITCH));
+            pitch.set(
+                (pitch() + dy * DRAG_SENSITIVITY).clamp(-MAX_PITCH, MAX_PITCH),
+            );
             last_pos.set((c.0, c.1));
         }
     });

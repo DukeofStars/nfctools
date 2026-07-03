@@ -207,3 +207,9 @@ input {
 .context-button:active {
     background-color: var(--highlight);
 }
+
+.elide {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}

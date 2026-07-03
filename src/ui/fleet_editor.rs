@@ -25,13 +25,16 @@ pub fn ShipEditor(mut ship: Signal<Option<Ship>>) -> Element {
         let hull_params = get_ln_editable_hull_params(ship_r);
 
         if let Some(hull_params) = hull_params {
-            (rsx! {
-                ShipConfigTable {
-                    key: "{ship_r.name}{hull_params:?}",
-                    ship,
-                    hull_params: hull_params.clone(),
-                }
-            }, Some(hull_params))
+            (
+                rsx! {
+                    ShipConfigTable {
+                        key: "{ship_r.name}{hull_params:?}",
+                        ship,
+                        hull_params: hull_params.clone(),
+                    }
+                },
+                Some(hull_params),
+            )
         } else {
             (rsx! { "Ship is not a liner" }, None)
         }
@@ -406,7 +409,7 @@ fn ShipConfigTable(
                         }
                     }
                 }
-            
+
             // for slot in 0..8 {
             //     tr {
             //         td { "Dressing Slot {slot+1}" }
