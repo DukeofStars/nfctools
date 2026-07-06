@@ -345,7 +345,7 @@ pub fn FleetFormationViewer(
             }
             div { style: "display: flex; flex-direction: row; justify-content: end; gap: 3px;",
                 button {
-                    style: "width: 130px;",
+                    style: "width: 120px;",
                     class: "button",
                     onclick: move |_| {
                         let Ok(mut clipboard) = Clipboard::new() else {
@@ -371,7 +371,7 @@ pub fn FleetFormationViewer(
                     "Copy to clipboard"
                 }
                 button {
-                    style: "width: 130px;",
+                    style: "width: 140px;",
                     class: "button",
                     onclick: move |_| {
                         let Ok(mut clipboard) = Clipboard::new() else {
