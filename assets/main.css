@@ -1,3 +1,10 @@
+@font-face {
+    font-family: "Bombardier";
+    src: url("bombardier.ttf") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+}
+
 :root {
     --text: white;
     --secondary-text: rgba(255, 255, 255, 0.4);

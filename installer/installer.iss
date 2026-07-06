@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "NebTools"
-#define MyAppVersion "0.3.0-alpha.d4"
+#define MyAppVersion "0.3.2"
 #define MyAppExeName "nfctools.exe"
 
 [Setup]
@@ -38,7 +38,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "..\target\release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\bombardier.ttf"; DestDir: "{autofonts}"; FontInstall: "Bombardier"; Flags: onlyifdoesntexist uninsneveruninstall
+; Source: "..\bombardier.ttf"; DestDir: "{autofonts}"; FontInstall: "Bombardier"; Flags: onlyifdoesntexist uninsneveruninstall
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

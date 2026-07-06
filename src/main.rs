@@ -37,6 +37,12 @@ mod components;
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
 
+#[used]
+static FONT: Asset = asset!(
+    "assets/bombardier.ttf",
+    manganis::AssetOptions::builder().with_hash_suffix(false)
+);
+
 #[derive(Parser)]
 #[clap(about, version)]
 struct Cli {
