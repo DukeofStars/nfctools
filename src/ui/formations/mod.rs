@@ -17,7 +17,7 @@ use crate::{
     ui::{
         dialog::{swarm_config::SwarmConfigDialog, DialogWrapper},
         fleet_editor::ChevronDown,
-        formations::viewer3d::{Canvas3D, Point3, Scene},
+        formations::viewer3d::{Canvas3D, MappedScene, Point3, Scene},
     },
 };
 
@@ -216,7 +216,7 @@ pub fn FleetFormationViewer(
         Some(point.1.clone())
     });
 
-    let mapped_points = use_signal(Vec::new);
+    let mapped_scene: Signal<Option<MappedScene>> = use_signal(|| None);
 
     let mut ctx_x = use_signal(|| 0f64);
     let mut ctx_y = use_signal(|| 0f64);
@@ -300,6 +300,8 @@ pub fn FleetFormationViewer(
     });
 
     let mut mouse_pos = use_signal(|| (0f64, 0f64));
+
+    let mut dragging = use_signal(|| false);
 
     rsx! {
         DialogWrapper { signal: show_swarm_dialog,
@@ -422,6 +424,8 @@ pub fn FleetFormationViewer(
                 ctx_y.set(coords.y);
                 update_selected_point();
                 show_ctx.set(true);
+                // Disable panning and yawing when context menu open.
+                dragging.set(false);
             },
             onclick: move |_| {
                 show_ctx.set(false);
@@ -438,7 +442,7 @@ pub fn FleetFormationViewer(
 
                 let mut min_dist_sq = f64::MAX;
                 let mut point_idx = 0;
-                for (idx, (x, y)) in mapped_points.read().iter().enumerate() {
+                for (idx, (x, y)) in mapped_scene.read().as_ref().map(|scene| &scene.points).unwrap_or(&Vec::new()).iter().enumerate() {
                     let dist_sq = (mouse_x - x) * (mouse_x - x)
                         + (mouse_y - y) * (mouse_y - y);
                     if dist_sq < min_dist_sq {
@@ -446,22 +450,21 @@ pub fn FleetFormationViewer(
                         point_idx = idx;
                     }
                 }
-                scene
-                    .write()
-                    .as_mut()
-                    .map(|scene| {
-                        if min_dist_sq <= SNAPPING_DIST * SNAPPING_DIST {
-                            scene.highlight_points.clear();
-                            scene.highlight_points.push((point_idx, "#a0a0a0".to_string()));
-                            near_point.set(Some(point_idx));
-                        } else {
-                            scene.highlight_points.clear();
-                            near_point.set(None);
-                        }
-                        if let Some(selected_point) = selected_point() {
-                            scene.highlight_points.push((selected_point, "#f0f0f0".to_string()));
-                        }
-                    });
+                let mut new_highlight_points = Vec::new();
+                if min_dist_sq <= SNAPPING_DIST * SNAPPING_DIST {
+                    new_highlight_points.push((point_idx, "grey".to_string()));
+                    near_point.set(Some(point_idx));
+                } else {
+                    near_point.set(None);
+                }
+                if let Some(selected_point) = selected_point() {
+                    new_highlight_points.push((selected_point, "white".to_string()));
+                }
+
+                if scene.read().as_ref().is_some_and(|scene| scene.highlight_points != new_highlight_points) {
+                    scene.write().as_mut().unwrap().highlight_points = new_highlight_points;
+                }
+
             },
             if show_ctx() {
                 div {
@@ -499,19 +502,20 @@ pub fn FleetFormationViewer(
                     }
                 }
             }
-            for (i , (x , y)) in mapped_points.read().iter().enumerate() {
-                p { style: "position: absolute; left: {x}px; top: {y+2.0}px; font-size: 10px; anchor: top;",
+            if let Some(mapped_scene) = mapped_scene.read().as_ref() {            for (i , (x , y)) in mapped_scene.points.iter().enumerate() {
+                label { style: "position: absolute; left: {x}px; top: {y+2.0}px; font-size: 14px; anchor: top;",
                     "{ship_names.get(i).map(|s| s.clone()).unwrap_or_default()}"
                 }
             }
+            }
             div {
-
                 if scene.read().is_some() {
                     Canvas3D {
                         size: canvas_size,
                         mouse_pos,
                         scene,
-                        mapped_points,
+                        mapped_scene,
+                        dragging
                     }
                 }
             }

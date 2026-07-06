@@ -5,11 +5,16 @@ use std::{fs::OpenOptions, path::PathBuf};
 use clap::{Parser, ValueEnum};
 use color_eyre::Result;
 use dioxus::{
-    desktop::{muda::Menu, wry::dpi::PhysicalSize, Config, WindowBuilder},
+    desktop::{
+        muda::Menu,
+        tao::event_loop::EventLoopBuilder,
+        wry::{dpi::PhysicalSize, WebViewBuilder},
+        Config, WindowBuilder,
+    },
     prelude::*,
 };
 use lazy_static::lazy_static;
-use tracing::{info, warn, Level};
+use tracing::{info, instrument::WithSubscriber, warn, Level};
 use tracing_subscriber::{
     fmt::{self, writer::MakeWriterExt},
     layer::SubscriberExt,
@@ -144,11 +149,16 @@ fn main() -> Result<()> {
 
     dioxus::LaunchBuilder::new()
         .with_cfg(desktop! {
-            Config::new().with_menu(Some(menu)).with_window(
-                WindowBuilder::new()
-                    .with_inner_size(PhysicalSize::new(1100, 600))
-                    .with_title(format!("NebTools v{} @dukeofstars", env!("CARGO_PKG_VERSION")))
-            )
+            Config::new()
+                .with_menu(Some(menu))
+                .with_window(
+                    WindowBuilder::new()
+                        .with_inner_size(PhysicalSize::new(1100, 600))
+                        .with_title(format!(
+                            "NebTools v{} @dukeofstars",
+                            env!("CARGO_PKG_VERSION")
+                        ))
+                )
         })
         .launch(App);
 
