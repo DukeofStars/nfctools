@@ -79,6 +79,8 @@ pub struct CraftTemplate {
     pub mod_dependencies: ModDependencies,
     #[serde(rename = "AssociatedTemplateName")]
     pub associated_template_name: Option<String>,
+    #[serde(rename = "SaveKey")]
+    pub save_key: Option<String>,
 }
 
 #[skip_serializing_none]
@@ -146,6 +148,8 @@ pub struct Elements {
 pub struct GeneralLoadoutElement {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
+    #[serde(rename(serialize = "@xmlns:p3", deserialize = "@xmlns:p3"))]
+    pub xmlns_p3: String,
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "AmmoKey")]
@@ -201,7 +205,9 @@ pub struct StringX {
 #[serde(deny_unknown_fields)]
 pub struct SortOverrideOrder {
     #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
-    pub xsi_nil: String,
+    pub xsi_nil: Option<String>,
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
 }
 
 #[skip_serializing_none]
@@ -277,6 +283,8 @@ pub struct RelativePosition {
 pub struct SaveId {
     #[serde(rename(serialize = "@xsi:nil", deserialize = "@nil"))]
     pub xsi_nil: String,
+    #[serde(rename = "$text")]
+    pub text: Option<String>,
 }
 
 #[skip_serializing_none]

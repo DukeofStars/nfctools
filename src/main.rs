@@ -5,16 +5,11 @@ use std::{fs::OpenOptions, path::PathBuf};
 use clap::{Parser, ValueEnum};
 use color_eyre::Result;
 use dioxus::{
-    desktop::{
-        muda::Menu,
-        tao::event_loop::EventLoopBuilder,
-        wry::{dpi::PhysicalSize, WebViewBuilder},
-        Config, WindowBuilder,
-    },
+    desktop::{muda::Menu, wry::dpi::PhysicalSize, Config, WindowBuilder},
     prelude::*,
 };
 use lazy_static::lazy_static;
-use tracing::{info, instrument::WithSubscriber, warn, Level};
+use tracing::{info, warn, Level};
 use tracing_subscriber::{
     fmt::{self, writer::MakeWriterExt},
     layer::SubscriberExt,
