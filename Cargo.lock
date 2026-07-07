@@ -3792,6 +3792,7 @@ name = "nfctools"
 version = "0.3.2"
 dependencies = [
  "arboard",
+ "base64",
  "chumsky",
  "clap",
  "color-eyre",

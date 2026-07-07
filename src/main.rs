@@ -37,12 +37,6 @@ mod components;
 
 const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
 
-#[used]
-static FONT: Asset = asset!(
-    "assets/bombardier.ttf",
-    manganis::AssetOptions::builder().with_hash_suffix(false)
-);
-
 #[derive(Parser)]
 #[clap(about, version)]
 struct Cli {
@@ -180,7 +174,22 @@ macro_rules! include_style {
 
 #[component]
 fn App() -> Element {
+    let font = rsx! {
+        dioxus::document::Style {
+            {format!(r#"
+                @font-face {{
+                    font-family: "Bombardier";
+                    src: url("data:font/ttf;base64,{}") format("truetype");
+                    font-weight: normal;
+                    font-style: normal;
+                }}
+            "#, include_str!(concat!(env!("OUT_DIR"), "/bombardier.ttf.base64")))}
+        }
+    };
+
     return rsx! {
+        {font}
+
         {include_style!("assets/dx-components-theme.css")}
         {include_style!("assets/main.css")}
 
