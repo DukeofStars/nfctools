@@ -65,11 +65,19 @@ pub fn load_tags() -> Result<TagsRepository> {
         .preference_dir()
         .join("tags.toml");
     debug!("Loading tags from '{}'", tags_path.display());
-    let tags_file = std::fs::read_to_string(&tags_path)
-        .inspect_err(|_| {
-            trace!("No tags file found, using default config values")
-        })
-        .unwrap_or_default();
+    let tags_file = if tags_path.exists() {
+        std::fs::read_to_string(&tags_path)
+            .wrap_err("Failed to read tags file")?
+    } else {
+        trace!("Creating new tags file");
+        if tags_path.parent().is_some_and(|parent| !parent.exists()) {
+            let parent = tags_path.parent().unwrap();
+            trace!("Creating directory: '{}'", parent.display());
+            std::fs::create_dir_all(&parent)?;
+        }
+        std::fs::write(&tags_path, "")?;
+        String::new()
+    };
     let tags_repo: TagsRepository =
         toml::from_str(&tags_file).wrap_err("Failed to parse tags file")?;
 
