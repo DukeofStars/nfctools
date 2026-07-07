@@ -149,7 +149,7 @@ pub struct GeneralLoadoutElement {
     #[serde(rename(serialize = "@xsi:type", deserialize = "@type"))]
     pub xsi_type: String,
     #[serde(rename(serialize = "@xmlns:p3", deserialize = "@xmlns:p3"))]
-    pub xmlns_p3: String,
+    pub xmlns_p3: Option<String>,
     #[serde(rename = "$text")]
     pub text: Option<String>,
     #[serde(rename = "AmmoKey")]
