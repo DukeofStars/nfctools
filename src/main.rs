@@ -2,8 +2,8 @@
 
 use std::{fs::OpenOptions, path::PathBuf};
 
-use clap::{Parser, ValueEnum};
-use color_eyre::Result;
+use clap::Parser;
+use color_eyre::{eyre::Context, Result};
 use dioxus::{
     desktop::{muda::Menu, wry::dpi::PhysicalSize, Config, WindowBuilder},
     prelude::*,
@@ -41,15 +41,8 @@ const NEBULOUS_GAME_ID_STEAM: u32 = 887570;
 #[clap(about, version)]
 struct Cli {
     #[clap(short, long)]
-    #[clap(default_value = "debug")]
-    logging_level: LoggingLevel,
-}
-#[derive(Clone, ValueEnum)]
-enum LoggingLevel {
-    Full,
-    Debug,
-    Info,
-    None,
+    #[clap(default_value = "info")]
+    logging_filter: String,
 }
 
 lazy_static! {
@@ -72,70 +65,51 @@ fn main() -> Result<()> {
             .write(true)
             .open(p)
     });
-    if let Some(Ok(file)) = log_file {
-        let subscriber = Registry::default()
-            .with(
-                fmt::Layer::new()
-                    .with_target(true)
-                    .with_span_events(
-                        tracing_subscriber::fmt::format::FmtSpan::NONE,
-                    )
-                    .with_filter(EnvFilter::new("info")),
-            )
-            .with(
-                fmt::Layer::new()
-                    .with_writer(file.with_max_level(Level::TRACE))
-                    .with_target(true)
-                    .with_span_events(
-                        tracing_subscriber::fmt::format::FmtSpan::NONE,
-                    )
-                    .with_ansi(false)
-                    .with_filter(EnvFilter::new(
-                        "trace,warnings=debug,dioxus=debug",
-                    )),
-            );
-        tracing::subscriber::set_global_default(subscriber).unwrap();
-        info!(
-            "Writing logs to '{}'",
-            std::env::current_exe()
-                .unwrap()
-                .parent()
-                .unwrap()
-                .join("log.txt")
-                .display()
-        );
+    let console_layer = tracing_subscriber::fmt::Layer::new()
+        .with_target(true)
+        .with_span_events(tracing_subscriber::fmt::format::FmtSpan::NONE)
+        .with_filter(EnvFilter::new(cli.logging_filter));
+    let file_layer = if let Some(Ok(file)) = log_file {
+        Some(
+            fmt::Layer::new()
+                .with_writer(file.with_max_level(Level::TRACE))
+                .with_target(true)
+                .with_span_events(
+                    tracing_subscriber::fmt::format::FmtSpan::NONE,
+                )
+                .with_ansi(false), // .with_filter(EnvFilter::new(
+                                   //     "trace,warnings=debug,dioxus=debug",
+                                   // )),
+        )
     } else {
-        warn!("Could not open log file. Only printing logs to stdout now.");
-        let subscriber =
-            Registry::default().with(fmt::Layer::new().map_writer(|w| {
-                w.with_max_level(match cli.logging_level {
-                    LoggingLevel::Full => Level::TRACE,
-                    LoggingLevel::Debug => Level::DEBUG,
-                    LoggingLevel::Info => Level::INFO,
-                    LoggingLevel::None => Level::ERROR,
-                })
-            }));
-        tracing::subscriber::set_global_default(subscriber).unwrap();
-    }
+        None
+    };
+    let subscriber = Registry::default().with(console_layer).with(file_layer);
+    tracing::subscriber::set_global_default(subscriber)
+        .wrap_err("Failed to initialise logger")?;
 
     std::thread::spawn(|| {
-        info!("Checking for updates");
         if let Err(err) = update() {
             warn!("Self update failed: {:?}", err);
         }
     });
 
+    debug!("Initialising clipboard handler");
+    // Some platforms require clipboard to be kept alive for the lifetime of the program.
+    let _clipboard =
+        arboard::Clipboard::new().wrap_err("Failed to create clipboard")?;
+
     // Launch app
 
     info!("Starting NebTools");
 
+    debug!("Initialising system menu");
     let menubars = Menubars::new();
-
     let menu = Menu::new();
     menubars.attach_to_menu(&menu);
-
     crate::menubar::MENUBARS.set(Some(menubars));
 
+    debug!("Launching app");
     dioxus::LaunchBuilder::new()
         .with_cfg(desktop! {
             Config::new()

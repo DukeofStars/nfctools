@@ -5,7 +5,7 @@ use color_eyre::{
     Result,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{info, trace, warn};
+use tracing::{debug, info, trace, warn};
 
 use crate::NEBULOUS_GAME_ID_STEAM;
 
@@ -37,7 +37,7 @@ pub fn load_app_config() -> Result<()> {
         )?
         .preference_dir()
         .join("config.toml");
-    trace!("Loading config from '{}'", config_path.display());
+    debug!("Loading config from '{}'", config_path.display());
     let config_file = std::fs::read_to_string(&config_path)
         .inspect_err(|_| {
             trace!("No config file found, using default config values")
@@ -61,7 +61,7 @@ pub fn save_app_config() -> Result<()> {
         )?
         .preference_dir()
         .join("config.toml");
-    trace!("Saving config to '{}'", config_path.display());
+    debug!("Saving config to '{}'", config_path.display());
 
     let config = APP_CONFIG.get().unwrap().lock().unwrap();
     std::fs::write(

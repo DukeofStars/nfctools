@@ -108,7 +108,6 @@ pub fn FleetList() -> Element {
     }
 
     let mut show_settings_dialog = use_signal(|| false);
-
     let mut show_backup_dialog = use_signal(|| false);
 
     let menu_handler =

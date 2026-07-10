@@ -6,6 +6,8 @@ use crate::include_style;
 
 #[component]
 pub fn WinPredictor() -> Element {
+    debug!("Creating Win Predictor view");
+
     return rsx! {
         {include_style!("assets/main.css")}
         {include_style!("assets/dx-components-theme.css")}
