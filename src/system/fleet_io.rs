@@ -4,7 +4,7 @@ use std::{
     path::Path,
 };
 
-use color_eyre::{eyre::Context, Result};
+use color_eyre::{Result, eyre::Context};
 use schemas::{Fleet, MissileTemplate};
 use tracing::{info, instrument, trace, warn};
 

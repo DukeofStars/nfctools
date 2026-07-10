@@ -7,7 +7,7 @@ use crate::{
         DropdownMenu, DropdownMenuContent, DropdownMenuItem,
         DropdownMenuTrigger,
     },
-    fleet_edit::{self, get_ln_editable_hull_params, EditableHullParams},
+    fleet_edit::{self, EditableHullParams, get_ln_editable_hull_params},
 };
 
 #[component]

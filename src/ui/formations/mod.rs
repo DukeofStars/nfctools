@@ -16,7 +16,7 @@ use crate::{
     fleet_data::FleetData,
     system::audio::AUDIO_HANDLER,
     ui::{
-        dialog::{swarm_config::SwarmConfigDialog, DialogWrapper},
+        dialog::{DialogWrapper, swarm_config::SwarmConfigDialog},
         fleet_editor::ChevronDown,
         formations::viewer3d::{Canvas3D, MappedScene, Point3, Scene},
     },

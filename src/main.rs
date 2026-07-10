@@ -3,17 +3,17 @@
 use std::{fs::OpenOptions, path::PathBuf};
 
 use clap::Parser;
-use color_eyre::{eyre::Context, Result};
+use color_eyre::{Result, eyre::Context};
 use dioxus::{
-    desktop::{muda::Menu, wry::dpi::PhysicalSize, Config, WindowBuilder},
+    desktop::{Config, WindowBuilder, muda::Menu, wry::dpi::PhysicalSize},
     prelude::*,
 };
 use lazy_static::lazy_static;
-use tracing::{info, warn, Level};
+use tracing::{Level, info, warn};
 use tracing_subscriber::{
+    EnvFilter, Layer, Registry,
     fmt::{self, writer::MakeWriterExt},
     layer::SubscriberExt,
-    EnvFilter, Layer, Registry,
 };
 
 use crate::ui::{fleet_list::FleetList, menubar::Menubars};

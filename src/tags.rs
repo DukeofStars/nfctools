@@ -10,12 +10,12 @@ use std::{
 
 use chumsky::prelude::*;
 use color_eyre::{
-    eyre::{eyre, Context},
     Result,
+    eyre::{Context, eyre},
 };
 use palette::{encoding::Srgb, rgb::Rgb};
 use serde::{Deserialize, Serialize};
-use serde_with::{serde_as, DisplayFromStr};
+use serde_with::{DisplayFromStr, serde_as};
 use text::whitespace;
 use tracing::{debug, error, trace, warn};
 

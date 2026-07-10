@@ -3,4 +3,5 @@ pub mod fleet_editor;
 pub mod fleet_list;
 pub mod formations;
 pub mod menubar;
+pub mod util;
 pub mod win_predictor;

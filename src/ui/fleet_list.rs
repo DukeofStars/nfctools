@@ -1,14 +1,14 @@
 use std::{ops::DerefMut, time::Duration};
 
 use dioxus::{
-    desktop::{use_muda_event_handler, Config, WindowBuilder},
+    desktop::{Config, WindowBuilder, use_muda_event_handler},
     prelude::*,
 };
 use futures::StreamExt;
 use palette::{
+    Hsv, IntoColor,
     encoding::{self, Srgb},
     rgb::Rgb,
-    Hsv, IntoColor,
 };
 use schemas::Ship;
 
@@ -16,15 +16,15 @@ use crate::{
     components::color_picker::ColorPicker,
     fleet_data::FleetData,
     system::{audio::AUDIO_HANDLER, config::load_app_config},
-    tags::{Color, Tag, TAGS_REPO},
+    tags::{Color, TAGS_REPO, Tag},
     ui::{
         dialog::{
+            DialogWrapper,
             backup::BackupDialog,
             error::{ErrorDialog, ErrorType},
             merge_fleets::MergeFleetsDialog,
             settings::SettingsDialog,
             spinner::SpinnerDialog,
-            DialogWrapper,
         },
         fleet_editor::ShipEditor,
         formations::FleetFormationViewer,
@@ -49,15 +49,58 @@ pub fn FleetList() -> Element {
         spawn_async(|| crate::system::load_fleets::load_fleets(None)).await
     });
 
-    let mut selected_fleet_data = use_signal(|| None::<FleetData>);
-    let mut selected_fleet_idx = use_signal(|| None::<usize>);
+    let mut description = use_signal(String::new);
+
+    let mut fleet_editor_tab = use_signal(|| FleetEditorTab::Blank);
 
     let mut loading_fleet = use_signal(|| false);
+
+    let mut selected_fleet_data = use_signal(|| None::<FleetData>);
+    let mut selected_fleet_idx = use_signal(|| None::<usize>);
 
     let mut selected_ship = use_signal(|| None::<Ship>);
     let mut selected_ship_idx = use_signal(|| None::<usize>);
 
-    let mut description = use_signal(String::new);
+    let mut prev_path = use_signal(|| None);
+    // When the selected_fleet_data is changed, asynchronously load the fleet.
+    let mut selected_fleet = use_resource(move || async move {
+        if let Some(fleet_data) = selected_fleet_data.as_ref() {
+            loading_fleet.set(true);
+            crate::ui::menubar::MENUBARS.with_borrow(|menubars| {
+                if let Some(menubars) = menubars.as_ref() {
+                    menubars.tools_merge.set_enabled(true);
+                }
+            });
+            fleet_editor_tab.set(FleetEditorTab::Blank);
+            selected_ship.set(None);
+            selected_ship_idx.set(None);
+            let fleet_path = fleet_data.path.clone();
+            let fleet =
+                spawn_async(|| crate::system::fleet_io::read_fleet(fleet_path));
+            let fleet = fleet.await;
+            if Some(fleet_data.path.clone()) == prev_path() {
+                loading_fleet.set(false);
+                return fleet.ok();
+            }
+            if let Some(desc) =
+                fleet.as_ref().ok().and_then(|f| f.description.as_ref())
+            {
+                *description.write() = desc.clone();
+            }
+            prev_path.set(Some(fleet_data.path.clone()));
+            loading_fleet.set(false);
+            fleet.ok()
+        } else {
+            crate::ui::menubar::MENUBARS.with_borrow(|menubars| {
+                if let Some(menubars) = menubars.as_ref() {
+                    menubars.tools_merge.set_enabled(false);
+                }
+            });
+            fleet_editor_tab.set(FleetEditorTab::Blank);
+            None
+        }
+    });
+
     let mut tags = use_signal(|| {
         let binding = description.read();
         let desc = binding.as_str();
@@ -251,48 +294,6 @@ pub fn FleetList() -> Element {
             )
         };
         description.set(new_desc);
-    });
-
-    let mut fleet_editor_tab = use_signal(|| FleetEditorTab::Blank);
-
-    let mut prev_path = use_signal(|| None);
-    // When the selected_fleet_data is changed, asynchronously load the fleet.
-    let mut selected_fleet = use_resource(move || async move {
-        if let Some(fleet_data) = selected_fleet_data.as_ref() {
-            loading_fleet.set(true);
-            crate::ui::menubar::MENUBARS.with_borrow(|menubars| {
-                if let Some(menubars) = menubars.as_ref() {
-                    menubars.tools_merge.set_enabled(true);
-                }
-            });
-            fleet_editor_tab.set(FleetEditorTab::Blank);
-            selected_ship.set(None);
-            selected_ship_idx.set(None);
-            let fleet_path = fleet_data.path.clone();
-            let fleet =
-                spawn_async(|| crate::system::fleet_io::read_fleet(fleet_path));
-            let fleet = fleet.await;
-            if Some(fleet_data.path.clone()) == prev_path() {
-                loading_fleet.set(false);
-                return fleet.ok();
-            }
-            if let Some(desc) =
-                fleet.as_ref().ok().and_then(|f| f.description.as_ref())
-            {
-                *description.write() = desc.clone();
-            }
-            prev_path.set(Some(fleet_data.path.clone()));
-            loading_fleet.set(false);
-            fleet.ok()
-        } else {
-            crate::ui::menubar::MENUBARS.with_borrow(|menubars| {
-                if let Some(menubars) = menubars.as_ref() {
-                    menubars.tools_merge.set_enabled(false);
-                }
-            });
-            fleet_editor_tab.set(FleetEditorTab::Blank);
-            None
-        }
     });
 
     // When the selected_ship is updated, save the fleet.

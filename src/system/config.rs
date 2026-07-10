@@ -4,8 +4,8 @@ use std::{
 };
 
 use color_eyre::{
-    eyre::{eyre, Context},
     Result,
+    eyre::{Context, eyre},
 };
 use serde::{Deserialize, Serialize};
 use tracing::{debug, info, trace, warn};

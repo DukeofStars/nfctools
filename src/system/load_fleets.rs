@@ -7,16 +7,16 @@ use std::{
 };
 
 use color_eyre::{
-    eyre::{bail, Context},
     Result,
+    eyre::{Context, bail},
 };
 use glob::Pattern;
 use metrohash::MetroHash;
 use tracing::{debug, info, trace, warn};
 
 use crate::{
-    fleet_data::FleetData, system::config::APP_CONFIG,
-    system::fleet_io::read_fleet,
+    fleet_data::FleetData,
+    system::{config::APP_CONFIG, fleet_io::read_fleet},
 };
 
 pub fn load_fleets(use_cache: Option<bool>) -> Result<Vec<FleetData>> {

@@ -1,7 +1,7 @@
 [package]
 name = "nfctools"
 version = "0.3.2"
-edition = "2021"
+edition = "2024"
 
 [workspace]
 members = ["schemas"]

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use dioxus::prelude::*;
 
-use crate::ui::formations::{viewer3d::Point3, Formation};
+use crate::ui::formations::{Formation, viewer3d::Point3};
 
 #[derive(Debug, Clone)]
 pub struct SwarmCompressionConfig {

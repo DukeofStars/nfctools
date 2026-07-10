@@ -1,12 +1,13 @@
 use dioxus::prelude::*;
 use dioxus_primitives::{
+    ContentAlign, ContentSide,
     color_picker::{self, Color, ColorAreaProps, ColorPickerContext},
     label::Label,
     popover,
     slider::*,
-    use_controlled, ContentAlign, ContentSide,
+    use_controlled,
 };
-use palette::{encoding, FromColor, Hsv, IntoColor, RgbHue, Srgb};
+use palette::{FromColor, Hsv, IntoColor, RgbHue, Srgb, encoding};
 
 use crate::include_style;
 
