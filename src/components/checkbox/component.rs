@@ -1,6 +1,8 @@
 use dioxus::prelude::*;
-use dioxus_primitives::checkbox::{self, CheckboxProps};
-use dioxus_primitives::icon;
+use dioxus_primitives::{
+    checkbox::{self, CheckboxProps},
+    icon,
+};
 
 use crate::include_style;
 

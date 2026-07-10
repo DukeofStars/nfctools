@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::Mutex, sync::OnceLock};
+use std::{
+    path::PathBuf,
+    sync::{Mutex, OnceLock},
+};
 
 use color_eyre::{
     eyre::{eyre, Context},

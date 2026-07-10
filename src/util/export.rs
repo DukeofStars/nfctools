@@ -4,8 +4,9 @@ use color_eyre::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::fleet_edit::EditableHullParams;
-use crate::ui::formations::FormationTemplate;
+use crate::{
+    fleet_edit::EditableHullParams, ui::formations::FormationTemplate,
+};
 
 const LN_CONFIG_PREFIX: &'static str = "LNCONFIG:";
 const FORMATION_PREFIX: &'static str = "FORM:";

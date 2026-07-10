@@ -4,7 +4,7 @@ use dioxus::prelude::*;
 use dioxus_primitives::checkbox::CheckboxState;
 use rfd::AsyncFileDialog;
 
-use crate::{components::checkbox::Checkbox, config::APP_CONFIG};
+use crate::{components::checkbox::Checkbox, system::config::APP_CONFIG};
 
 #[component]
 pub fn SettingsDialog(signal: Signal<bool>) -> Element {
@@ -118,7 +118,7 @@ pub fn SettingsDialog(signal: Signal<bool>) -> Element {
                         spawn(async move {
                             saving.set(true);
                             *APP_CONFIG.get().unwrap().lock().unwrap() = config();
-                            crate::config::save_app_config().unwrap();
+                            crate::system::config::save_app_config().unwrap();
                             saving.set(false);
                             signal.set(false);
                         });

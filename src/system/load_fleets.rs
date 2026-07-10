@@ -14,7 +14,10 @@ use glob::Pattern;
 use metrohash::MetroHash;
 use tracing::{debug, info, trace, warn};
 
-use crate::{config::APP_CONFIG, fleet_data::FleetData, fleet_io::read_fleet};
+use crate::{
+    fleet_data::FleetData, system::config::APP_CONFIG,
+    system::fleet_io::read_fleet,
+};
 
 pub fn load_fleets(use_cache: Option<bool>) -> Result<Vec<FleetData>> {
     let Some(Ok(app_config)) = APP_CONFIG.get().map(|m| m.lock()) else {

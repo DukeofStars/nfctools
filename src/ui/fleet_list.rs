@@ -1,5 +1,4 @@
-use std::ops::DerefMut;
-use std::time::Duration;
+use std::{ops::DerefMut, time::Duration};
 
 use dioxus::{
     desktop::{use_muda_event_handler, Config, WindowBuilder},
@@ -14,13 +13,9 @@ use palette::{
 use schemas::Ship;
 
 use crate::{
-    audio::AUDIO_HANDLER,
     components::color_picker::ColorPicker,
-    config::load_app_config,
     fleet_data::FleetData,
-    fleet_io::read_fleet,
-    load_fleets,
-    spawn_async::spawn_async,
+    system::{audio::AUDIO_HANDLER, config::load_app_config},
     tags::{Color, Tag, TAGS_REPO},
     ui::{
         dialog::{
@@ -34,6 +29,7 @@ use crate::{
         fleet_editor::ShipEditor,
         formations::FleetFormationViewer,
     },
+    util::spawn_async::spawn_async,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -50,7 +46,7 @@ pub fn FleetList() -> Element {
         spawn_async(load_app_config).await.unwrap();
         spawn_async(crate::tags::init_tags).await;
         // Then load fleets (load_fleets requires APP_CONFIG to be set)
-        spawn_async(|| load_fleets::load_fleets(None)).await
+        spawn_async(|| crate::system::load_fleets::load_fleets(None)).await
     });
 
     let mut selected_fleet_data = use_signal(|| None::<FleetData>);
@@ -122,16 +118,17 @@ pub fn FleetList() -> Element {
                         selected_fleet_idx.set(None);
                         selected_ship.set(None);
                         selected_ship_idx.set(None);
-                        let new_fleets =
-                            spawn_async(|| load_fleets::load_fleets(None))
-                                .await;
+                        let new_fleets = spawn_async(|| {
+                            crate::system::load_fleets::load_fleets(None)
+                        })
+                        .await;
                         fleets.set(Some(new_fleets));
                         show_spinner_dialog.set(false);
                     }
                     "fleets-clear-cache" => {
                         info!("Clearing fleet cache");
                         show_spinner!("Clearing fleet cache");
-                        let cache_path = crate::config::APP_CONFIG
+                        let cache_path = crate::system::config::APP_CONFIG
                             .get()
                             .unwrap()
                             .lock()
@@ -263,7 +260,7 @@ pub fn FleetList() -> Element {
     let mut selected_fleet = use_resource(move || async move {
         if let Some(fleet_data) = selected_fleet_data.as_ref() {
             loading_fleet.set(true);
-            crate::menubar::MENUBARS.with_borrow(|menubars| {
+            crate::ui::menubar::MENUBARS.with_borrow(|menubars| {
                 if let Some(menubars) = menubars.as_ref() {
                     menubars.tools_merge.set_enabled(true);
                 }
@@ -272,7 +269,8 @@ pub fn FleetList() -> Element {
             selected_ship.set(None);
             selected_ship_idx.set(None);
             let fleet_path = fleet_data.path.clone();
-            let fleet = spawn_async(|| read_fleet(fleet_path));
+            let fleet =
+                spawn_async(|| crate::system::fleet_io::read_fleet(fleet_path));
             let fleet = fleet.await;
             if Some(fleet_data.path.clone()) == prev_path() {
                 loading_fleet.set(false);
@@ -287,7 +285,7 @@ pub fn FleetList() -> Element {
             loading_fleet.set(false);
             fleet.ok()
         } else {
-            crate::menubar::MENUBARS.with_borrow(|menubars| {
+            crate::ui::menubar::MENUBARS.with_borrow(|menubars| {
                 if let Some(menubars) = menubars.as_ref() {
                     menubars.tools_merge.set_enabled(false);
                 }
@@ -317,7 +315,10 @@ pub fn FleetList() -> Element {
                 .expect("Ship updated without any ship idx being set");
             fleet.ships.as_mut().unwrap().ship.as_mut().unwrap()[ship_idx] =
                 ship.clone();
-            match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
+            match crate::system::fleet_io::write_fleet(
+                fleet_data.path.clone(),
+                fleet,
+            ) {
                 Ok(_) => {}
                 Err(err) => {
                     error_popup!(
@@ -358,7 +359,10 @@ pub fn FleetList() -> Element {
             }
         }
 
-        match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
+        match crate::system::fleet_io::write_fleet(
+            fleet_data.path.clone(),
+            fleet,
+        ) {
             Ok(_) => {}
             Err(err) => {
                 error_popup!(
@@ -383,7 +387,7 @@ pub fn FleetList() -> Element {
         selected_fleet_data.set(None);
         secondary_selected_fleet_idxs.clear();
 
-        crate::search::parse_search_text(search_text())
+        crate::util::search::parse_search_text(search_text())
     });
 
     rsx! {

@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 use rfd::AsyncFileDialog;
 use schemas::Fleet;
 
-use crate::{fleet_data::FleetData, fleet_io::read_fleet};
+use crate::{fleet_data::FleetData, system::fleet_io::read_fleet};
 
 #[component]
 pub fn MergeFleetsDialog(
@@ -39,7 +39,7 @@ pub fn MergeFleetsDialog(
                             .set_title("Save merged fleet")
                             .add_filter("Fleet", &["fleet"])
                             .set_directory(
-                                crate::config::APP_CONFIG
+                                crate::system::config::APP_CONFIG
                                     .get()
                                     .expect("App configuration not loaded")
                                     .lock()
@@ -167,7 +167,7 @@ pub fn MergeFleetsDialog(
                                     .push(mod_dep);
                             }
                         }
-                        crate::fleet_io::write_fleet(file.path(), &out)
+                        crate::system::fleet_io::write_fleet(file.path(), &out)
                             .expect("Failed to write fleet file");
                         debug!("Merge complete successfully");
                         running.set(false);

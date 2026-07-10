@@ -10,7 +10,7 @@ use rfd::AsyncFileDialog;
 use zip::write::FileOptions;
 
 use crate::{
-    components::checkbox::Checkbox, config::APP_CONFIG,
+    components::checkbox::Checkbox, system::config::APP_CONFIG,
     ui::dialog::DialogWrapper,
 };
 

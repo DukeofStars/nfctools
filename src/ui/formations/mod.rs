@@ -1,19 +1,20 @@
+use std::str::FromStr;
+
 use arboard::Clipboard;
 use dioxus::prelude::*;
 use schemas::{Fleet, InitialFormation, RelativePosition, Ship};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 pub mod swarm;
 mod viewer3d;
 
 use crate::{
-    audio::AUDIO_HANDLER,
     components::dropdown_menu::{
         DropdownMenu, DropdownMenuContent, DropdownMenuItem,
         DropdownMenuTrigger,
     },
     fleet_data::FleetData,
+    system::audio::AUDIO_HANDLER,
     ui::{
         dialog::{swarm_config::SwarmConfigDialog, DialogWrapper},
         fleet_editor::ChevronDown,
@@ -195,7 +196,10 @@ pub fn FleetFormationViewer(
         let Some(fleet_data) = fleet_data.as_ref() else {
             return;
         };
-        match crate::fleet_io::write_fleet(fleet_data.path.clone(), fleet) {
+        match crate::system::fleet_io::write_fleet(
+            fleet_data.path.clone(),
+            fleet,
+        ) {
             Ok(_) => {}
             Err(err) => {
                 error!("Failed to write fleet file: {:?}", err);
@@ -363,7 +367,7 @@ pub fn FleetFormationViewer(
                             return;
                         };
                         let template = formation.to_template();
-                        let Ok(s) = crate::export::export_formation(&template) else {
+                        let Ok(s) = crate::util::export::export_formation(&template) else {
                             warn!("Failed to export formation");
                             return;
                         };
@@ -392,7 +396,7 @@ pub fn FleetFormationViewer(
                         let Ok(clipboard_text) = clipboard.get_text() else {
                             return;
                         };
-                        let Ok(new_form) = crate::export::import_formation(&clipboard_text) else {
+                        let Ok(new_form) = crate::util::export::import_formation(&clipboard_text) else {
                             return;
                         };
 

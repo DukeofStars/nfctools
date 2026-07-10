@@ -1,6 +1,6 @@
-use dioxus::prelude::*;
-
 use std::str::FromStr;
+
+use dioxus::prelude::*;
 
 use crate::ui::formations::swarm::SwarmCompressionConfig;
 

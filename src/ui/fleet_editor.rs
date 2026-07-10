@@ -56,7 +56,7 @@ pub fn ShipEditor(mut ship: Signal<Option<Ship>>) -> Element {
                             class: "button",
                             onclick: move |_| {
                                 if let Some(hull_params) = hull_params.read().as_ref() {
-                                    let Ok(hex) = crate::export::export_hull_config(hull_params) else {
+                                    let Ok(hex) = crate::util::export::export_hull_config(hull_params) else {
                                         warn!("Failed to serialize hull parameters");
                                         return;
                                     };
@@ -72,7 +72,7 @@ pub fn ShipEditor(mut ship: Signal<Option<Ship>>) -> Element {
                             class: "button",
                             onclick: move |_| {
                                 let mut clipboard = Clipboard::new().unwrap();
-                                let hull_params = crate::export::import_hull_config(
+                                let hull_params = crate::util::export::import_hull_config(
                                     &clipboard.get_text().unwrap(),
                                 );
                                 if let Err(err) = hull_params {

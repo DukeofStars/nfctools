@@ -16,20 +16,19 @@ use tracing_subscriber::{
     EnvFilter, Layer, Registry,
 };
 
-use crate::{menubar::Menubars, ui::fleet_list::FleetList};
+use crate::ui::{fleet_list::FleetList, menubar::Menubars};
 
-mod audio;
-mod config;
+// System interactions
+mod system;
+// Constants
 mod dressings;
-mod export;
-mod fleet_data;
 mod fleet_edit;
-mod fleet_io;
-mod load_fleets;
-mod menubar;
-mod search;
-mod spawn_async;
+// Helper functions
+mod util;
+// Structures
+mod fleet_data;
 mod tags;
+// UI
 mod ui;
 
 #[allow(unused)]
@@ -107,7 +106,7 @@ fn main() -> Result<()> {
     let menubars = Menubars::new();
     let menu = Menu::new();
     menubars.attach_to_menu(&menu);
-    crate::menubar::MENUBARS.set(Some(menubars));
+    crate::ui::menubar::MENUBARS.set(Some(menubars));
 
     debug!("Launching app");
     dioxus::LaunchBuilder::new()

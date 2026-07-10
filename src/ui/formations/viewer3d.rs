@@ -2,7 +2,7 @@ use dioxus::{html::geometry::WheelDelta, prelude::*};
 use nalgebra::{Isometry3, Perspective3, Vector3};
 use serde::Serialize;
 
-use crate::spawn_async::spawn_async;
+use crate::util::spawn_async::spawn_async;
 
 pub type Point3 = nalgebra::Point3<f64>;
 

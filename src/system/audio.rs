@@ -3,7 +3,7 @@ pub struct AudioHandler {
     player: rodio::Player,
 }
 impl AudioHandler {
-    const HOVER_SOUND: &[u8] = include_bytes!("../assets/hover-click.wav");
+    const HOVER_SOUND: &[u8] = include_bytes!("../../assets/hover-click.wav");
 
     pub fn new() -> AudioHandler {
         let handle = rodio::DeviceSinkBuilder::open_default_sink()
@@ -26,7 +26,7 @@ impl AudioHandler {
         source: rodio::Decoder<std::io::Cursor<&'static [u8]>>,
     ) {
         if let Some(Ok(config)) =
-            crate::config::APP_CONFIG.get().map(|m| m.lock())
+            crate::system::config::APP_CONFIG.get().map(|m| m.lock())
         {
             if !config.sound_effects {
                 return;
